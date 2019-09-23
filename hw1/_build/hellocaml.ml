@@ -1050,7 +1050,7 @@ let rec optimize (e:exp) : exp =
     | Add (e1, e2) -> begin match e1 with
                         | Const x -> begin match e2 with
                                         | Const y -> Const (Int64.add x y)
-                                        | _ -> Add (e1, (optimize e2))
+                                        | _ -> Add (x, (optimize e2))
                                      end
                         | _ -> begin match e2 with
                                   | Const y -> Add ((optimize e1), y)
