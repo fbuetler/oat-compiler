@@ -1045,20 +1045,28 @@ let rec interpret (c:ctxt) (e:exp) : int64 =
   Hint: what simple optimizations can you do with Neg?
 *)
 
+(* TODO: write more cases *)
+
 let rec optimize (e:exp) : exp =
   begin match e with
-    | Add (e1, e2) -> begin match e1 with
-                        | Const x -> begin match e2 with
-                                        | Const y -> Const (Int64.add x y)
-                                        | _ -> Add (e1, (optimize e2))
-                                     end
-                        | _ -> begin match e2 with
-                                  | Const y -> Add ((optimize e1), y)
-                                  | _ -> Add ((optimize e1), (optimize e2))
-                               end
+    | Add (e1, e2) -> begin match (optimize e1), (optimize e2) with
+                        | Const x, Const y -> Const (Int64.add x y)
+                        | tmp, Const 0L -> tmp
+                        | Const 0L, tmp -> tmp
+                        | tmp1, tmp2 -> Add (tmp1, tmp2)
                       end
-    | Mult (e1, e2) -> Mul ((optimize e1), (optimize e2))
-    | Neg e1 -> Neg (optimize e1)
+    | Mult (e1, e2) -> begin match (optimize e1), (optimize e2) with
+                        | Const x, Const y -> Const (Int64.mul x y)
+                        | tmp, Const 1L -> tmp
+                        | Const 1L, tmp -> tmp
+                        | tmp, Const 0L -> Const 0L
+                        | Const 0L, tmp -> Const 0L
+                        | tmp1, tmp2 -> Mult (tmp1, tmp2)
+                       end
+    | Neg e1 -> begin match (optimize e1) with
+                  | Const 0L -> Const 0L
+                  | tmp -> Neg tmp
+                end
     | _ -> e
   end
 
