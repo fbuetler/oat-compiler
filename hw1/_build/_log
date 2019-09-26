@@ -17,16 +17,26 @@ ocamlc.opt -c -I util -o gradedtests.cmo gradedtests.ml # cached
 ocamldep.opt -modules providedtests.ml > providedtests.ml.depends
 # Target: providedtests.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:providedtests.cmo, file:providedtests.ml, implem, ocaml, quiet }
 ocamlc.opt -c -I util -o providedtests.cmo providedtests.ml
++ ocamlc.opt -c -I util -o providedtests.cmo providedtests.ml
+File "providedtests.ml", line 32, characters 6-98:
+32 |       ("correctness1", assert_eqf (fun () -> (interpret context exp)) (run context (compile exp)));
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 10: this expression should have type unit.
 # Target: main.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:main.cmo, file:main.ml, implem, ocaml, quiet }
 ocamlc.opt -c -I util -o main.cmo main.ml
 # Target: util/assert.cmx, tags: { compile, extension:cmx, extension:ml, file:util/assert.cmx, file:util/assert.ml, implem, native, ocaml, quiet }
 ocamlopt.opt -c -I util -o util/assert.cmx util/assert.ml # cached
 # Target: hellocaml.cmx, tags: { compile, extension:cmx, extension:ml, file:hellocaml.cmx, file:hellocaml.ml, implem, native, ocaml, quiet }
-ocamlopt.opt -c -I util -o hellocaml.cmx hellocaml.ml
+ocamlopt.opt -c -I util -o hellocaml.cmx hellocaml.ml # cached
 # Target: gradedtests.cmx, tags: { compile, extension:cmx, extension:ml, file:gradedtests.cmx, file:gradedtests.ml, implem, native, ocaml, quiet }
-ocamlopt.opt -c -I util -o gradedtests.cmx gradedtests.ml
+ocamlopt.opt -c -I util -o gradedtests.cmx gradedtests.ml # cached
 # Target: providedtests.cmx, tags: { compile, extension:cmx, extension:ml, file:providedtests.cmx, file:providedtests.ml, implem, native, ocaml, quiet }
 ocamlopt.opt -c -I util -o providedtests.cmx providedtests.ml
++ ocamlopt.opt -c -I util -o providedtests.cmx providedtests.ml
+File "providedtests.ml", line 32, characters 6-98:
+32 |       ("correctness1", assert_eqf (fun () -> (interpret context exp)) (run context (compile exp)));
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 10: this expression should have type unit.
 # Target: main.cmx, tags: { compile, extension:cmx, extension:ml, file:main.cmx, file:main.ml, implem, native, ocaml, quiet }
 ocamlopt.opt -c -I util -o main.cmx main.ml
 # Target: main.native, tags: { dont_link_with, extension:native, file:main.native, link, native, ocaml, program, quiet }

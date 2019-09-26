@@ -515,13 +515,9 @@ end
 *)
 
 let compose_pair (p:(('b -> 'c) * ('a -> 'b))) : 'a -> 'c =
-  failwith "rev_t unimplemented"
-  (*
   begin match p with
-    (f1, f2) -> f1 f2
+    (f1, f2) -> fun x -> f1 (f2 x)
   end
-  *)
-
 
 (******************************************************************************)
 (*                                                                            *)
@@ -1210,10 +1206,22 @@ let ans1 = run [] p1
      glue together two programs.
 
    - You should test the correctness of your compiler on several examples.
+
+type insn =
+  | IPushC of int64   (* push an int64 constant onto the stack *)
+  | IPushV of string  (* push (lookup string ctxt)  onto the stack *)
+  | IMul              (* multiply the top two values on the stack *)
+  | IAdd              (* add the top two values on the stack *)
+  | INeg              (* negate the top value on the stack *)
 *)
 let rec compile (e:exp) : program =
-  failwith "compile unimplemented"
-
+  begin match e with
+    | Var x -> [IPushV x]
+    | Const c -> [IPushC c]
+    | Add (e1, e2) -> ((compile e1) @ (compile e2)) @ [IAdd]
+    | Mult (e1, e2) -> ((compile e1) @ (compile e2)) @ [IMul]
+    | Neg e1 -> (compile e1) @ [INeg]
+  end
 
 
 (************)

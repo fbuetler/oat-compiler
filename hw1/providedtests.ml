@@ -13,8 +13,26 @@ let provided_tests : suite = [
     ("case3", assert_eqf (fun () -> prob3_case3) 64);
   ]);
   
-  Test ("Student-Provided Tests For Problem4-5", [
+  Test ("Student-Provided Tests For Problem 4-5", [
     ("optimize1", assert_eqf (fun () -> optimize (Add(Const 3L, Neg (Const 0L)))) (Const 3L));
+  ]);
+
+  (*
+    (interpret c e) = v       if and only if
+    (run c (compile e)) = v
+  *)
+
+  Test ("Student-Provided Tests For Problem 5", [
+    ("compile1", assert_eqf (fun () -> compile (Mult(Const 2L, Const 3L))) ([IPushC 2L; IPushC 3L; IMul]));
+  ]);
+
+  Test ("Student-Provided Correctness Tests For Problem 5", [
+    let exp = (Add(Mult(Var "x", Var "y"), Const 5L)) in
+      let context = [("x", 2L); ("y", 7L)] in
+      ("correctness1", assert_eqf (fun () -> (interpret context exp)) (run context (compile exp)));
+    let exp = (Add(Var "x", Const 1L)) in
+      let context = [("x", 3L)]  in
+      ("correctness2", assert_eqf (fun () -> (interpret context exp)) (run context (compile exp)));
   ]);
 
 ] 
