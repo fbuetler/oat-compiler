@@ -1,5 +1,5 @@
 DIRS := util,x86
-LIBS := unix,str,nums
+LIBS := unix,str
 SUBMIT := simulator.ml studenttests.ml
 OTHER := gradedtests.ml main.ml 
 HWNAME := hw02
