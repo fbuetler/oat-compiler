@@ -170,16 +170,25 @@ let interpret_val (op:operand) (m:mach) : int64 =
 let incr_rip (m:mach) : unit =
   m.regs.(rind Rip) <- (Int64.add m.regs.(rind Rip) ins_size)
 
+(* save value as sbyte to stack and decrement the stackpointer*)
+let push_to_stack (value:int64) (offset:int64) (m:mach) : unit =
+  (* TODO debug *)
+  Array.blit (Array.of_list (sbytes_of_int64 value)) 0 m.mem (Int64.to_int m.regs.(rind Rsp)) 8;
+  m.regs.(rind Rsp) <- Int64.sub m.regs.(rind Rsp) ins_size (* TODO: or ins_size * 8 ? *)
+
+let save_res (value:int64) (dest:operand) (m:mach) : unit =
+  begin match dest with
+  | Imm imm -> failwith "you cannot save to a value :P"
+  | Reg reg -> Array.set m.regs (rind reg) value
+  | _ -> push_to_stack value (interpret_val dest m) m
+  end
+
+  (* Ind3 (Lit i, Rsp) *)
+
 let set_flags (fo:bool) (value:int64) (m:mach) : unit =
     m.flags.fo <- fo;
     m.flags.fs <- (value < 0L);
     m.flags.fz <- (value == 0L)
-
-let save_res (value:int64) (dest:operand) (m:mach) : unit =
-  begin match dest with
-  | Reg reg -> Array.set m.regs (rind reg) value
-  | _ -> ()
-  end
 
 let arith_bin_op (operation: int64 -> int64 -> Int64_overflow.t) (src:operand) (dest:operand) (m:mach) : unit =
   let res = operation (interpret_val src m) (interpret_val dest m) in
@@ -193,6 +202,18 @@ let arith_un_op (operation: int64 -> Int64_overflow.t) (src:operand) (m:mach) : 
     save_res res.value src m;
     incr_rip m
 
+let log_bin_op (operation: int64 -> int64 -> int64) (src:operand) (dest:operand) (m:mach) : unit =
+  let res = operation (interpret_val src m) (interpret_val dest m) in
+    set_flags false res m;
+    save_res res dest m;
+    incr_rip m
+
+let log_un_op (operation: int64 -> int64) (src:operand) (m:mach) : unit =
+  let res = operation (interpret_val src m) in
+    set_flags false res m;
+    save_res res src m;
+    incr_rip m
+
 let interpret_instr (instr:ins) (m:mach) : unit =
   begin match instr with
     (* Arithmetic Instructions *)
@@ -203,10 +224,10 @@ let interpret_instr (instr:ins) (m:mach) : unit =
     | Decq, [src] -> arith_un_op Int64_overflow.pred src m
     | Negq, [src] -> arith_un_op Int64_overflow.neg src m
     (* Logic Instructions *)
-    | Andq, [src; dest] -> ()
-    | Orq, [src; dest] -> ()
-    | Xorq, [src; dest] -> ()
-    | Notq, [src] -> ()
+    | Andq, [src; dest] -> log_bin_op Int64.logand src dest m
+    | Orq, [src; dest] -> log_bin_op Int64.logor src dest m
+    | Xorq, [src; dest] -> log_bin_op Int64.logxor src dest m
+    | Notq, [src] -> log_un_op Int64.lognot src m
     (* Bit-manipulation Instructions *)
     | Sarq, [amt; dest] -> ()
     | Shlq, [amt; dest] -> ()
@@ -245,7 +266,10 @@ let get_instr (m:mach) : ins =
 *)
 let step (m:mach) : unit =
   let instr = get_instr m in 
-  interpret_instr instr m
+    interpret_instr instr m (*;
+    Printf.printf "Rax %Ld\n" m.regs.(rind Rax);
+    Printf.printf "Rbx %Ld\n" m.regs.(rind Rbx)
+    *)
 
 (* Runs the machine until the rip register reaches a designated
    memory address. *)
