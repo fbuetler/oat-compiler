@@ -263,7 +263,9 @@ let interpret_instr_base (instr:ins) (m:mach) : unit =
     | Pushq, [src] -> push_to_stack (interpret_val src m) m
     | Popq, [dest] -> save_res (pop_from_stack m) dest m
     (* Control-flow and condition Instructions *)
-    | Cmpq, [src1; src2] -> ()
+    | Cmpq, [src1; src2] ->
+      let res = Int64_overflow.sub (interpret_val src2 m) (interpret_val src1 m) in
+      set_flags res.overflow res.value m
     | Callq, [src] -> ()
     | Retq, [] -> ()
     | Jmp, [src] -> ()
