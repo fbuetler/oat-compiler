@@ -239,7 +239,7 @@ let interpret_instr_base (instr:ins) (m:mach) : unit =
     | Set cc, [dest] -> ()
     (* Data-movement Instructions *)
     | Leaq, [ind; dest] -> ()
-    | Movq, [src; dest] -> ()
+    | Movq, [src; dest] -> save_res (interpret_val src m) dest m
     | Pushq, [src] -> ()
     | Popq, [dest] -> ()
     (* Control-flow and condition Instructions *)
