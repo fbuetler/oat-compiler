@@ -1,5 +1,5 @@
 DIRS := util,x86
-LIBS := unix,str,nums
+LIBS := unix,str
 SUBMIT := simulator.ml studenttests.ml
 OTHER := gradedtests.ml main.ml 
 HWNAME := hw02
@@ -9,10 +9,10 @@ ZIPNAME := $(HWNAME)-submit($(TIMESTAMP)).zip
 .PHONY: all test clean zip
 
 main.native: $(SUBMIT) $(OTHER)
-	ocamlbuild -Is $(DIRS) -libs $(LIBS) main.native
+	ocamlbuild -use-ocamlfind -Is $(DIRS) -libs $(LIBS) main.native
 
 main.byte: $(SUBMIT) $(OTHER)
-	ocamlbuild -Is $(DIRS) -libs $(LIBS) main.byte
+	ocamlbuild -use-ocamlfind -Is $(DIRS) -libs $(LIBS) main.byte
 
 all: main.byte main.native
 
