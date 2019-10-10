@@ -198,28 +198,24 @@ let set_flags (fo:bool) (value:int64) (m:mach) : unit =
 let arith_bin_op (operation: int64 -> int64 -> Int64_overflow.t) (src:operand) (dest:operand) (m:mach) : unit =
   let res = operation (interpret_val src m) (interpret_val dest m) in
   set_flags res.overflow res.value m;
-  save_res res.value dest m;
-  incr_rip m
+  save_res res.value dest m
 
 let arith_un_op (operation: int64 -> Int64_overflow.t) (src:operand) (m:mach) : unit =
   let res = operation (interpret_val src m) in
   set_flags res.overflow res.value m;
-  save_res res.value src m;
-  incr_rip m
+  save_res res.value src m
 
 let log_bin_op (operation: int64 -> int64 -> int64) (src:operand) (dest:operand) (m:mach) : unit =
   let res = operation (interpret_val src m) (interpret_val dest m) in
   set_flags false res m;
-  save_res res dest m;
-  incr_rip m
+  save_res res dest m
 
 let log_un_op (operation: int64 -> int64) (src:operand) (m:mach) : unit =
   let res = operation (interpret_val src m) in
   set_flags false res m;
-  save_res res src m;
-  incr_rip m
+  save_res res src m
 
-let interpret_instr (instr:ins) (m:mach) : unit =
+let interpret_instr_base (instr:ins) (m:mach) : unit =
   begin match instr with
     (* Arithmetic Instructions *)
     | Addq, [src; dest] -> arith_bin_op Int64_overflow.add src dest m
@@ -252,6 +248,10 @@ let interpret_instr (instr:ins) (m:mach) : unit =
     | _ -> failwith "this instruction should not exist"
   end
 
+let interpret_instr (instr:ins) (m:mach) : unit =
+  interpret_instr_base instr m;
+  incr_rip m
+
 let get_instr (m:mach) : ins =
   let addr = map_addr @@ m.regs.(rind Rip) in
   begin match addr with
@@ -271,10 +271,7 @@ let get_instr (m:mach) : ins =
 *)
 let step (m:mach) : unit =
   let instr = get_instr m in 
-  interpret_instr instr m (*;
-                            Printf.printf "Rax %Ld\n" m.regs.(rind Rax);
-                            Printf.printf "Rbx %Ld\n" m.regs.(rind Rbx)
-                          *)
+  interpret_instr instr m
 
 (* Runs the machine until the rip register reaches a designated
    memory address. *)
