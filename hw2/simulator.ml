@@ -254,7 +254,7 @@ let interpret_instr_base (instr:ins) (m:mach) : unit =
     | Shrq, [amt; dest] -> ()
     | Set cc, [dest] -> ()
     (* Data-movement Instructions *)
-    | Leaq, [ind; dest] -> ()
+    | Leaq, [ind; dest] -> save_res (interpret_mem_loc ind m) dest m
     | Movq, [src; dest] -> save_res (interpret_val src m) dest m
     | Pushq, [src] -> ()
     | Popq, [dest] -> ()
