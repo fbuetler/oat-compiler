@@ -286,16 +286,24 @@ let interpret_instr_base (instr:ins) (m:mach) : unit =
     | Cmpq, [src1; src2] ->
       let res = Int64_overflow.sub (interpret_val src2 m) (interpret_val src1 m) in
       set_flags res.overflow res.value m
-    | Callq, [src] -> ()
-    | Retq, [] -> ()
-    | Jmp, [src] -> ()
+    | Callq, [src] ->
+      push_to_stack m.regs.(rind Rip) m;
+      m.regs.(rind Rip) <- interpret_val src m
+    | Retq, [] -> m.regs.(rind Rip) <- pop_from_stack m
+    | Jmp, [src] -> m.regs.(rind Rip) <- interpret_val src m
     | J cc, [src] -> ()
     | _ -> failwith "this instruction should not exist"
   end
 
 let interpret_instr (instr:ins) (m:mach) : unit =
   interpret_instr_base instr m;
-  incr_rip m
+  begin match instr with
+    | Callq, _ -> ()
+    | Retq, _ -> ()
+    | Jmp, _ -> ()
+    | J _, _ -> ()
+    | _ -> incr_rip m
+  end 
 
 let get_instr (m:mach) : ins =
   let addr = map_addr @@ m.regs.(rind Rip) in
