@@ -228,6 +228,13 @@ let arith_un_op (operation: int64 -> Int64_overflow.t) (src:operand) (m:mach) : 
   set_flags res.overflow res.value m;
   save_res res.value src m
 
+let shift_op (operation: int64 -> int -> int64) (decide_fo: int64 -> int64 -> bool) (amt:operand) (dest:operand) (m:mach) : unit =
+  let input = interpret_val dest m in
+  let amt_val = Int64.to_int @@ interpret_val amt m in
+  let output = operation input amt_val in
+  if amt_val = 1 then set_flags (decide_fo input output) output m;
+  save_res output dest m
+
 let log_bin_op (operation: int64 -> int64 -> int64) (src:operand) (dest:operand) (m:mach) : unit =
   let res = operation (interpret_val dest m) (interpret_val src m) in
   set_flags false res m;
@@ -237,6 +244,10 @@ let log_un_op (operation: int64 -> int64) (src:operand) (m:mach) : unit =
   let res = operation (interpret_val src m) in
   set_flags false res m;
   save_res res src m
+
+let msb_as_bool (value: int64) : bool =
+  let msb = Int64.logand value @@ Int64.lognot Int64.max_int in
+  not @@ Int64.equal Int64.zero msb
 
 let interpret_instr_base (instr:ins) (m:mach) : unit =
   begin match instr with
@@ -253,9 +264,15 @@ let interpret_instr_base (instr:ins) (m:mach) : unit =
     | Xorq, [src; dest] -> log_bin_op Int64.logxor src dest m
     | Notq, [src] -> log_un_op Int64.lognot src m
     (* Bit-manipulation Instructions *)
-    | Sarq, [amt; dest] -> ()
-    | Shlq, [amt; dest] -> ()
-    | Shrq, [amt; dest] -> ()
+    | Sarq, [amt; dest] ->
+      let decide_fo _ _ = false in
+      shift_op Int64.shift_right decide_fo amt dest m
+    | Shlq, [amt; dest] -> 
+      let decide_fo _ output = (msb_as_bool output) <> (msb_as_bool @@ Int64.shift_left output 1) in
+      shift_op Int64.shift_left decide_fo amt dest m
+    | Shrq, [amt; dest] ->
+      let decide_fo input _ = msb_as_bool input in
+      shift_op Int64.shift_right decide_fo amt dest m
     | Set cc, [dest] -> ()
     (* Data-movement Instructions *)
     | Leaq, [ind; dest] -> save_res (interpret_mem_loc ind m) dest m
