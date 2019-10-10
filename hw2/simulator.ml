@@ -216,7 +216,7 @@ let save_res (value:int64) (dest:operand) (m:mach) : unit =
 let set_flags (fo:bool) (value:int64) (m:mach) : unit =
   m.flags.fo <- fo;
   m.flags.fs <- (value < 0L);
-  m.flags.fz <- (value == 0L)
+  m.flags.fz <- (value = 0L)
 
 let arith_bin_op (operation: int64 -> int64 -> Int64_overflow.t) (src:operand) (dest:operand) (m:mach) : unit =
   let res = operation (interpret_val src m) (interpret_val dest m) in
