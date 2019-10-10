@@ -181,11 +181,14 @@ let push_to_stack (value:int64) (offset:int64) (m:mach) : unit =
   Array.blit (Array.of_list (sbytes_of_int64 value)) 0 m.mem (Int64.to_int m.regs.(rind Rsp)) 8;
   m.regs.(rind Rsp) <- Int64.sub m.regs.(rind Rsp) ins_size (* TODO: or ins_size * 8 ? *)
 
+let write_to_mem (value:int64) (offset:int64) (m:mach) : unit =
+  Array.blit (Array.of_list (sbytes_of_int64 value)) 0 m.mem (Int64.to_int offset) 8
+
 let save_res (value:int64) (dest:operand) (m:mach) : unit =
   begin match dest with
     | Imm imm -> failwith "you cannot save to a value :P"
     | Reg reg -> Array.set m.regs (rind reg) value
-    | _ -> push_to_stack value (interpret_val dest m) m
+    | _ -> write_to_mem value (interpret_val dest m) m (* ISSUE Why were we pushing to the stack here before? *)
   end
 
 (* Ind3 (Lit i, Rsp) *)
