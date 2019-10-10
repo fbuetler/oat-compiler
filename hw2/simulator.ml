@@ -138,14 +138,17 @@ let debug_simulator = ref true
 
 (* Interpret a condition code with respect to the given flags. *)
 let interp_cnd {fo; fs; fz} : cnd -> bool = 
-  fun x -> begin match x with
+  let rec interp x = 
+    begin match x with
       | Eq -> fz
       | Neq -> not fz
       | Lt -> (fs && not fo) || (not fs && fo)
-      | Le -> ((fs && not fo) || (not fs && fo)) || fz
-      | Gt -> ((not fs || fo) && (fs || not fo)) && not fz
-      | Ge -> fs == fo
+      | Le -> interp Lt || interp Eq
+      | Gt -> not (interp Le)
+      | Ge -> not (interp Lt)
     end
+  in
+  interp
 
 (* Maps an X86lite address into Some OCaml array index,
    or None if the address is not within the legal address space. *)
