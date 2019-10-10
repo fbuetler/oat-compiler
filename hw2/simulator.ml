@@ -183,6 +183,11 @@ let push_to_stack (value:int64) (m:mach) : unit =
   write_mem value next m;
   m.regs.(rind Rsp) <- next
 
+let pop_from_stack (m:mach) : int64 =
+  let v = read_mem m.regs.(rind Rsp) m in
+  m.regs.(rind Rsp) <- Int64.add m.regs.(rind Rsp) ins_size;
+  int64_of_sbytes v
+
 let interpret_mem_loc (op:operand) (m:mach) : int64 =
   begin match op with
     | Imm imm -> failwith "Imm is not a memory location"
@@ -256,7 +261,7 @@ let interpret_instr_base (instr:ins) (m:mach) : unit =
     | Leaq, [ind; dest] -> save_res (interpret_mem_loc ind m) dest m
     | Movq, [src; dest] -> save_res (interpret_val src m) dest m
     | Pushq, [src] -> push_to_stack (interpret_val src m) m
-    | Popq, [dest] -> ()
+    | Popq, [dest] -> save_res (pop_from_stack m) dest m
     (* Control-flow and condition Instructions *)
     | Cmpq, [src1; src2] -> ()
     | Callq, [src] -> ()
