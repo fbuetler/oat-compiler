@@ -95,7 +95,7 @@ let sbytes_of_int64 (i:int64) : sbyte list =
   let open Char in 
   let open Int64 in
   List.map (fun n -> Byte (shift_right i n |> logand 0xffL |> to_int |> chr))
-           [0; 8; 16; 24; 32; 40; 48; 56]
+    [0; 8; 16; 24; 32; 40; 48; 56]
 
 (* Convert an sbyte representation to an int64 *)
 let int64_of_sbytes (bs:sbyte list) : int64 =
@@ -139,13 +139,13 @@ let debug_simulator = ref true
 (* Interpret a condition code with respect to the given flags. *)
 let interp_cnd {fo; fs; fz} : cnd -> bool = 
   fun x -> begin match x with
-    | Eq -> fz
-    | Neq -> not fz
-    | Lt -> (fs && not fo) || (not fs && fo)
-    | Le -> ((fs && not fo) || (not fs && fo)) || fz
-    | Gt -> ((not fs || fo) && (fs || not fo)) && not fz
-    | Ge -> fs == fo
-  end
+      | Eq -> fz
+      | Neq -> not fz
+      | Lt -> (fs && not fo) || (not fs && fo)
+      | Le -> ((fs && not fo) || (not fs && fo)) || fz
+      | Gt -> ((not fs || fo) && (fs || not fo)) && not fz
+      | Ge -> fs == fo
+    end
 
 (* Maps an X86lite address into Some OCaml array index,
    or None if the address is not within the legal address space. *)
@@ -178,41 +178,41 @@ let push_to_stack (value:int64) (offset:int64) (m:mach) : unit =
 
 let save_res (value:int64) (dest:operand) (m:mach) : unit =
   begin match dest with
-  | Imm imm -> failwith "you cannot save to a value :P"
-  | Reg reg -> Array.set m.regs (rind reg) value
-  | _ -> push_to_stack value (interpret_val dest m) m
+    | Imm imm -> failwith "you cannot save to a value :P"
+    | Reg reg -> Array.set m.regs (rind reg) value
+    | _ -> push_to_stack value (interpret_val dest m) m
   end
 
-  (* Ind3 (Lit i, Rsp) *)
+(* Ind3 (Lit i, Rsp) *)
 
 let set_flags (fo:bool) (value:int64) (m:mach) : unit =
-    m.flags.fo <- fo;
-    m.flags.fs <- (value < 0L);
-    m.flags.fz <- (value == 0L)
+  m.flags.fo <- fo;
+  m.flags.fs <- (value < 0L);
+  m.flags.fz <- (value == 0L)
 
 let arith_bin_op (operation: int64 -> int64 -> Int64_overflow.t) (src:operand) (dest:operand) (m:mach) : unit =
   let res = operation (interpret_val src m) (interpret_val dest m) in
-    set_flags res.overflow res.value m;
-    save_res res.value dest m;
-    incr_rip m
+  set_flags res.overflow res.value m;
+  save_res res.value dest m;
+  incr_rip m
 
 let arith_un_op (operation: int64 -> Int64_overflow.t) (src:operand) (m:mach) : unit =
   let res = operation (interpret_val src m) in
-    set_flags res.overflow res.value m;
-    save_res res.value src m;
-    incr_rip m
+  set_flags res.overflow res.value m;
+  save_res res.value src m;
+  incr_rip m
 
 let log_bin_op (operation: int64 -> int64 -> int64) (src:operand) (dest:operand) (m:mach) : unit =
   let res = operation (interpret_val src m) (interpret_val dest m) in
-    set_flags false res m;
-    save_res res dest m;
-    incr_rip m
+  set_flags false res m;
+  save_res res dest m;
+  incr_rip m
 
 let log_un_op (operation: int64 -> int64) (src:operand) (m:mach) : unit =
   let res = operation (interpret_val src m) in
-    set_flags false res m;
-    save_res res src m;
-    incr_rip m
+  set_flags false res m;
+  save_res res src m;
+  incr_rip m
 
 let interpret_instr (instr:ins) (m:mach) : unit =
   begin match instr with
@@ -251,25 +251,25 @@ let get_instr (m:mach) : ins =
   let addr = map_addr @@ m.regs.(rind Rip) in
   begin match addr with
     | Some a -> begin match Array.get m.mem a with
-                  | InsB0 b -> b
-                  | _ -> raise X86lite_segfault (* TODO: what else ? *)
-                end
+        | InsB0 b -> b
+        | _ -> raise X86lite_segfault (* TODO: what else ? *)
+      end
     | None -> raise X86lite_segfault
   end
 
 (* Simulates one step of the machine:
-    - fetch the instruction at %rip
-    - compute the source and/or destination information from the operands
-    - simulate the instruction semantics
-    - update the registers and/or memory appropriately
-    - set the condition flags
+   - fetch the instruction at %rip
+   - compute the source and/or destination information from the operands
+   - simulate the instruction semantics
+   - update the registers and/or memory appropriately
+   - set the condition flags
 *)
 let step (m:mach) : unit =
   let instr = get_instr m in 
-    interpret_instr instr m (*;
-    Printf.printf "Rax %Ld\n" m.regs.(rind Rax);
-    Printf.printf "Rbx %Ld\n" m.regs.(rind Rbx)
-    *)
+  interpret_instr instr m (*;
+                            Printf.printf "Rax %Ld\n" m.regs.(rind Rax);
+                            Printf.printf "Rbx %Ld\n" m.regs.(rind Rbx)
+                          *)
 
 (* Runs the machine until the rip register reaches a designated
    memory address. *)
@@ -304,23 +304,23 @@ exception Redefined_sym of lbl
    - the text segment starts at the lowest address
    - the data segment starts after the text segment
 
-  HINT: List.fold_left and List.fold_right are your friends.
- *)
+   HINT: List.fold_left and List.fold_right are your friends.
+*)
 let assemble (p:prog) : exec =
-failwith "assemble unimplemented"
+  failwith "assemble unimplemented"
 
 (* Convert an object file into an executable machine state. 
-    - allocate the mem array
-    - set up the memory state by writing the symbolic bytes to the 
+   - allocate the mem array
+   - set up the memory state by writing the symbolic bytes to the 
       appropriate locations 
-    - create the inital register state
-      - initialize rip to the entry point address
-      - initializes rsp to the last word in memory 
-      - the other registers are initialized to 0
-    - the condition code flags start as 'false'
+   - create the inital register state
+   - initialize rip to the entry point address
+   - initializes rsp to the last word in memory 
+   - the other registers are initialized to 0
+   - the condition code flags start as 'false'
 
-  Hint: The Array.make, Array.blit, and Array.of_list library functions 
-  may be of use.
+   Hint: The Array.make, Array.blit, and Array.of_list library functions 
+   may be of use.
 *)
 let load {entry; text_pos; data_pos; text_seg; data_seg} : mach = 
-failwith "load unimplemented"
+  failwith "load unimplemented"
