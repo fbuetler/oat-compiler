@@ -291,7 +291,10 @@ let interpret_instr_base (instr:ins) (m:mach) : unit =
       m.regs.(rind Rip) <- interpret_val src m
     | Retq, [] -> m.regs.(rind Rip) <- pop_from_stack m
     | Jmp, [src] -> m.regs.(rind Rip) <- interpret_val src m
-    | J cc, [src] -> ()
+    | J cc, [src] ->
+      if interp_cnd m.flags cc
+      then m.regs.(rind Rip) <- interpret_val src m
+      else incr_rip m
     | _ -> failwith "this instruction should not exist"
   end
 
