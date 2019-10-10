@@ -157,20 +157,17 @@ let map_addr (addr:quad) : int option =
   then None
   else Some (Int64.to_int (Int64.sub addr mem_bot));;
 
+let map_addr_fatal (addr:quad) : int =
+  begin match map_addr addr with
+    | Some x -> x
+    | None -> raise X86lite_segfault
+  end
+
 let interpret_imm (i:imm) : int64 =
   begin match i with
     | Lit x -> x
     | _ -> failwith "Labels should no exist" (* labels shouldnt exist, i guess *)
   end 
-
-let interpret_val (op:operand) (m:mach) : int64 =
-  begin match op with
-    | Imm imm ->  interpret_imm imm
-    | Reg reg -> m.regs.(rind reg)
-    | Ind1 imm -> interpret_imm imm
-    | Ind2 reg -> m.regs.(rind reg)
-    | Ind3 (imm, reg) -> Int64.add (interpret_imm imm) (m.regs.(rind reg))
-  end
 
 let incr_rip (m:mach) : unit =
   m.regs.(rind Rip) <- (Int64.add m.regs.(rind Rip) ins_size)
@@ -181,14 +178,33 @@ let push_to_stack (value:int64) (offset:int64) (m:mach) : unit =
   Array.blit (Array.of_list (sbytes_of_int64 value)) 0 m.mem (Int64.to_int m.regs.(rind Rsp)) 8;
   m.regs.(rind Rsp) <- Int64.sub m.regs.(rind Rsp) ins_size (* TODO: or ins_size * 8 ? *)
 
-let write_to_mem (value:int64) (offset:int64) (m:mach) : unit =
-  Array.blit (Array.of_list (sbytes_of_int64 value)) 0 m.mem (Int64.to_int offset) 8
+let write_mem (value:int64) (addr:int64) (m:mach) : unit =
+  Array.blit (Array.of_list (sbytes_of_int64 value)) 0 m.mem (map_addr_fatal addr) 8
+
+let read_mem (addr:int64) (m:mach) : sbyte list = 
+  Array.to_list @@ Array.sub m.mem (map_addr_fatal addr) 8
+
+let interpret_mem_loc (op:operand) (m:mach) : int64 =
+  begin match op with
+    | Imm imm -> failwith "Imm is not a memory location"
+    | Reg reg -> failwith "Reg is not a memory location"
+    | Ind1 imm -> interpret_imm imm
+    | Ind2 reg -> m.regs.(rind reg)
+    | Ind3 (imm, reg) -> Int64.add (interpret_imm imm) (m.regs.(rind reg))
+  end
+
+let interpret_val (op:operand) (m:mach) : int64 =
+  begin match op with
+    | Imm imm ->  interpret_imm imm
+    | Reg reg -> m.regs.(rind reg)
+    | _ -> int64_of_sbytes @@ read_mem (interpret_mem_loc op m) m
+  end
 
 let save_res (value:int64) (dest:operand) (m:mach) : unit =
   begin match dest with
     | Imm imm -> failwith "you cannot save to a value :P"
     | Reg reg -> Array.set m.regs (rind reg) value
-    | _ -> write_to_mem value (interpret_val dest m) m (* ISSUE Why were we pushing to the stack here before? *)
+    | _ -> write_mem value (interpret_mem_loc dest m) m
   end
 
 (* Ind3 (Lit i, Rsp) *)
