@@ -172,17 +172,16 @@ let interpret_imm (i:imm) : int64 =
 let incr_rip (m:mach) : unit =
   m.regs.(rind Rip) <- (Int64.add m.regs.(rind Rip) ins_size)
 
-(* save value as sbyte to stack and decrement the stackpointer*)
-let push_to_stack (value:int64) (offset:int64) (m:mach) : unit =
-  (* TODO debug *)
-  Array.blit (Array.of_list (sbytes_of_int64 value)) 0 m.mem (Int64.to_int m.regs.(rind Rsp)) 8;
-  m.regs.(rind Rsp) <- Int64.sub m.regs.(rind Rsp) ins_size (* TODO: or ins_size * 8 ? *)
-
 let write_mem (value:int64) (addr:int64) (m:mach) : unit =
   Array.blit (Array.of_list (sbytes_of_int64 value)) 0 m.mem (map_addr_fatal addr) 8
 
 let read_mem (addr:int64) (m:mach) : sbyte list = 
   Array.to_list @@ Array.sub m.mem (map_addr_fatal addr) 8
+
+let push_to_stack (value:int64) (m:mach) : unit =
+  let next = Int64.sub m.regs.(rind Rsp) ins_size in
+  write_mem value next m;
+  m.regs.(rind Rsp) <- next
 
 let interpret_mem_loc (op:operand) (m:mach) : int64 =
   begin match op with
@@ -256,7 +255,7 @@ let interpret_instr_base (instr:ins) (m:mach) : unit =
     (* Data-movement Instructions *)
     | Leaq, [ind; dest] -> save_res (interpret_mem_loc ind m) dest m
     | Movq, [src; dest] -> save_res (interpret_val src m) dest m
-    | Pushq, [src] -> ()
+    | Pushq, [src] -> push_to_stack (interpret_val src m) m
     | Popq, [dest] -> ()
     (* Control-flow and condition Instructions *)
     | Cmpq, [src1; src2] -> ()
