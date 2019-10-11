@@ -171,6 +171,13 @@ let student_instruction_tests_flo = [
               && m.flags.fs = true
               && m.flags.fz = false)
   ;
+  make_instr_test "callq" 
+    [(Callq, [~$0x400100])]
+    (fun m -> m.regs.(rind Rip) = 0x400100L
+              && m.regs.(rind Rsp) = (Int64.sub mem_top 16L)
+              && int64_of_sbytes (sbyte_list m.mem (mem_size-16)) = mem_bot
+    )
+  ;
   make_instr_test "j Eq 1" 
     [(Cmpq, [~$42; ~$42])
     ;(J Eq, [~$0x400100])
