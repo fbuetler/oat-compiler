@@ -110,6 +110,16 @@ let student_instruction_tests_philippe = [
     0b0101001101101000101011101010111110101010001101000101010110110100L
     0b0111011101111110101111111010111110101110101111111111110111111110L
     {fo=false; fs=false; fz=false};
+  make_un_op_test Notq 0L (-1L) {fo=false; fs=false; fz=false};
+  make_un_op_test Notq (-1L) 0L {fo=false; fs=false; fz=false};
+  make_un_op_test Notq
+    6L
+    0b1111111111111111111111111111111111111111111111111111111111111001L
+    {fo=false; fs=false; fz=false};
+  make_un_op_test Notq
+    0b0111011000111110101110110010110110101110101010111011110111011110L
+    0b1000100111000001010001001101001001010001010101000100001000100001L
+    {fo=false; fs=false; fz=false};
 ]
 
 let provided_tests : suite = [
