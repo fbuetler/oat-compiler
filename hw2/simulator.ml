@@ -243,7 +243,7 @@ let log_bin_op (operation: int64 -> int64 -> int64) (src:operand) (dest:operand)
   save_res res dest m
 
 let log_un_op (operation: int64 -> int64) (src:operand) (m:mach) : unit =
-  let res = operation (interpret_val src m) in
+  let res = operation @@ interpret_val src m in
   set_flags false res m;
   save_res res src m
 
@@ -260,7 +260,7 @@ let interpret_instr_base (instr:ins) (m:mach) : unit =
     | Andq, [src; dest] -> log_bin_op Int64.logand src dest m
     | Orq, [src; dest] -> log_bin_op Int64.logor src dest m
     | Xorq, [src; dest] -> log_bin_op Int64.logxor src dest m
-    | Notq, [src] -> log_un_op Int64.lognot src m
+    | Notq, [src] -> save_res (Int64.lognot @@ interpret_val src m) src m
     (* Bit-manipulation Instructions *)
     | Sarq, [amt; dest] -> shift_op Int64.shift_right amt dest m
     | Shlq, [amt; dest] -> shift_op Int64.shift_left amt dest m
