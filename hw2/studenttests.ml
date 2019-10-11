@@ -109,6 +109,21 @@ let student_instruction_tests_flo = [
     ;(Leaq, [Ind3 (Lit 3L, Rcx); ~%Rax])] 
     (fun m -> m.regs.(rind Rax) = 45L)
   ;
+  make_instr_test "pushq1" 
+    [(Pushq, [~$42])] 
+    (fun m -> int64_of_sbytes (sbyte_list m.mem (mem_size-16)) = 42L
+              && m.regs.(rind Rsp) = (Int64.sub mem_top 16L)
+    )
+  ;
+  make_instr_test "pushq2" 
+    [(Pushq, [~$42])
+    ;(Pushq, [~$27])
+    ] 
+    (fun m -> int64_of_sbytes (sbyte_list m.mem (mem_size-16)) = 42L
+              && int64_of_sbytes (sbyte_list m.mem (mem_size-24)) = 27L
+              && m.regs.(rind Rsp) = (Int64.sub mem_top 24L)
+    )
+  ;
 
 ]
 
