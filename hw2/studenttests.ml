@@ -101,7 +101,15 @@ let student_instruction_tests_philippe = [
   make_un_op_test Negq (-1L) 1L {fo=false; fs=false; fz=false};
   make_un_op_test Negq 5L (-5L) {fo=false; fs=true; fz=false};
   make_un_op_test Negq Int64.max_int (Int64.neg Int64.max_int) {fo=false; fs=true; fz=false};
-  make_un_op_test Negq Int64.min_int Int64.min_int {fo=true; fs=true; fz=false};
+  make_bin_op_test Orq 0L 0L 0L {fo=false; fs=false; fz=true};
+  make_bin_op_test Orq 7L 7L 7L {fo=false; fs=false; fz=false};
+  make_bin_op_test Orq (-1L) (-1L) (-1L) {fo=false; fs=true; fz=false};
+  make_bin_op_test Orq 0b01L 0b10L 0b11L {fo=false; fs=false; fz=false};
+  make_bin_op_test Orq
+    0b0111011000111110101110110010110110101110101010111011110111011110L
+    0b0101001101101000101011101010111110101010001101000101010110110100L
+    0b0111011101111110101111111010111110101110101111111111110111111110L
+    {fo=false; fs=false; fz=false};
 ]
 
 let provided_tests : suite = [
