@@ -154,6 +154,90 @@ let student_instruction_tests_flo = [
               && m.flags.fs = true
               && m.flags.fz = false)
   ;
+  make_instr_test "j Eq 1" 
+    [(Cmpq, [~$42; ~$42])
+    ;(J Eq, [~$0x400100])
+    ] 
+    (fun m -> m.regs.(rind Rip) = 0x400100L)
+  ;
+  make_instr_test "j Eq 2" 
+    [(Cmpq, [~$42; ~$3])
+    ;(J Eq, [~$0x400100])
+    ] 
+    (fun m -> m.regs.(rind Rip) = (Int64.add mem_bot 16L))
+  ;
+  make_instr_test "j Neq 1" 
+    [(Cmpq, [~$42; ~$42])
+    ;(J Neq, [~$0x400100])
+    ] 
+    (fun m -> m.regs.(rind Rip) = (Int64.add mem_bot 16L))
+  ;
+  make_instr_test "j Neq 2" 
+    [(Cmpq, [~$42; ~$3])
+    ;(J Neq, [~$0x400100])
+    ] 
+    (fun m -> m.regs.(rind Rip) = 0x400100L)
+  ;
+  make_instr_test "j Gt 1" 
+    [(Cmpq, [~$3; ~$42])
+    ;(J Gt, [~$0x400100])
+    ] 
+    (fun m -> m.regs.(rind Rip) = 0x400100L)
+  ;
+  make_instr_test "j Gt 2" 
+    [(Cmpq, [~$42; ~$3])
+    ;(J Gt, [~$0x400100])
+    ] 
+    (fun m -> m.regs.(rind Rip) = (Int64.add mem_bot 16L))
+  ;
+  make_instr_test "j Ge 1" 
+    [(Cmpq, [~$42; ~$42])
+    ;(J Ge, [~$0x400100])
+    ] 
+    (fun m -> m.regs.(rind Rip) = 0x400100L)
+  ;
+  make_instr_test "j Ge 2" 
+    [(Cmpq, [~$41; ~$42])
+    ;(J Ge, [~$0x400100])
+    ] 
+    (fun m -> m.regs.(rind Rip) = 0x400100L)
+  ;
+  make_instr_test "j Ge 3" 
+    [(Cmpq, [~$43; ~$42])
+    ;(J Ge, [~$0x400100])
+    ] 
+    (fun m -> m.regs.(rind Rip) = (Int64.add mem_bot 16L))
+  ;
+  make_instr_test "j Lt 1" 
+    [(Cmpq, [~$42; ~$3])
+    ;(J Lt, [~$0x400100])
+    ] 
+    (fun m -> m.regs.(rind Rip) = 0x400100L)
+  ;
+  make_instr_test "j Lt 2" 
+    [(Cmpq, [~$3; ~$42])
+    ;(J Lt, [~$0x400100])
+    ] 
+    (fun m -> m.regs.(rind Rip) = (Int64.add mem_bot 16L))
+  ;
+  make_instr_test "j Le 1" 
+    [(Cmpq, [~$42; ~$42])
+    ;(J Le, [~$0x400100])
+    ] 
+    (fun m -> m.regs.(rind Rip) = 0x400100L)
+  ;
+  make_instr_test "j Le 2" 
+    [(Cmpq, [~$42; ~$41])
+    ;(J Le, [~$0x400100])
+    ] 
+    (fun m -> m.regs.(rind Rip) = 0x400100L)
+  ;
+  make_instr_test "j Le 3" 
+    [(Cmpq, [~$42; ~$43])
+    ;(J Le, [~$0x400100])
+    ] 
+    (fun m -> m.regs.(rind Rip) = (Int64.add mem_bot 16L))
+  ;
 
 ]
 
