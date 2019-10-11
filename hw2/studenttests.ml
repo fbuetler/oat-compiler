@@ -22,12 +22,13 @@ let make_instr_test_print (label:string) (instructions:ins list) (check: mach ->
 let make_subq_test (a:int64) (b:int64) (res:int64) (flags:flags) =
   let label = Printf.sprintf "subq (%s - %s) = %s"
       (Int64.to_string a) (Int64.to_string b) (Int64.to_string res) in
-  let get_res (m:mach) = int64_of_sbytes (sbyte_list m.mem (mem_size-16)) in
+  let get_res (m:mach) = int64_of_sbytes (sbyte_list m.mem (mem_size-8)) in
   make_instr_test_print label
     [(Movq, [Imm (Lit a); ~%Rax])
-    ;(Movq, [Imm (Lit b); ~%Rax])] 
+    ;(Subq, [Imm (Lit b); ~%Rax])
+    ;(Movq, [~%Rax; stack_offset 0L])] 
     (fun m -> get_res m = res && m.flags = flags)
-    (fun m -> Printf.sprintf "res = %s, flags = {fo: %B, fs: %B, fz: %B}"
+    (fun m -> Printf.sprintf "res = %s, flags = {fo=%B, fs=%B, fz=%B}"
         (Int64.to_string @@ get_res m) m.flags.fo m.flags.fs m.flags.fz)
 
 let student_instruction_tests = [
@@ -39,7 +40,13 @@ let student_instruction_tests = [
 
 (* TODO merge this with the other tests *)
 let student_instruction_tests_philippe = [
-  make_subq_test 0L 0L 1L {fo=false; fs=false; fz=false}
+  make_subq_test 0L 0L 0L {fo=false; fs=false; fz=true};
+  make_subq_test (-7L) 3L (-10L) {fo=false; fs=true; fz=false};
+  make_subq_test 3L (-7L) 10L {fo=false; fs=false; fz=false};
+  make_subq_test (-7L) (-7L) 0L {fo=false; fs=false; fz=true};
+  make_subq_test Int64.min_int 1L Int64.max_int {fo=true; fs=false; fz=false};
+  make_subq_test 0L Int64.max_int (Int64.neg Int64.max_int) {fo=false; fs=true; fz=false};
+  make_subq_test 0L Int64.min_int Int64.min_int {fo=true; fs=true; fz=false}
 ]
 
 let provided_tests : suite = [
