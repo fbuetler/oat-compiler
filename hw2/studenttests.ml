@@ -91,6 +91,12 @@ let student_instruction_tests_philippe = [
   make_un_op_test Incq (-1L) 0L {fo=false; fs=false; fz=true};
   make_un_op_test Incq (-2L) (-1L) {fo=false; fs=true; fz=false};
   make_un_op_test Incq Int64.max_int Int64.min_int {fo=true; fs=true; fz=false};
+  make_un_op_test Negq 0L 0L {fo=false; fs=false; fz=true};
+  make_un_op_test Negq 1L (-1L) {fo=false; fs=true; fz=false};
+  make_un_op_test Negq (-1L) 1L {fo=false; fs=false; fz=false};
+  make_un_op_test Negq 5L (-5L) {fo=false; fs=true; fz=false};
+  make_un_op_test Negq Int64.max_int (Int64.neg Int64.max_int) {fo=false; fs=true; fz=false};
+  make_un_op_test Negq Int64.min_int Int64.min_int {fo=true; fs=true; fz=false};
 ]
 
 let provided_tests : suite = [
