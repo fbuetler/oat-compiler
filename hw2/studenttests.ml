@@ -124,6 +124,23 @@ let student_instruction_tests_flo = [
               && m.regs.(rind Rsp) = (Int64.sub mem_top 24L)
     )
   ;
+  make_instr_test "pushq popq" 
+    [(Pushq, [~$42])
+    ;(Popq, [~%Rax])] 
+    (fun m -> m.regs.(rind Rax) = 42L
+              && m.regs.(rind Rsp) = (Int64.sub mem_top 8L)
+    )
+  ;
+  make_instr_test "pushq pushq popq popq" 
+    [(Pushq, [~$42])
+    ;(Pushq, [~$3])
+    ;(Popq, [~%Rcx])
+    ;(Popq, [~%Rax])] 
+    (fun m -> m.regs.(rind Rax) = 42L
+              && m.regs.(rind Rcx) = 3L
+              && m.regs.(rind Rsp) = (Int64.sub mem_top 8L)
+    )
+  ;
   make_instr_test "cmpq1" 
     [(Cmpq, [~$42; ~$7])] 
     (fun m -> m.flags.fo = false
