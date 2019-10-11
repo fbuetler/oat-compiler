@@ -211,8 +211,6 @@ let save_res (value:int64) (dest:operand) (m:mach) : unit =
     | _ -> write_mem value (interpret_mem_loc dest m) m
   end
 
-(* Ind3 (Lit i, Rsp) *)
-
 let set_flags (fo:bool) (value:int64) (m:mach) : unit =
   m.flags.fo <- fo;
   m.flags.fs <- (value < 0L);
