@@ -74,7 +74,10 @@ let student_instruction_tests_flo = [
   make_bin_op_test Addq 123123L 42424242L 42547365L {fo=false; fs=false; fz=false}; (* random add *)
   make_bin_op_test Addq 1L 9223372036854775807L 9223372036854775808L {fo=true; fs=true; fz=false}; (* overflow add: T_Max + 1 = |T_Min| *)
   make_bin_op_test Imulq 8L 4L 32L {fo=false; fs=false; fz=false};
-
+  make_bin_op_test Imulq 4L 8L 32L {fo=false; fs=false; fz=false};
+  make_bin_op_test Imulq 8L 0L 0L {fo=false; fs=false; fz=true};
+  make_bin_op_test Imulq 8L 1L 8L {fo=false; fs=false; fz=false};
+  make_bin_op_test Imulq 3037000500L 3037000500L (-9223372036709301616L) {fo=true; fs=true; fz=false};
   make_bin_op_test Sarq 1L 4L 2L {fo=false; fs=false; fz=false}; (* small random arithmetic shift *)
   make_bin_op_test Sarq 13L 1588476L 193L {fo=false; fs=false; fz=false}; (* big random arithmetic shift *)
   make_bin_op_test Sarq 10L (-1L) (-1L) {fo=false; fs=true; fz=false}; (* arithmetic shifting only ones shouldnt change anything*)
