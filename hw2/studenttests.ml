@@ -95,6 +95,21 @@ let student_instruction_tests_flo = [
   make_bin_op_test Sarq 3L 0L 0L {fo=false; fs=false; fz=true}; (* arithmetic shifting 0 shouldnt change anything *)
   make_bin_op_test Sarq 3L 8L 1L {fo=false; fs=false; fz=false}; (* arithmetic sfhit: MSB is 1 *)
   make_bin_op_test Shrq 4L 8L 0L {fo=false; fs=false; fz=true}; (* logical shift *)
+  make_instr_test "leaq1" 
+    [(Leaq, [Ind1 (Lit 42L); ~%Rax])] 
+    (fun m -> m.regs.(rind Rax) = 42L)
+  ;
+  make_instr_test "leaq2" 
+    [(Movq, [~$42; ~%Rcx])
+    ;(Leaq, [Ind2 (Rcx); ~%Rax])] 
+    (fun m -> m.regs.(rind Rax) = 42L)
+  ;
+  make_instr_test "leaq3" 
+    [(Movq, [~$42; ~%Rcx])
+    ;(Leaq, [Ind3 (Lit 3L, Rcx); ~%Rax])] 
+    (fun m -> m.regs.(rind Rax) = 45L)
+  ;
+
 ]
 
 (* TODO merge this with the other tests *)
