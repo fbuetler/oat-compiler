@@ -269,7 +269,7 @@ let interpret_instr_base (instr:ins) (m:mach) : unit =
     | Shrq, [amt; dest] -> shift_op Int64.shift_right amt dest m
     | Set cc, [dest] ->
       let b = if interp_cnd m.flags cc then Int64.one else Int64.zero in
-      let mask = Int64.of_int 255 in
+      let mask = Int64.lognot @@ Int64.of_int 255 in
       save_res (Int64.logor b (Int64.logand mask @@ interpret_val dest m)) dest m
     (* Data-movement Instructions *)
     | Leaq, [ind; dest] -> save_res (interpret_mem_loc ind m) dest m
