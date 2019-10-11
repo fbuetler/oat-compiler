@@ -124,6 +124,36 @@ let student_instruction_tests_flo = [
               && m.regs.(rind Rsp) = (Int64.sub mem_top 24L)
     )
   ;
+  make_instr_test "cmpq1" 
+    [(Cmpq, [~$42; ~$7])] 
+    (fun m -> m.flags.fo = false
+              && m.flags.fs = true
+              && m.flags.fz = false)
+  ;
+  make_instr_test "cmpq2" 
+    [(Cmpq, [~$7; ~$42])] 
+    (fun m -> m.flags.fo = false
+              && m.flags.fs = false
+              && m.flags.fz = false)
+  ;
+  make_instr_test "cmpq3" 
+    [(Cmpq, [~$42; ~$42])] 
+    (fun m -> m.flags.fo = false
+              && m.flags.fs = false
+              && m.flags.fz = true)
+  ;
+  make_instr_test "cmpq4" 
+    [(Cmpq, [~$1; Imm (Lit 9223372036854775808L)])] 
+    (fun m -> m.flags.fo = true
+              && m.flags.fs = false
+              && m.flags.fz = false)
+  ;
+  make_instr_test "cmpq5" 
+    [(Cmpq, [~$(-1); Imm (Lit 9223372036854775807L)])] 
+    (fun m -> m.flags.fo = true
+              && m.flags.fs = true
+              && m.flags.fz = false)
+  ;
 
 ]
 
