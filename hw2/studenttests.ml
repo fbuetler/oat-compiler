@@ -178,6 +178,12 @@ let student_instruction_tests_flo = [
               && int64_of_sbytes (sbyte_list m.mem (mem_size-16)) = mem_bot
     )
   ;
+  make_instr_test "retq" 
+    [(Pushq, [~$0x400100])
+    ;(Retq, [])] 
+    (fun m -> m.regs.(rind Rip) = 0x400100L
+              && m.regs.(rind Rsp) = (Int64.sub mem_top 8L))
+  ;
   make_instr_test "j Eq 1" 
     [(Cmpq, [~$42; ~$42])
     ;(J Eq, [~$0x400100])
