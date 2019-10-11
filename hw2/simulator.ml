@@ -211,6 +211,8 @@ let save_res (value:int64) (dest:operand) (m:mach) : unit =
     | _ -> write_mem value (interpret_mem_loc dest m) m
   end
 
+(* Ind3 (Lit i, Rsp) *)
+
 let set_flags (fo:bool) (value:int64) (m:mach) : unit =
   m.flags.fo <- fo;
   m.flags.fs <- (value < 0L);
@@ -226,15 +228,15 @@ let arith_un_op (operation: int64 -> Int64_overflow.t) (src:operand) (m:mach) : 
   set_flags res.overflow res.value m;
   save_res res.value src m
 
-let msb_as_bool (value: int64) : bool =
-  let msb = Int64.logand value @@ Int64.lognot Int64.max_int in
-  not @@ Int64.equal Int64.zero msb
-
-let shift_op (operation: int64 -> int -> int64) (amt:operand) (dest:operand) (m:mach) : unit =
+let shift_op (operation: int64 -> int -> int64) (decide_fo: int64 -> int64 -> bool) (amt:operand) (dest:operand) (m:mach) : unit =
   let input = interpret_val dest m in
   let amt_val = Int64.to_int @@ interpret_val amt m in
   let output = operation input amt_val in
-  if amt_val = 1 then set_flags ((msb_as_bool input) <> (msb_as_bool output)) output m;
+  begin match amt_val with
+    | 0 -> ()
+    | 1 -> set_flags (decide_fo input output) output m
+    | _ -> set_flags m.flags.fo output m
+  end;
   save_res output dest m
 
 let log_bin_op (operation: int64 -> int64 -> int64) (src:operand) (dest:operand) (m:mach) : unit =
@@ -246,6 +248,10 @@ let log_un_op (operation: int64 -> int64) (src:operand) (m:mach) : unit =
   let res = operation @@ interpret_val src m in
   set_flags false res m;
   save_res res src m
+
+let msb_as_bool (value: int64) : bool =
+  let msb = Int64.logand value @@ Int64.lognot Int64.max_int in
+  not @@ Int64.equal Int64.zero msb
 
 let interpret_instr_base (instr:ins) (m:mach) : unit =
   begin match instr with
@@ -262,12 +268,18 @@ let interpret_instr_base (instr:ins) (m:mach) : unit =
     | Xorq, [src; dest] -> log_bin_op Int64.logxor src dest m
     | Notq, [src] -> save_res (Int64.lognot @@ interpret_val src m) src m
     (* Bit-manipulation Instructions *)
-    | Sarq, [amt; dest] -> shift_op Int64.shift_right amt dest m
-    | Shlq, [amt; dest] -> shift_op Int64.shift_left amt dest m
-    | Shrq, [amt; dest] -> shift_op Int64.shift_right amt dest m
+    | Sarq, [amt; dest] ->
+      let decide_fo _ _ = false in
+      shift_op Int64.shift_right decide_fo amt dest m
+    | Shlq, [amt; dest] -> 
+      let decide_fo _ output = (msb_as_bool output) <> (msb_as_bool @@ Int64.shift_left output 1) in
+      shift_op Int64.shift_left decide_fo amt dest m
+    | Shrq, [amt; dest] ->
+      let decide_fo input _ = msb_as_bool input in
+      shift_op Int64.shift_right decide_fo amt dest m
     | Set cc, [dest] ->
       let b = if interp_cnd m.flags cc then Int64.one else Int64.zero in
-      let mask = Int64.lognot @@ Int64.of_int 255 in
+      let mask = Int64.of_int 255 in
       save_res (Int64.logor b (Int64.logand mask @@ interpret_val dest m)) dest m
     (* Data-movement Instructions *)
     | Leaq, [ind; dest] -> save_res (interpret_mem_loc ind m) dest m

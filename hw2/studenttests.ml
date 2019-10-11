@@ -73,13 +73,14 @@ let make_un_op_test (op:opcode) (a:int64) (res:int64) (flags:flags) =
 let student_instruction_tests_flo = [
   make_bin_op_test Addq 123123L 42424242L 42547365L {fo=false; fs=false; fz=false}; (* random add *)
   make_bin_op_test Addq 1L 9223372036854775807L 9223372036854775808L {fo=true; fs=true; fz=false}; (* overflow add: T_Max + 1 = |T_Min| *)
+  make_bin_op_test Imulq 8L 4L 32L {fo=false; fs=false; fz=false};
+
   make_bin_op_test Sarq 1L 4L 2L {fo=false; fs=false; fz=false}; (* small random arithmetic shift *)
   make_bin_op_test Sarq 13L 1588476L 193L {fo=false; fs=false; fz=false}; (* big random arithmetic shift *)
   make_bin_op_test Sarq 10L (-1L) (-1L) {fo=false; fs=true; fz=false}; (* arithmetic shifting only ones shouldnt change anything*)
   make_bin_op_test Sarq 3L 0L 0L {fo=false; fs=false; fz=true}; (* arithmetic shifting 0 shouldnt change anything *)
   make_bin_op_test Sarq 3L 8L 1L {fo=false; fs=false; fz=false}; (* arithmetic sfhit: MSB is 1 *)
-  make_bin_op_test Shrq 4L 8L 0L {fo=false; fs=false; fz=false}; (* logical shift *)
-  make_bin_op_test Shrq 4L 8L 0L {fo=false; fs=false; fz=false}; (* logical shift *)
+  make_bin_op_test Shrq 4L 8L 0L {fo=false; fs=false; fz=true}; (* logical shift *)
 ]
 
 (* TODO merge this with the other tests *)
