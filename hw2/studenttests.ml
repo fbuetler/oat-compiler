@@ -95,6 +95,10 @@ let student_instruction_tests_flo = [
   make_bin_op_test Sarq 3L 0L 0L {fo=false; fs=false; fz=true}; (* arithmetic shifting 0 shouldnt change anything *)
   make_bin_op_test Sarq 3L 8L 1L {fo=false; fs=false; fz=false}; (* arithmetic sfhit: MSB is 1 *)
   make_bin_op_test Shrq 4L 8L 0L {fo=false; fs=false; fz=true}; (* logical shift *)
+  make_bin_op_test Shrq 1L (-1L) 0x7fffffffffffffffL {fo=true; fs=false; fz=false};
+  make_bin_op_test Shlq 1L 0L 0L {fo=false; fs=false; fz=true};
+  make_bin_op_test Shlq 1L 0xc000000000000000L 0x8000000000000000L {fo=false; fs=true; fz=false};
+
   make_instr_test "leaq1" 
     [(Leaq, [Ind1 (Lit 42L); ~%Rax])] 
     (fun m -> m.regs.(rind Rax) = 42L)
@@ -175,7 +179,7 @@ let student_instruction_tests_flo = [
     [(Callq, [~$0x400100])]
     (fun m -> m.regs.(rind Rip) = 0x400100L
               && m.regs.(rind Rsp) = (Int64.sub mem_top 16L)
-              && int64_of_sbytes (sbyte_list m.mem (mem_size-16)) = Int64.add mem_bot 8L
+              && int64_of_sbytes (sbyte_list m.mem (mem_size-16)) = Int64.add mem_bot ins_size
     )
   ;
   make_instr_test "retq" 
@@ -623,24 +627,6 @@ let cso_sub_1 = test_machine
     [InsB0 (Movq, [(Imm (Lit 0x8000000000000000L)); ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
     ;InsB0 (Subq, [~$1; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
 
-let student_instruction_tests_christian_part1 =
-  [ ("cc_sarq_0", cc_from_to 2 cc_sarq_0 (false, false, false) (false, false, false));
-    ("cc_sarq_1", cc_from_to 2 cc_sarq_1 (false, false, false) (false, false, false));
-    ("cc_sarq_2", cc_from_to 2 cc_sarq_2 (true, false, false) (false, false, false));
-    ("cc_sarq_4", cc_from_to 2 cc_sarq_4 (true, false, false) (true, false, true));
-    ("cc_shlq_1", cc_from_to 2 cc_shlq_1 (true, false, true) (true, false, true));
-    ("cc_shlq_2", cc_from_to 2 cc_shlq_2 (false, false, false) (false, false, false));
-    ("cc_shlq_3", cc_from_to 2 cc_shlq_3 (false, false, false) (true, true, false));
-    ("cc_shlq_4", cc_from_to 2 cc_shlq_4 (false, false, false) (false, true, false));
-    ("cc_shrq_1", cc_from_to 2 cc_shrq_1 (false, false, false) (false, false, false));
-    ("cc_shrq_2", cc_from_to 2 cc_shrq_2 (false, false, false) (true, false, false));
-    ("cc_shrq_3", cc_from_to 2 cc_shrq_3 (false, false, false) (false, false, true));
-    ("cc_shrq_4", cc_from_to 2 cc_shrq_4 (false, false, false) (false, false, true));
-    ("cc_mult_1", cso_test 2 cso_mult_1 true); 
-    ("cc_add_1", cso_test 2 cso_add_1 true); 
-    ("cc_sub_1", cso_test 2 cso_sub_1 true); 
-  ]
-
 (* additional functional tests *)
 
 let setb_1 = test_machine
@@ -654,7 +640,22 @@ let setb_2 = test_machine
     ;InsB0 (Cmpq, [~$2; ~$1]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
     ;InsB0 (Set Gt, [Ind2 Rsp]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
 
-let student_instruction_tests_christian_part2 = [
+let student_instruction_tests_christian = [
+  ("cc_sarq_0", cc_from_to 2 cc_sarq_0 (false, false, false) (false, false, false));
+  ("cc_sarq_1", cc_from_to 2 cc_sarq_1 (false, false, false) (false, false, false));
+  ("cc_sarq_2", cc_from_to 2 cc_sarq_2 (true, false, false) (false, false, false));
+  ("cc_sarq_4", cc_from_to 2 cc_sarq_4 (true, false, false) (true, false, true));
+  ("cc_shlq_1", cc_from_to 2 cc_shlq_1 (true, false, true) (true, false, true));
+  ("cc_shlq_2", cc_from_to 2 cc_shlq_2 (false, false, false) (false, false, false));
+  ("cc_shlq_3", cc_from_to 2 cc_shlq_3 (false, false, false) (true, true, false));
+  ("cc_shlq_4", cc_from_to 2 cc_shlq_4 (false, false, false) (false, true, false));
+  ("cc_shrq_1", cc_from_to 2 cc_shrq_1 (false, false, false) (false, false, false));
+  ("cc_shrq_2", cc_from_to 2 cc_shrq_2 (false, false, false) (true, false, false));
+  ("cc_shrq_3", cc_from_to 2 cc_shrq_3 (false, false, false) (false, false, true));
+  ("cc_shrq_4", cc_from_to 2 cc_shrq_4 (false, false, false) (false, false, true));
+  ("cc_mult_1", cso_test 2 cso_mult_1 true); 
+  ("cc_add_1", cso_test 2 cso_add_1 true); 
+  ("cc_sub_1", cso_test 2 cso_sub_1 true); 
   ("setb_1", machine_test "only to change the lowest byte" 3 setb_1 (fun m -> 
        m.regs.(rind Rax) = 0xFFFFFFFFFFFFFF01L
      ));  
@@ -662,6 +663,139 @@ let student_instruction_tests_christian_part2 = [
        m.mem.(0xffff) = Byte(Char.chr 0)
      ));  
 ]
+(* ##### end: tests christian ##### *)
+
+(* ##### start: tests roman ##### *)
+let fib_rec n = [ gtext "main"
+                    [ Movq,  [~$n; ~%Rdi]
+                    ; Callq, [~$$"fib"]
+                    ; Retq,  []
+                    ]
+                ; text "fib"
+                    [ Cmpq, [~$1; ~%Rdi] (* compute rdi - 1 *)
+                    ; J Le, [~$$"exit"]
+                    ; Pushq, [~%Rdi]
+                    ; Decq, [~%Rdi]
+                    ; Callq, [~$$"fib"] (* recursive call, DO NOT REUSE REGISTERS! *)
+                    ; Popq, [~%Rdi]
+                    ; Subq, [~$2; ~%Rdi]
+                    ; Pushq, [~%Rax] (* save first rec-result to stack, cuz regs might be overwritten *)
+                    ; Callq, [~$$"fib"] (* recursive call, DO NOT REUSE REGISTERS! *)
+                    ; Popq, [~%R08]
+                    ; Addq, [~%R08; ~%Rax]
+                    ; Retq,  []
+                    ]
+                ; text "exit"
+                    [ Movq,  [~$1; ~%Rax]
+                    ; Retq,  []
+                    ]
+                ]
+
+(* gcd_loop: computing the gcd of 2 numbers with a loop instead of recursively *)
+let gcd_rec a b = [ gtext "main"
+                      (* move a to rdi, and b to rsi *)
+                      [ Movq,  [~$a; ~%Rdi]
+                      ; Movq,  [~$b; ~%Rsi]
+                      ]
+                  ; text "gcd"
+                      (* to try something new, we do a stupid jump via a stupid indirect *)
+                      [ Movq, [~$48; ~%R15]
+                      ; Cmpq, [~%Rdi; ~%Rsi] (* we want a >= b, if that is not the case: swap them *)
+                      ; J Lt, [Ind3 (Lbl "gcd", Rsi)]
+                      (* swap section *)
+                      ; Movq, [~%Rsi; ~%R10]
+                      ; Movq, [~%Rdi; ~%Rsi]
+                      ; Movq, [~%R10; ~%Rdi]
+                      (* if the smaller one of the variables is 0, then we return :D *)
+                      ; Cmpq, [~$0; ~%Rsi]
+                      ; J Eq, [~$$"return"]
+                      (* otherwise sub b from a, then get back to loop *)
+                      ; Subq, [~%Rsi; ~%Rdi]
+                      ; Jmp, [~$$"gcd"]
+                      ]
+                  ; text "return" (* return section: return a *)
+                      [ Movq, [~%Rdi; ~%Rax]
+                      ; Retq, []
+                      ]
+                  ]
+(* NOTE: to show off how good our assemble function is, we arranged the sections as bad as possible *)
+let gcd_rec a b = [ text "exita"
+                      [ Movq,  [~%Rsi; ~%Rax]
+                      ; Retq,  []
+                      ]
+                  ; gtext "main"
+                      [ Movq,  [~$a; ~%Rdi]
+                      ; Movq,  [~$b; ~%Rsi]
+                      (* if negaitve inputs were given, negate them (make them positive) *)
+                      ; Cmpq, [~$0; ~%Rsi]
+                      ; J Ge, [Ind3 (Lit 16L, Rip)] (* If input was positive: no negation needed *)
+                      ; Negq, [~%Rsi] (* otherwise negate input / make it positive *)
+                      ; Cmpq, [~$0; ~%Rdi] (* and the same for the other input *)
+                      ; J Ge, [Ind3 (Lit 16L, Rip)]
+                      ; Negq, [~%Rdi]
+                      ; Callq, [~$$"gcd"]
+                      ; Retq,  []
+                      ]
+                  ; text "exitb"
+                      [ Movq,  [~%Rdi; ~%Rax]
+                      ; Retq,  []
+                      ]
+                  ; text "gcd"
+                      (* ARGUMENTS: b == Rsi, a == Rdi *)
+                      [ Cmpq, [~$0; ~%Rsi] (* compare b with 0  *)
+                      ; J Eq, [~$$"exitb"] (* If b = 0: return a*)
+                      ; Cmpq, [~$0; ~%Rdi] (* compare a with 0  *)
+                      ; J Eq, [~$$"exita"] (* If a = 0: return b*)
+                      ; Cmpq, [~%Rsi; ~%Rdi] (* compute a - b *)
+                      ; J Le, [Ind3 (Lit 32L, Rip)] (* if a <= b, then skip next 3 instructions*)
+                      (* CASE: a >= b: return gcd(a - b, b) *)
+                      ; Subq, [~%Rsi; ~%Rdi]
+                      ; Callq, [~$$"gcd"]
+                      ; Retq,  []
+                      (* CASE: b > a: return gcd(a, b - a) *)
+                      ; Subq, [~%Rdi; ~%Rsi]
+                      ; Callq, [~$$"gcd"]
+                      ; Retq,  []
+                      ]
+                  ]
+
+let program_test (p:prog) (ans:int64) () =
+  let res = assemble p |> load |> run in
+  if res <> ans
+  then failwith (Printf.sprintf("Expected %Ld but got %Ld") ans res)
+  else ()
+
+let student_instruction_tests_roman = [
+  ("fib20", program_test (fib_rec 20) 10946L);
+  ("fib-1", program_test (fib_rec (-1)) 1L);
+  ("fib1", program_test (fib_rec 1) 1L);
+  ("fib2", program_test (fib_rec 2) 2L);
+  ("fib3", program_test (fib_rec 3) 3L);
+  ("fib4", program_test (fib_rec 4) 5L);
+  ("fib5", program_test (fib_rec 5) 8L);
+  ("fib15", program_test (fib_rec 15) 987L);
+  ("fib20", program_test (fib_rec 20) 10946L);
+  ("fib25", program_test (fib_rec 25) 121393L);
+  (*
+  ("rec_gcd1", program_test (gcd_rec 1 1) 1L);
+  ("rec_gcd2", program_test (gcd_rec 2 3) 1L);
+  ("rec_gcd3", program_test (gcd_rec 12 21) 3L);
+  ("rec_gcd4", program_test (gcd_rec 78624 20736) 864L);
+  (* repeat the previous three tests, just with some negative inputs*)
+  ("rec_gcd5", program_test (gcd_rec (-2) 3) 1L);
+  ("rec_gcd6", program_test (gcd_rec 12 (-21)) 3L);
+  ("rec_gcd7", program_test (gcd_rec (-78624) (-20736)) 864L);
+  ("it_gcd1", program_test (gcd_rec 1 1) 1L);
+  ("it_gcd2", program_test (gcd_rec 2 3) 1L);
+  ("it_gcd3", program_test (gcd_rec 12 21) 3L);
+  ("it_gcd4", program_test (gcd_rec 78624 20736) 864L);
+  (* repeat the previous three tests, just with some negative inputs*)
+  ("it_gcd5", program_test (gcd_rec (-2) 3) 1L);
+  ("it_gcd6", program_test (gcd_rec 12 (-21)) 3L);
+  ("it_gcd7", program_test (gcd_rec (-78624) (-20736)) 864L);
+  *)
+]
+(* ##### end: tests roman ##### *)
 
 (* ##### end: tests christian ##### *)
 
@@ -669,7 +803,7 @@ let provided_tests : suite = [
   Test ("student_instruction_tests_flo", student_instruction_tests_flo);
   Test ("student_instruction_tests_philippe", student_instruction_tests_philippe);
   Test ("student_instruction_tests_jan", student_instruction_tests_jan);
-  Test ("Additonal cc tests", student_instruction_tests_christian_part1);
-  Test ("Additonal functionality tests", student_instruction_tests_christian_part2);
+  Test ("student_instruction_tests_christian", student_instruction_tests_christian);
+  Test ("student_instruction_tests_roman", student_instruction_tests_roman);
   Test ("Student-Provided Big Test for Part III: Score recorded as PartIIITestCase", []);
 ] 
