@@ -175,7 +175,7 @@ let student_instruction_tests_flo = [
     [(Callq, [~$0x400100])]
     (fun m -> m.regs.(rind Rip) = 0x400100L
               && m.regs.(rind Rsp) = (Int64.sub mem_top 16L)
-              && int64_of_sbytes (sbyte_list m.mem (mem_size-16)) = mem_bot
+              && int64_of_sbytes (sbyte_list m.mem (mem_size-16)) = Int64.add mem_bot 8L
     )
   ;
   make_instr_test "retq" 
