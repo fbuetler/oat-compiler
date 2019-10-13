@@ -368,8 +368,22 @@ let sort_prog_elems (p:prog): prog =
   let (text, data) = List.partition is_text p in
   List.concat [text; data]
 
+(* replace_instr_labels replaces all references to labels in an instruction with the concrete location *)
+let replace_instr_labels (sym_loc: string -> int64) ((opcode, operands):ins) : ins =
+  let map_imm old = begin match old with
+    | Lit _ -> old
+    | Lbl l -> Lit (sym_loc l)
+  end in
+  let map_operand o = begin match o with
+    | Imm imm -> Imm (map_imm imm)
+    | Ind1 imm -> Ind1 (map_imm imm)
+    | Ind3 (imm, reg) -> Ind3 (map_imm imm, reg)
+    | _ -> o
+  end in
+  (opcode, List.map map_operand operands)
+
 let instr_to_sbytes (sym_loc: string -> int64) (instr:ins)  : sbyte list = 
-  [InsB0 instr; InsFrag; InsFrag; InsFrag; InsFrag; InsFrag; InsFrag; InsFrag] (* TODO resolve symbols *)
+  [InsB0 (replace_instr_labels sym_loc instr); InsFrag; InsFrag; InsFrag; InsFrag; InsFrag; InsFrag; InsFrag] 
 
 let data_to_sbytes (sym_loc: string -> int64) (d:data) : sbyte list = 
   begin match d with
