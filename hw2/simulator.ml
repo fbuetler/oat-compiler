@@ -401,14 +401,14 @@ let asm_size (a:asm) : int = List.length @@ asm_to_sbytes (fun _ -> 0L) a
 (* TODO Optimize: The way this function is currently written causes assemble to be O(n^2) in the length of the program *)
 let get_symbol_location (p:prog) (sym:string) : int64 = 
   let step (loc, found) e = 
-    begin match found || e.lbl == sym with
+    begin match found || e.lbl = sym with
       | true -> (loc, true)
       | false -> (Int64.add loc @@ Int64.of_int @@ asm_size e.asm, false)
     end
   in
   begin match List.fold_left step (mem_bot, false) p with
     | (loc, true) -> loc
-    | (_, false) -> raise @@ Undefined_sym sym
+    | (loc, false) -> raise @@ Undefined_sym sym
   end 
 
 (* Convert an X86 program into an object file:
