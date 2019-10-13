@@ -387,7 +387,8 @@ let instr_to_sbytes (sym_loc: string -> int64) (instr:ins)  : sbyte list =
 
 let data_to_sbytes (sym_loc: string -> int64) (d:data) : sbyte list = 
   begin match d with
-    | Asciz str -> [] (* TODO *)
+    (* TODO Should we null-terminate strings? *)
+    | Asciz s -> List.init (String.length s) (fun i -> Byte (String.get s i))
     | Quad (Lit v) -> sbytes_of_int64 v
     | Quad (Lbl l) -> sbytes_of_int64 @@ sym_loc l
   end
