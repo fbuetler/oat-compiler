@@ -269,6 +269,31 @@ let student_instruction_tests_flo = [
     (fun m -> m.regs.(rind Rip) = (Int64.add mem_bot 16L))
   ;
 
+  (* load tests *)
+  let helloworld_dataseg =
+    [ Byte 'c'; Byte '\x00'; Byte '\x00'; Byte '\x00'
+    ; Byte '\x00'; Byte '\x00'; Byte '\x00'; Byte '\x00'
+    ; Byte 'H'; Byte 'e' ; Byte 'l'; Byte 'l'
+    ; Byte 'o'; Byte ','; Byte ' '; Byte 'w'
+    ; Byte 'o'; Byte 'r'; Byte 'l'; Byte 'd'
+    ; Byte '!'; Byte '\x00' ] in
+  let helloworld_textseg =
+    [ InsB0 (Xorq, [Reg Rax; Reg Rax]);              InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ; InsB0 (Movq, [Imm (Lit 100L); Reg Rax]);       InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ; InsB0 (Retq, []);                              InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ; InsB0 (Xorq, [Reg Rax; Reg Rax]);              InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ; InsB0 (Movq, [Ind1 (Lit 0x400030L); Reg Rax]); InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ; InsB0 (Retq, []);                              InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ] in
+  let test_exec: exec =
+    { entry = 0x400008L
+    ; text_pos = 0x400000L
+    ; data_pos = 0x400064L
+    ; text_seg = helloworld_textseg
+    ; data_seg = helloworld_dataseg
+    } in 
+    ("load_helloworld", assert_eqf (fun () -> (load test_exec).regs.(rind Rip)) 0x400008L);
+    (* TODO: test the rest of load *)
 ]
 
 (* TODO merge this with the other tests *)
