@@ -276,6 +276,7 @@ let interpret_instr_base (instr:ins) (m:mach) : unit =
       shift_op Int64.shift_left decide_fo amt dest m
     | Shrq, [amt; dest] ->
       let decide_fo input= msb_as_bool input in
+      shift_op Int64.shift_right_logical decide_fo amt dest m
     | Set cc, [dest] ->
       let b = if interp_cnd m.flags cc then Int64.one else Int64.zero in
       let mask = Int64.of_int 255 in
