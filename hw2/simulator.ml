@@ -374,12 +374,9 @@ let instr_to_sbytes (sym_loc: string -> int64) (instr:ins)  : sbyte list =
 
 let data_to_sbytes (sym_loc: string -> int64) (d:data) : sbyte list = 
   begin match d with
-    (*
-    TODO Should we null-terminate strings?
-    Probably yes, since the comment of `assemble` says:
-    "Note: the size of an Asciz string section is (1 + the string length)"
-    *)
-    | Asciz s -> List.init (String.length s) (fun i -> Byte (String.get s i))
+    | Asciz s ->
+      let base = List.init (String.length s) (fun i -> Byte (String.get s i)) in
+      List.concat [base; [Byte '\x00']]
     | Quad (Lit v) -> sbytes_of_int64 v
     | Quad (Lbl l) -> sbytes_of_int64 @@ sym_loc l
   end
@@ -408,7 +405,7 @@ let get_symbol_location (p:prog) (sym:string) : int64 =
   in
   begin match List.fold_left step (mem_bot, false) p with
     | (loc, true) -> loc
-    | (loc, false) -> raise @@ Undefined_sym sym
+    | (_, false) -> raise @@ Undefined_sym sym
   end 
 
 (* Convert an X86 program into an object file:
