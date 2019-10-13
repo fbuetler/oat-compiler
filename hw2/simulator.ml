@@ -355,19 +355,6 @@ exception Undefined_sym of lbl
 (* Assemble should raise this when a label is defined more than once *)
 exception Redefined_sym of lbl
 
-
-(*
-sort_prog_elems sorts the sections in the program so that all text sections come first.
-Otherwise the order is preserved.
-*)
-let sort_prog_elems (p:prog): prog =
-  let is_text (e:elem) = begin match e.asm with
-    | Text _ -> true
-    | Data _ -> false
-  end in
-  let (text, data) = List.partition is_text p in
-  List.concat [text; data]
-
 (* replace_instr_labels replaces all references to labels in an instruction with the concrete location *)
 let replace_instr_labels (sym_loc: string -> int64) ((opcode, operands):ins) : ins =
   let map_imm old = begin match old with
@@ -387,8 +374,9 @@ let instr_to_sbytes (sym_loc: string -> int64) (instr:ins)  : sbyte list =
 
 let data_to_sbytes (sym_loc: string -> int64) (d:data) : sbyte list = 
   begin match d with
-    (* TODO Should we null-terminate strings? *)
-    | Asciz s -> List.init (String.length s) (fun i -> Byte (String.get s i))
+    | Asciz s ->
+      let base = List.init (String.length s) (fun i -> Byte (String.get s i)) in
+      List.concat [base; [Byte '\x00']]
     | Quad (Lit v) -> sbytes_of_int64 v
     | Quad (Lbl l) -> sbytes_of_int64 @@ sym_loc l
   end
@@ -407,9 +395,10 @@ let asm_to_sbytes (sym_loc: string -> int64) (a:asm)  : sbyte list =
 let asm_size (a:asm) : int = List.length @@ asm_to_sbytes (fun _ -> 0L) a
 
 (* p must be sorted before calling get_symbol_location *)
+(* TODO Optimize: The way this function is currently written causes assemble to be O(n^2) in the length of the program *)
 let get_symbol_location (p:prog) (sym:string) : int64 = 
   let step (loc, found) e = 
-    begin match found || e.lbl == sym with
+    begin match found || e.lbl = sym with
       | true -> (loc, true)
       | false -> (Int64.add loc @@ Int64.of_int @@ asm_size e.asm, false)
     end
@@ -432,8 +421,27 @@ let get_symbol_location (p:prog) (sym:string) : int64 =
 
    HINT: List.fold_left and List.fold_right are your friends.
 *)
-let assemble (p:prog) : exec =
-  failwith "assemble unimplemented"
+let assemble (unsorted_p:prog) : exec =
+  let is_text (e:elem) = begin match e.asm with
+    | Text _ -> true
+    | Data _ -> false
+  end in
+  let (text, data) = List.partition is_text unsorted_p in
+  let sorted_p = List.concat [text; data] in
+  let sym_loc = get_symbol_location sorted_p in
+  let section_to_sbytes (elems: X86.elem list) = elems
+                                                 |> List.map (fun e -> e.asm)
+                                                 |> List.map (asm_to_sbytes sym_loc)
+                                                 |> List.flatten in
+  let text_seg = section_to_sbytes text in
+  let text_pos = mem_bot in
+  {
+    entry = sym_loc "main"; 
+    text_pos = text_pos;
+    data_pos = Int64.add text_pos @@ Int64.of_int @@ List.length text_seg;
+    text_seg = text_seg;
+    data_seg = section_to_sbytes data;
+  }
 
 (* Convert an object file into an executable machine state. 
    - allocate the mem array
