@@ -298,7 +298,6 @@ let interpret_instr_base (instr:ins) (m:mach) : unit =
     | J cc, [src] ->
       if interp_cnd m.flags cc
       then m.regs.(rind Rip) <- interpret_val src m
-      else incr_rip m
     | _ -> failwith "this instruction should not exist"
   end
 
