@@ -86,8 +86,8 @@ let student_instruction_tests_flo = [
   make_bin_op_test Andq 0b1111L 0b0000L 0b0000L {fo=false; fs=false; fz=true};
   make_bin_op_test Xorq 0b1111L 0b0001L 0b1110L {fo=false; fs=false; fz=false};
   make_bin_op_test Xorq 0b101000111011L 
-                        0b011101011001L 
-                        0b110101100010L {fo=false; fs=false; fz=false};
+    0b011101011001L 
+    0b110101100010L {fo=false; fs=false; fz=false};
   make_bin_op_test Xorq 0b1010L 0b1010L 0b0000L {fo=false; fs=false; fz=true};                      
   make_bin_op_test Sarq 1L 4L 2L {fo=false; fs=false; fz=false}; (* small random arithmetic shift *)
   make_bin_op_test Sarq 13L 1588476L 193L {fo=false; fs=false; fz=false}; (* big random arithmetic shift *)
@@ -292,8 +292,8 @@ let student_instruction_tests_flo = [
     ; text_seg = helloworld_textseg
     ; data_seg = helloworld_dataseg
     } in 
-    ("load_helloworld", assert_eqf (fun () -> (load test_exec).regs.(rind Rip)) 0x400008L);
-    (* TODO: test the rest of load *)
+  ("load_helloworld", assert_eqf (fun () -> (load test_exec).regs.(rind Rip)) 0x400008L);
+  (* TODO: test the rest of load *)
 ]
 
 (* TODO merge this with the other tests *)
@@ -348,200 +348,200 @@ type cc_expected = CC_set | CC_cleared | CC_unchanged
 
 let machine_test_cc (inss:ins list) (fo', fs', fz') () : unit =
   List.iter (fun init ->
-    let expect : cc_expected -> bool = function
-      | CC_set -> true
-      | CC_cleared -> false
-      | CC_unchanged -> init in
-    let m = inss_to_sbytes inss |> test_machine in
-    machine_test "" (List.length inss)
-      {m with flags = {fo = init; fs = init; fz = init}}
-      (fun {flags} ->
-        expect fo' = flags.fo &&
-        expect fs' = flags.fs &&
-        expect fz' = flags.fz) ()
-  ) [false; true]
+      let expect : cc_expected -> bool = function
+        | CC_set -> true
+        | CC_cleared -> false
+        | CC_unchanged -> init in
+      let m = inss_to_sbytes inss |> test_machine in
+      machine_test "" (List.length inss)
+        {m with flags = {fo = init; fs = init; fz = init}}
+        (fun {flags} ->
+           expect fo' = flags.fo &&
+           expect fs' = flags.fs &&
+           expect fz' = flags.fz) ()
+    ) [false; true]
 
 
 let student_instruction_tests_jan = [
-    (* unary ops *)
+  (* unary ops *)
   ("negq", machine_test_inss
-    [Movq, [~$42; ~%Rax]; Negq, [~%Rax]]
-    (fun m -> m.regs.(rind Rax) = -42L)
+     [Movq, [~$42; ~%Rax]; Negq, [~%Rax]]
+     (fun m -> m.regs.(rind Rax) = -42L)
   );
   ("incq", machine_test_inss
-    [Movq, [~$42; ~%Rax]; Incq, [~%Rax]]
-    (fun m -> m.regs.(rind Rax) = 43L)
+     [Movq, [~$42; ~%Rax]; Incq, [~%Rax]]
+     (fun m -> m.regs.(rind Rax) = 43L)
   );
   ("decq", machine_test_inss
-    [Movq, [~$42; ~%Rax]; Decq, [~%Rax]]
-    (fun m -> m.regs.(rind Rax) = 41L)
+     [Movq, [~$42; ~%Rax]; Decq, [~%Rax]]
+     (fun m -> m.regs.(rind Rax) = 41L)
   );
   ("notq", machine_test_inss
-    [Movq, [~$42; ~%Rax]; Notq, [~%Rax]]
-    (fun m -> m.regs.(rind Rax) = -43L)
+     [Movq, [~$42; ~%Rax]; Notq, [~%Rax]]
+     (fun m -> m.regs.(rind Rax) = -43L)
   );
-    (* binary ops *)
+  (* binary ops *)
   ("addq", machine_test_inss
-    [Movq, [~$42; ~%Rax]; Movq, [~$13; ~%Rbx]; Addq, [~%Rbx; ~%Rax]]
-    (fun m -> m.regs.(rind Rax) = 55L)
+     [Movq, [~$42; ~%Rax]; Movq, [~$13; ~%Rbx]; Addq, [~%Rbx; ~%Rax]]
+     (fun m -> m.regs.(rind Rax) = 55L)
   );
   ("subq", machine_test_inss
-    [Movq, [~$42; ~%Rax]; Movq, [~$13; ~%Rbx]; Subq, [~%Rbx; ~%Rax]]
-    (fun m -> m.regs.(rind Rax) = 29L)
+     [Movq, [~$42; ~%Rax]; Movq, [~$13; ~%Rbx]; Subq, [~%Rbx; ~%Rax]]
+     (fun m -> m.regs.(rind Rax) = 29L)
   );
   ("imulq", machine_test_inss
-    [Movq, [~$42; ~%Rax]; Movq, [~$(-13); ~%Rbx]; Imulq, [~%Rbx; ~%Rax]]
-    (fun m -> m.regs.(rind Rax) = -546L)
+     [Movq, [~$42; ~%Rax]; Movq, [~$(-13); ~%Rbx]; Imulq, [~%Rbx; ~%Rax]]
+     (fun m -> m.regs.(rind Rax) = -546L)
   );
   ("xorq", machine_test_inss
-    [Movq, [~$42; ~%Rax]; Movq, [~$13; ~%Rbx]; Xorq, [~%Rbx; ~%Rax]]
-    (fun m -> m.regs.(rind Rax) = 39L)
+     [Movq, [~$42; ~%Rax]; Movq, [~$13; ~%Rbx]; Xorq, [~%Rbx; ~%Rax]]
+     (fun m -> m.regs.(rind Rax) = 39L)
   );
   ("orq", machine_test_inss
-    [Movq, [~$42; ~%Rax]; Movq, [~$13; ~%Rbx]; Orq, [~%Rbx; ~%Rax]]
-    (fun m -> m.regs.(rind Rax) = 47L)
+     [Movq, [~$42; ~%Rax]; Movq, [~$13; ~%Rbx]; Orq, [~%Rbx; ~%Rax]]
+     (fun m -> m.regs.(rind Rax) = 47L)
   );
   ("andq", machine_test_inss
-    [Movq, [~$42; ~%Rax]; Movq, [~$13; ~%Rbx]; Andq, [~%Rbx; ~%Rax]]
-    (fun m -> m.regs.(rind Rax) = 8L)
+     [Movq, [~$42; ~%Rax]; Movq, [~$13; ~%Rbx]; Andq, [~%Rbx; ~%Rax]]
+     (fun m -> m.regs.(rind Rax) = 8L)
   );
   ("sarq", machine_test_inss
-    [Movq, [~$(-42); ~%Rax]; Movq, [~$2; ~%Rcx]; Sarq, [~%Rcx; ~%Rax]]
-    (fun m -> m.regs.(rind Rax) = -11L)
+     [Movq, [~$(-42); ~%Rax]; Movq, [~$2; ~%Rcx]; Sarq, [~%Rcx; ~%Rax]]
+     (fun m -> m.regs.(rind Rax) = -11L)
   );
   ("shlq", machine_test_inss
-    [Movq, [~$(-42); ~%Rax]; Movq, [~$2; ~%Rcx]; Shlq, [~%Rcx; ~%Rax]]
-    (fun m -> m.regs.(rind Rax) = -168L)
+     [Movq, [~$(-42); ~%Rax]; Movq, [~$2; ~%Rcx]; Shlq, [~%Rcx; ~%Rax]]
+     (fun m -> m.regs.(rind Rax) = -168L)
   );
   ("shrq", machine_test_inss
-    [Movq, [~$(-42); ~%Rax]; Movq, [~$2; ~%Rcx]; Shrq, [~%Rcx; ~%Rax]]
-    (fun m -> m.regs.(rind Rax) = 0x3ffffffffffffff5L)
+     [Movq, [~$(-42); ~%Rax]; Movq, [~$2; ~%Rcx]; Shrq, [~%Rcx; ~%Rax]]
+     (fun m -> m.regs.(rind Rax) = 0x3ffffffffffffff5L)
   );
-    (* other ops *)
+  (* other ops *)
   ("leaq", machine_test_inss
-    [Movq, [~$42; ~%Rax]; Leaq, [Ind3 (Lit 13L, Rax); ~%Rbx]]
-    (fun m -> m.regs.(rind Rbx) = 55L)
+     [Movq, [~$42; ~%Rax]; Leaq, [Ind3 (Lit 13L, Rax); ~%Rbx]]
+     (fun m -> m.regs.(rind Rbx) = 55L)
   );
   ("pushq", machine_test_inss
-    [Movq, [~$42; ~%Rax]; Pushq, [~%Rax]]
-    (fun m -> m.regs.(rind Rax) = 42L
-      && m.regs.(rind Rsp) = Int64.sub mem_top 16L
-      && int64_of_sbytes (sbyte_list m.mem (mem_size-16)) = 42L)
+     [Movq, [~$42; ~%Rax]; Pushq, [~%Rax]]
+     (fun m -> m.regs.(rind Rax) = 42L
+               && m.regs.(rind Rsp) = Int64.sub mem_top 16L
+               && int64_of_sbytes (sbyte_list m.mem (mem_size-16)) = 42L)
   );
   ("popq", machine_test_inss
-    [Movq, [~$42; Ind2 Rsp]; Popq, [~%Rax]]
-    (fun m -> m.regs.(rind Rax) = 42L
-      && m.regs.(rind Rsp) = mem_top
-      && int64_of_sbytes (sbyte_list m.mem (mem_size-8)) = 42L)
+     [Movq, [~$42; Ind2 Rsp]; Popq, [~%Rax]]
+     (fun m -> m.regs.(rind Rax) = 42L
+               && m.regs.(rind Rsp) = mem_top
+               && int64_of_sbytes (sbyte_list m.mem (mem_size-8)) = 42L)
   );
   ("set true", machine_test_inss
-    [Movq, [Imm (Lit 0x123456789abcdefL); ~%Rax]; Cmpq, [~$1; ~$2]; Set Gt, [~%Rax]]
-    (fun m -> m.regs.(rind Rax) = 0x123456789abcd01L)
+     [Movq, [Imm (Lit 0x123456789abcdefL); ~%Rax]; Cmpq, [~$1; ~$2]; Set Gt, [~%Rax]]
+     (fun m -> m.regs.(rind Rax) = 0x123456789abcd01L)
   );
   ("set false", machine_test_inss
-    [Movq, [Imm (Lit 0x123456789abcdefL); ~%Rax]; Cmpq, [~$2; ~$2]; Set Gt, [~%Rax]]
-    (fun m -> m.regs.(rind Rax) = 0x123456789abcd00L)
+     [Movq, [Imm (Lit 0x123456789abcdefL); ~%Rax]; Cmpq, [~$2; ~$2]; Set Gt, [~%Rax]]
+     (fun m -> m.regs.(rind Rax) = 0x123456789abcd00L)
   );
   ("set mem", machine_test_inss
-    [Movq, [Imm (Lit 0x123456789abcdefL); Ind2 Rsp]; Cmpq, [~$1; ~$2]; Set Gt, [Ind2 Rsp]]
-    (fun m -> int64_of_sbytes (sbyte_list m.mem (mem_size-8)) = 0x123456789abcd01L)
+     [Movq, [Imm (Lit 0x123456789abcdefL); Ind2 Rsp]; Cmpq, [~$1; ~$2]; Set Gt, [Ind2 Rsp]]
+     (fun m -> int64_of_sbytes (sbyte_list m.mem (mem_size-8)) = 0x123456789abcd01L)
   );
   ("set at mem top does not cause segfault", machine_test_inss
-    [Addq, [~$7; ~%Rsp]; Cmpq, [~$1; ~$2]; Set Gt, [Ind2 Rsp]]
-    (fun m -> (m.mem.(mem_size-1)) = Byte (Char.chr 1))
+     [Addq, [~$7; ~%Rsp]; Cmpq, [~$1; ~$2]; Set Gt, [Ind2 Rsp]]
+     (fun m -> (m.mem.(mem_size-1)) = Byte (Char.chr 1))
   );
   ("jmp", machine_test_inss
-    [Jmp, [~$42]]
-    (fun m -> m.regs.(rind Rip) = 42L)
+     [Jmp, [~$42]]
+     (fun m -> m.regs.(rind Rip) = 42L)
   );
   ("j true", machine_test_inss
-    [Cmpq, [~$1; ~$2]; J Gt, [~$42]]
-    (fun m -> m.regs.(rind Rip) = 42L)
+     [Cmpq, [~$1; ~$2]; J Gt, [~$42]]
+     (fun m -> m.regs.(rind Rip) = 42L)
   );
   ("j false", machine_test_inss
-    [Cmpq, [~$2; ~$2]; J Gt, [~$42]]
-    (fun m -> m.regs.(rind Rip) = Int64.add mem_bot 16L)
+     [Cmpq, [~$2; ~$2]; J Gt, [~$42]]
+     (fun m -> m.regs.(rind Rip) = Int64.add mem_bot 16L)
   );
   ("retq", machine_test_inss
-    [Movq, [~$42; Ind2 Rsp]; Retq, []]
-    (fun m -> m.regs.(rind Rip) = 42L
-      && m.regs.(rind Rsp) = mem_top)
+     [Movq, [~$42; Ind2 Rsp]; Retq, []]
+     (fun m -> m.regs.(rind Rip) = 42L
+               && m.regs.(rind Rsp) = mem_top)
   );
   ("callq", machine_test_inss
-    [Callq, [~$42]]
-    (fun m -> m.regs.(rind Rip) = 42L
-      && m.regs.(rind Rsp) = Int64.sub mem_top 16L
-      && int64_of_sbytes (sbyte_list m.mem (mem_size-16)) =
-        Int64.add mem_bot 8L)
+     [Callq, [~$42]]
+     (fun m -> m.regs.(rind Rip) = 42L
+               && m.regs.(rind Rsp) = Int64.sub mem_top 16L
+               && int64_of_sbytes (sbyte_list m.mem (mem_size-16)) =
+                  Int64.add mem_bot 8L)
   );
   ("notq should not touch flags", machine_test_cc
-    [Movq, [~$42; ~%Rax]; Notq, [~%Rax]]
-    (CC_unchanged, CC_unchanged, CC_unchanged)
+     [Movq, [~$42; ~%Rax]; Notq, [~%Rax]]
+     (CC_unchanged, CC_unchanged, CC_unchanged)
   );
   ("imulq no overflow", machine_test_inss
-    [Movq, [~$42; ~%Rax]; Movq, [~$(-13); ~%Rbx]; Imulq, [~%Rbx; ~%Rax]]
-    (fun m -> m.flags.fo = false)
+     [Movq, [~$42; ~%Rax]; Movq, [~$(-13); ~%Rbx]; Imulq, [~%Rbx; ~%Rax]]
+     (fun m -> m.flags.fo = false)
   );
   ("imulq overflow", machine_test_inss
-    [Movq, [Imm (Lit 0x0001000000000000L); ~%Rax];  Imulq, [~%Rax; ~%Rax]]
-    (fun m -> m.flags.fo = true)
+     [Movq, [Imm (Lit 0x0001000000000000L); ~%Rax];  Imulq, [~%Rax; ~%Rax]]
+     (fun m -> m.flags.fo = true)
   );
-    (* if AMT=0 flags are unaffected *)
+  (* if AMT=0 flags are unaffected *)
   ("sarq-flags-amt0", machine_test_cc
-    [Movq, [~$(-42); ~%Rax]; Sarq, [~$0; ~%Rax]]
-    (CC_unchanged, CC_unchanged, CC_unchanged)
+     [Movq, [~$(-42); ~%Rax]; Sarq, [~$0; ~%Rax]]
+     (CC_unchanged, CC_unchanged, CC_unchanged)
   );
   ("shlq-flags-amt0", machine_test_cc
-    [Movq, [~$(-42); ~%Rax]; Shlq, [~$0; ~%Rax]]
-    (CC_unchanged, CC_unchanged, CC_unchanged)
+     [Movq, [~$(-42); ~%Rax]; Shlq, [~$0; ~%Rax]]
+     (CC_unchanged, CC_unchanged, CC_unchanged)
   );
   ("shrq-flags-amt0", machine_test_cc
-    [Movq, [~$(-42); ~%Rax]; Shrq, [~$0; ~%Rax]]
-    (CC_unchanged, CC_unchanged, CC_unchanged)
+     [Movq, [~$(-42); ~%Rax]; Shrq, [~$0; ~%Rax]]
+     (CC_unchanged, CC_unchanged, CC_unchanged)
   );
-    (* if AMT=1 then fo=0, fs and fz normal*)
+  (* if AMT=1 then fo=0, fs and fz normal*)
   ("sarq-flags-amt1", machine_test_cc
-    [Movq, [~$(-42); ~%Rax]; Movq, [~$1; ~%Rcx]; Sarq, [~%Rcx; ~%Rax]]
-    (CC_cleared, CC_set, CC_cleared)
+     [Movq, [~$(-42); ~%Rax]; Movq, [~$1; ~%Rcx]; Sarq, [~%Rcx; ~%Rax]]
+     (CC_cleared, CC_set, CC_cleared)
   );
-    (* OF is set if the top two bits of DEST are different and the shift amount is 1 *)
+  (* OF is set if the top two bits of DEST are different and the shift amount is 1 *)
   ("shlq-flags-amt1-01", machine_test_cc
-    [Movq, [Imm (Lit 0x4000000000000000L); ~%Rax]; Shlq, [~$1; ~%Rax]]
-    (CC_set, CC_set, CC_cleared)
+     [Movq, [Imm (Lit 0x4000000000000000L); ~%Rax]; Shlq, [~$1; ~%Rax]]
+     (CC_set, CC_set, CC_cleared)
   );
   ("shlq-flags-amt1-10", machine_test_cc
-    [Movq, [Imm (Lit 0x8000000000000000L); ~%Rax]; Shlq, [~$1; ~%Rax]]
-    (CC_set, CC_cleared, CC_set)
+     [Movq, [Imm (Lit 0x8000000000000000L); ~%Rax]; Shlq, [~$1; ~%Rax]]
+     (CC_set, CC_cleared, CC_set)
   );
   ("shlq-flags-amt1-00", machine_test_cc
-    [Movq, [~$0; ~%Rax]; Shlq, [~$1; ~%Rax]]
-    (CC_unchanged, CC_cleared, CC_set)
+     [Movq, [~$0; ~%Rax]; Shlq, [~$1; ~%Rax]]
+     (CC_unchanged, CC_cleared, CC_set)
   );
   ("shlq-flags-amt1-11", machine_test_cc
-    [Movq, [Imm (Lit 0xc000000000000000L); ~%Rax]; Shlq, [~$1; ~%Rax]]
-    (CC_unchanged, CC_set, CC_cleared)
+     [Movq, [Imm (Lit 0xc000000000000000L); ~%Rax]; Shlq, [~$1; ~%Rax]]
+     (CC_unchanged, CC_set, CC_cleared)
   );
-    (* OF is set to the most-significant bit of the original operand if the shift amount is 1 *)
+  (* OF is set to the most-significant bit of the original operand if the shift amount is 1 *)
   ("shrq-flags-amt1", machine_test_cc
-    [Movq, [~$1; ~%Rax]; Shrq, [~$1; ~%Rax]]
-    (CC_cleared, CC_cleared, CC_set)
+     [Movq, [~$1; ~%Rax]; Shrq, [~$1; ~%Rax]]
+     (CC_cleared, CC_cleared, CC_set)
   );
   ("shrq-flags-amt1", machine_test_cc
-    [Movq, [~$(-1); ~%Rax]; Shrq, [~$1; ~%Rax]]
-    (CC_set, CC_cleared, CC_cleared)
+     [Movq, [~$(-1); ~%Rax]; Shrq, [~$1; ~%Rax]]
+     (CC_set, CC_cleared, CC_cleared)
   );
-    (* if AMT<>1 then fo is unaffected *)
+  (* if AMT<>1 then fo is unaffected *)
   ("sarq-flags-amt3", machine_test_cc
-    [Movq, [~$(-42); ~%Rax]; Sarq, [~$3; ~%Rax]]
-    (CC_unchanged, CC_set, CC_cleared)
+     [Movq, [~$(-42); ~%Rax]; Sarq, [~$3; ~%Rax]]
+     (CC_unchanged, CC_set, CC_cleared)
   );
   ("shlq-flags-amt3", machine_test_cc
-    [Movq, [~$(-42); ~%Rax]; Shlq, [~$3; ~%Rax]]
-    (CC_unchanged, CC_set, CC_cleared)
+     [Movq, [~$(-42); ~%Rax]; Shlq, [~$3; ~%Rax]]
+     (CC_unchanged, CC_set, CC_cleared)
   );
   ("shrq-flags-amt3", machine_test_cc
-    [Movq, [~$(-42); ~%Rax]; Shrq, [~$3; ~%Rax]]
-    (CC_unchanged, CC_cleared, CC_cleared)
+     [Movq, [~$(-42); ~%Rax]; Shrq, [~$3; ~%Rax]]
+     (CC_unchanged, CC_cleared, CC_cleared)
   );
   ("fact6-iter", program_test (factorial_iter 6) 720L);
 ]
@@ -556,72 +556,72 @@ let cc_from_to (n:int) (m:mach) (fo',fs',fz') (fo'',fs'',fz'') =
 
 (* Additional shift cc tests*)
 let cc_sarq_0 = test_machine  
-  [InsB0 (Movq, [~$0x400600; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
-   ;InsB0 (Sarq, [(Imm (Lit 0L)); ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
+    [InsB0 (Movq, [~$0x400600; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ;InsB0 (Sarq, [(Imm (Lit 0L)); ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
 
 let cc_sarq_1 = test_machine  
-  [InsB0 (Movq, [(Imm (Lit 0xFFFFFFFFFFFFFFFFL)); ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
-   ;InsB0 (Sarq, [~$0; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
+    [InsB0 (Movq, [(Imm (Lit 0xFFFFFFFFFFFFFFFFL)); ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ;InsB0 (Sarq, [~$0; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
 
 let cc_sarq_2 = test_machine  
-  [InsB0 (Movq, [~$424242; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
-   ;InsB0 (Sarq, [~$1; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
+    [InsB0 (Movq, [~$424242; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ;InsB0 (Sarq, [~$1; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
 
 let cc_sarq_3 = test_machine  
-  [InsB0 (Movq, [~$1; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
-   ;InsB0 (Sarq, [~$1; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
+    [InsB0 (Movq, [~$1; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ;InsB0 (Sarq, [~$1; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
 
 let cc_sarq_4 = test_machine  
-  [InsB0 (Movq, [~$2; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
-   ;InsB0 (Sarq, [~$2; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
+    [InsB0 (Movq, [~$2; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ;InsB0 (Sarq, [~$2; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
 
 
 let cc_shlq_1 = test_machine  
-  [InsB0 (Movq, [~$424242; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
-   ;InsB0 (Shlq, [~$0; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
+    [InsB0 (Movq, [~$424242; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ;InsB0 (Shlq, [~$0; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
 
 let cc_shlq_2 = test_machine  
-  [InsB0 (Movq, [(Imm (Lit 0x3FFFFFFFFFFFFFFFL)); ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
-   ;InsB0 (Shlq, [~$1; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
+    [InsB0 (Movq, [(Imm (Lit 0x3FFFFFFFFFFFFFFFL)); ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ;InsB0 (Shlq, [~$1; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
 
 let cc_shlq_3 = test_machine  
-  [InsB0 (Movq, [(Imm (Lit 0x7FFFFFFFFFFFFFFFL)); ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
-   ;InsB0 (Shlq, [~$1; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
+    [InsB0 (Movq, [(Imm (Lit 0x7FFFFFFFFFFFFFFFL)); ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ;InsB0 (Shlq, [~$1; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
 
 let cc_shlq_4 = test_machine  
-  [InsB0 (Movq, [(Imm (Lit 0x7FFFFFFFFFFFFFFFL)); ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
-   ;InsB0 (Shlq, [~$2; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
+    [InsB0 (Movq, [(Imm (Lit 0x7FFFFFFFFFFFFFFFL)); ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ;InsB0 (Shlq, [~$2; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
 
 
 let cc_shrq_1 = test_machine  
-  [InsB0 (Movq, [~$424242; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
-   ;InsB0 (Shrq, [~$0; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
+    [InsB0 (Movq, [~$424242; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ;InsB0 (Shrq, [~$0; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
 
 let cc_shrq_2 = test_machine  
-  [InsB0 (Movq, [~$(-1); ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
-   ;InsB0 (Shrq, [~$1; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
+    [InsB0 (Movq, [~$(-1); ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ;InsB0 (Shrq, [~$1; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
 
 let cc_shrq_3 = test_machine  
-  [InsB0 (Movq, [~$1; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
-   ;InsB0 (Shrq, [~$1; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
+    [InsB0 (Movq, [~$1; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ;InsB0 (Shrq, [~$1; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
 
 let cc_shrq_4 = test_machine  
-  [InsB0 (Movq, [~$2; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
-   ;InsB0 (Shrq, [~$2; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
+    [InsB0 (Movq, [~$2; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ;InsB0 (Shrq, [~$2; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
 
 (* additional overflow tests *)
 
 let cso_mult_1 = test_machine  
-  [InsB0 (Movq, [(Imm (Lit 0x4000000000000000L)); ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
-   ;InsB0 (Imulq, [~$2; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
+    [InsB0 (Movq, [(Imm (Lit 0x4000000000000000L)); ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ;InsB0 (Imulq, [~$2; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
 
 let cso_add_1 = test_machine  
-  [InsB0 (Movq, [(Imm (Lit 0x7FFFFFFFFFFFFFFFL)); ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
-   ;InsB0 (Addq, [~$1; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
+    [InsB0 (Movq, [(Imm (Lit 0x7FFFFFFFFFFFFFFFL)); ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ;InsB0 (Addq, [~$1; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
 
 let cso_sub_1 = test_machine  
-  [InsB0 (Movq, [(Imm (Lit 0x8000000000000000L)); ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
-   ;InsB0 (Subq, [~$1; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
+    [InsB0 (Movq, [(Imm (Lit 0x8000000000000000L)); ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ;InsB0 (Subq, [~$1; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
 
 let student_instruction_tests_christian_part1 =
   [ ("cc_sarq_0", cc_from_to 2 cc_sarq_0 (false, false, false) (false, false, false));
@@ -644,30 +644,30 @@ let student_instruction_tests_christian_part1 =
 (* additional functional tests *)
 
 let setb_1 = test_machine
-  [InsB0 (Movq, [(Imm (Lit 0xFFFFFFFFFFFFFFFFL)); ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
-   ;InsB0 (Cmpq, [~$2; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
-   ;InsB0 (Set Le, [~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
+    [InsB0 (Movq, [(Imm (Lit 0xFFFFFFFFFFFFFFFFL)); ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ;InsB0 (Cmpq, [~$2; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ;InsB0 (Set Le, [~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
 
 let setb_2 = test_machine
-  [InsB0 (Movq, [(Imm (Lit 0xFFFFFFFFFFFFFFFFL)); Ind2 Rsp]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
-   ;InsB0 (Addq, [~$7; ~%Rsp]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
-   ;InsB0 (Cmpq, [~$2; ~$1]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
-   ;InsB0 (Set Gt, [Ind2 Rsp]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
+    [InsB0 (Movq, [(Imm (Lit 0xFFFFFFFFFFFFFFFFL)); Ind2 Rsp]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ;InsB0 (Addq, [~$7; ~%Rsp]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ;InsB0 (Cmpq, [~$2; ~$1]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
+    ;InsB0 (Set Gt, [Ind2 Rsp]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
 
 let student_instruction_tests_christian_part2 = [
   ("setb_1", machine_test "only to change the lowest byte" 3 setb_1 (fun m -> 
-    m.regs.(rind Rax) = 0xFFFFFFFFFFFFFF01L
-  ));  
+       m.regs.(rind Rax) = 0xFFFFFFFFFFFFFF01L
+     ));  
   ("setb_2", machine_test "only to change the lowest byte" 4 setb_2 (fun m -> 
-    m.mem.(0xffff) = Byte(Char.chr 0)
-  ));  
+       m.mem.(0xffff) = Byte(Char.chr 0)
+     ));  
 ]
 
 
 let provided_tests : suite = [
   Test ("student_instruction_tests_flo", student_instruction_tests_flo);
   Test ("student_instruction_tests_philippe", student_instruction_tests_philippe);
-  Test ("student_instruction_tests_philippe", student_instruction_tests_jan);
+  Test ("student_instruction_tests_jan", student_instruction_tests_jan);
   Test ("Additonal cc tests", student_instruction_tests_christian_part1);
   Test ("Additonal functionality tests", student_instruction_tests_christian_part2);
   Test ("Student-Provided Big Test for Part III: Score recorded as PartIIITestCase", []);
