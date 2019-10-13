@@ -395,18 +395,18 @@ let asm_to_sbytes (sym_loc: string -> int64) (a:asm)  : sbyte list =
 let asm_size (a:asm) : int = List.length @@ asm_to_sbytes (fun _ -> 0L) a
 
 (* p must be sorted before calling get_symbol_location *)
-(* TODO Optimize: The way this function is currently written causes assemble to be O(n^2) in the length of the program *)
-let get_symbol_location (p:prog) (sym:string) : int64 = 
-  let step (loc, found) e = 
-    begin match found || e.lbl = sym with
-      | true -> (loc, true)
-      | false -> (Int64.add loc @@ Int64.of_int @@ asm_size e.asm, false)
-    end
-  in
-  begin match List.fold_left step (mem_bot, false) p with
-    | (loc, true) -> loc
-    | (_, false) -> raise @@ Undefined_sym sym
-  end 
+let make_get_symbol_location (p:prog) : string -> int64 = 
+  let locs_by_name = Hashtbl.create @@ List.length p in
+  let cur_pos = ref mem_bot in
+  List.iter (fun e ->
+      Hashtbl.add locs_by_name e.lbl !cur_pos;
+      cur_pos := Int64.add !cur_pos @@ Int64.of_int @@ asm_size e.asm
+    ) p;
+  let get_symbol_location name = begin match Hashtbl.find_opt locs_by_name name with
+    | Some loc -> loc
+    | None -> raise (Undefined_sym name)
+  end in
+  get_symbol_location
 
 (* Convert an X86 program into an object file:
    - separate the text and data segments
@@ -428,7 +428,7 @@ let assemble (unsorted_p:prog) : exec =
   end in
   let (text, data) = List.partition is_text unsorted_p in
   let sorted_p = List.concat [text; data] in
-  let sym_loc = get_symbol_location sorted_p in
+  let sym_loc = make_get_symbol_location sorted_p in
   let section_to_sbytes (elems: X86.elem list) = elems
                                                  |> List.map (fun e -> e.asm)
                                                  |> List.map (asm_to_sbytes sym_loc)
