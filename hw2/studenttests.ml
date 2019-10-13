@@ -194,13 +194,13 @@ let student_instruction_tests_flo = [
     [(Cmpq, [~$42; ~$3])
     ;(J Eq, [~$0x400100])
     ] 
-    (fun m -> m.regs.(rind Rip) = (Int64.add mem_bot 16L))
+    (fun m -> m.regs.(rind Rip) = (Int64.add mem_bot 24L))
   ;
   make_instr_test "j Neq 1" 
     [(Cmpq, [~$42; ~$42])
     ;(J Neq, [~$0x400100])
     ] 
-    (fun m -> m.regs.(rind Rip) = (Int64.add mem_bot 16L))
+    (fun m -> m.regs.(rind Rip) = (Int64.add mem_bot 24L))
   ;
   make_instr_test "j Neq 2" 
     [(Cmpq, [~$42; ~$3])
@@ -218,7 +218,7 @@ let student_instruction_tests_flo = [
     [(Cmpq, [~$42; ~$3])
     ;(J Gt, [~$0x400100])
     ] 
-    (fun m -> m.regs.(rind Rip) = (Int64.add mem_bot 16L))
+    (fun m -> m.regs.(rind Rip) = (Int64.add mem_bot 24L))
   ;
   make_instr_test "j Ge 1" 
     [(Cmpq, [~$42; ~$42])
@@ -236,7 +236,7 @@ let student_instruction_tests_flo = [
     [(Cmpq, [~$43; ~$42])
     ;(J Ge, [~$0x400100])
     ] 
-    (fun m -> m.regs.(rind Rip) = (Int64.add mem_bot 16L))
+    (fun m -> m.regs.(rind Rip) = (Int64.add mem_bot 24L))
   ;
   make_instr_test "j Lt 1" 
     [(Cmpq, [~$42; ~$3])
@@ -248,7 +248,7 @@ let student_instruction_tests_flo = [
     [(Cmpq, [~$3; ~$42])
     ;(J Lt, [~$0x400100])
     ] 
-    (fun m -> m.regs.(rind Rip) = (Int64.add mem_bot 16L))
+    (fun m -> m.regs.(rind Rip) = (Int64.add mem_bot 24L))
   ;
   make_instr_test "j Le 1" 
     [(Cmpq, [~$42; ~$42])
@@ -266,7 +266,7 @@ let student_instruction_tests_flo = [
     [(Cmpq, [~$42; ~$43])
     ;(J Le, [~$0x400100])
     ] 
-    (fun m -> m.regs.(rind Rip) = (Int64.add mem_bot 16L))
+    (fun m -> m.regs.(rind Rip) = (Int64.add mem_bot 24L))
   ;
 
   (* load tests *)
