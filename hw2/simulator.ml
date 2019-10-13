@@ -355,6 +355,55 @@ exception Undefined_sym of lbl
 (* Assemble should raise this when a label is defined more than once *)
 exception Redefined_sym of lbl
 
+
+(*
+sort_prog_elems sorts the sections in the program so that all text sections come first.
+Otherwise the order is preserved.
+*)
+let sort_prog_elems (p:prog): prog =
+  let is_text (e:elem) = begin match e.asm with
+    | Text _ -> true
+    | Data _ -> false
+  end in
+  let (text, data) = List.partition is_text p in
+  List.concat [text; data]
+
+let instr_to_sbytes (sym_loc: string -> int64) (instr:ins)  : sbyte list = 
+  [InsB0 instr; InsFrag; InsFrag; InsFrag; InsFrag; InsFrag; InsFrag; InsFrag] (* TODO resolve symbols *)
+
+let data_to_sbytes (sym_loc: string -> int64) (d:data) : sbyte list = 
+  begin match d with
+    | Asciz str -> [] (* TODO *)
+    | Quad (Lit v) -> sbytes_of_int64 v
+    | Quad (Lbl l) -> sbytes_of_int64 @@ sym_loc l
+  end
+
+let asm_to_sbytes (sym_loc: string -> int64) (a:asm)  : sbyte list =
+  begin match a with
+    | Text instructions -> instructions
+                           |> List.map @@ instr_to_sbytes sym_loc
+                           |> List.flatten
+    | Data parts -> parts
+                    |> List.map @@ data_to_sbytes sym_loc
+                    |> List.flatten
+  end
+
+(* asm_size deterimes the size of an assembly section in bytes *)
+let asm_size (a:asm) : int = List.length @@ asm_to_sbytes (fun _ -> 0L) a
+
+(* p must be sorted before calling get_symbol_location *)
+let get_symbol_location (p:prog) (sym:string) : int64 = 
+  let step (loc, found) e = 
+    begin match found || e.lbl == sym with
+      | true -> (loc, true)
+      | false -> (Int64.add loc @@ Int64.of_int @@ asm_size e.asm, false)
+    end
+  in
+  begin match List.fold_left step (mem_bot, false) p with
+    | (loc, true) -> loc
+    | (_, false) -> raise @@ Undefined_sym sym
+  end 
+
 (* Convert an X86 program into an object file:
    - separate the text and data segments
    - compute the size of each segment
