@@ -303,14 +303,8 @@ let interpret_instr_base (instr:ins) (m:mach) : unit =
   end
 
 let interpret_instr (instr:ins) (m:mach) : unit =
-  interpret_instr_base instr m;
-  begin match instr with
-    | Callq, _ -> ()
-    | Retq, _ -> ()
-    | Jmp, _ -> ()
-    | J _, _ -> ()
-    | _ -> incr_rip m
-  end 
+  incr_rip m;
+  interpret_instr_base instr m
 
 let get_instr (m:mach) : ins =
   let addr = map_addr @@ m.regs.(rind Rip) in
