@@ -70,6 +70,63 @@ let make_un_op_test (op:opcode) (a:int64) (res:int64) (flags:flags) =
     (fun m -> Printf.sprintf "res = %s, flags = {fo=%B, fs=%B, fz=%B}"
         (Int64.to_string @@ get_res m) m.flags.fo m.flags.fs m.flags.fz)
 
+let binary_search n = [ gtext "main" 
+                          [ Movq, [~$$"data"; ~%Rbx] (* base *)
+                          ; Movq,  [~$n; ~%Rdi] (* searched val *)
+                          ; Callq, [~$$"search"]
+                          ; Retq, []
+                          ]
+                      ; text "search"
+                          [ Movq, [~$0; ~%R08] (* left *)
+                          ; Movq, [Ind2 (Rbx); ~%R09] (* right *)
+                          ; Addq, [Imm (Lit 8L); ~%Rbx] (* start of array *)
+                          ; Jmp, [~$$"search.loop"]
+                          ]
+                      ; text "search.loop"
+                          [ Cmpq, [~%R09; ~%R08] 
+                          ; J Gt, [~$$"exit.notfound"] (* if l > r then exit  *)
+                          ; Movq, [~%R09; ~%R10] (* middle *)
+                          ; Addq, [~%R08; ~%R10] (* l+r *)
+                          ; Sarq, [~$1; ~%R10]  (* /= 2 *)
+                          ; Movq, [~$0; ~%R11]  (* reset m *)
+                          ; Addq, [~%R10; ~%R11] (* copy m to preserve it*)
+                          ; Shlq, [~$3; ~%R11] (* jump blocks *)
+                          ; Addq, [~%Rbx; ~%R11] (* calc offset = base + m*)
+                          ; Cmpq, [Ind2 (R11); ~%Rdi]
+                          ; J Lt, [~$$"search.less"] (* val < a[middle] then *)
+                          ; J Gt, [~$$"search.greater"] (* val > a[middle] *)
+                          ; Movq, [~%R10; ~%Rax] (* val == a[middle] *)
+                          ; Retq, []
+                          ]
+                      ; text "search.less"
+                          [ Decq, [~%R10]
+                          ; Movq, [~%R10; ~%R09]
+                          ; Jmp,  [~$$"search.loop"]
+                          ]
+                      ; text "search.greater"
+                          [ Incq, [~%R10]
+                          ; Movq, [~%R10; ~%R08]
+                          ; Jmp,  [~$$"search.loop"]
+                          ]
+                      ; text "exit.notfound"
+                          [ Movq,  [~$(-1); ~%Rax]
+                          ; Retq,  []
+                          ]
+                      ; data "data"
+                          [ Quad (Lit 9L) (* length: 10 - 1 *)
+                          ; Quad (Lit 7L)
+                          ; Quad (Lit 13L)
+                          ; Quad (Lit 27L)
+                          ; Quad (Lit 33L)
+                          ; Quad (Lit 42L)
+                          ; Quad (Lit 54L)
+                          ; Quad (Lit 61L)
+                          ; Quad (Lit 69L)
+                          ; Quad (Lit 82L)
+                          ; Quad (Lit 99L)
+                          ]
+                      ]
+
 let student_instruction_tests_flo = [
   make_bin_op_test Addq 123123L 42424242L 42547365L {fo=false; fs=false; fz=false}; (* random add *)
   make_bin_op_test Addq 1L 9223372036854775807L 9223372036854775808L {fo=true; fs=true; fz=false}; (* overflow add: T_Max + 1 = |T_Min| *)
@@ -769,7 +826,7 @@ let student_instruction_tests_roman = [
   ("fib15", program_test (fib_rec 15) 987L);
   ("fib20", program_test (fib_rec 20) 10946L);
   ("fib25", program_test (fib_rec 25) 121393L);
-  (*
+(*
   ("rec_gcd1", program_test (gcd_rec 1 1) 1L);
   ("rec_gcd2", program_test (gcd_rec 2 3) 1L);
   ("rec_gcd3", program_test (gcd_rec 12 21) 3L);
@@ -786,7 +843,7 @@ let student_instruction_tests_roman = [
   ("it_gcd5", program_test (gcd_loop (-2) 3) 1L);
   ("it_gcd6", program_test (gcd_loop 12 (-21)) 3L);
   ("it_gcd7", program_test (gcd_loop (-78624) (-20736)) 864L);
-  *)
+*)
 ]
 (* ##### end: tests roman ##### *)
 
@@ -896,11 +953,11 @@ let make_sub_parse_test (inp:string) (ans:int) =
 
 
 let provided_tests : suite = [
-  (* Test ("student_instruction_tests_flo", student_instruction_tests_flo);
-     Test ("student_instruction_tests_philippe", student_instruction_tests_philippe);
-     Test ("student_instruction_tests_jan", student_instruction_tests_jan);
-     Test ("student_instruction_tests_christian", student_instruction_tests_christian);
-     Test ("student_instruction_tests_roman", student_instruction_tests_roman); *)
+  Test ("student_instruction_tests_flo", student_instruction_tests_flo);
+  Test ("student_instruction_tests_philippe", student_instruction_tests_philippe);
+  Test ("student_instruction_tests_jan", student_instruction_tests_jan);
+  Test ("student_instruction_tests_christian", student_instruction_tests_christian);
+  Test ("student_instruction_tests_roman", student_instruction_tests_roman);
   Test ("Student-Provided Big Test for Part III: Score recorded as PartIIITestCase", [
       make_sub_parse_test "5" 5;
       make_sub_parse_test "84" 84;
@@ -914,5 +971,22 @@ let provided_tests : suite = [
       make_sub_parse_test "(10-1)-5" 4;
       make_sub_parse_test "9-(10-5)" 4;
       make_sub_parse_test "9-((12-2)-5)" 4;
+
+      (* array = [7,13,27,33,42,54,61,69,82,99] *)
+      ("binarysearch7", program_test (binary_search 7) 0L);
+      ("binarysearch13", program_test (binary_search 13) 1L);
+      ("binarysearch27", program_test (binary_search 27) 2L);
+      ("binarysearch33", program_test (binary_search 33) 3L);
+      ("binarysearch42", program_test (binary_search 42) 4L);
+      ("binarysearch54", program_test (binary_search 54) 5L);
+      ("binarysearch61", program_test (binary_search 61) 6L);
+      ("binarysearch69", program_test (binary_search 69) 7L);
+      ("binarysearch82", program_test (binary_search 82) 8L);
+      ("binarysearch99", program_test (binary_search 99) 9L);
+      ("binarysearch1000", program_test (binary_search 1000) (-1L));
+      ("binarysearch1", program_test (binary_search 1) (-1L));
+      ("binarysearch0", program_test (binary_search 0) (-1L));
+      ("binarysearch", program_test (binary_search (-1)) (-1L));
+      ("binarysearch-22", program_test (binary_search (-22)) (-1L));
     ]);
 ] 
