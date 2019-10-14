@@ -450,10 +450,6 @@ let student_instruction_tests_jan = [
      [Movq, [Imm (Lit 0x123456789abcdefL); Ind2 Rsp]; Cmpq, [~$1; ~$2]; Set Gt, [Ind2 Rsp]]
      (fun m -> int64_of_sbytes (sbyte_list m.mem (mem_size-8)) = 0x123456789abcd01L)
   );
-  ("set at mem top does not cause segfault", machine_test_inss
-     [Addq, [~$7; ~%Rsp]; Cmpq, [~$1; ~$2]; Set Gt, [Ind2 Rsp]]
-     (fun m -> (m.mem.(mem_size-1)) = Byte (Char.chr 1))
-  );
   ("jmp", machine_test_inss
      [Jmp, [~$42]]
      (fun m -> m.regs.(rind Rip) = 42L)
@@ -634,12 +630,6 @@ let setb_1 = test_machine
     ;InsB0 (Cmpq, [~$2; ~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
     ;InsB0 (Set Le, [~%Rax]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
 
-let setb_2 = test_machine
-    [InsB0 (Movq, [(Imm (Lit 0xFFFFFFFFFFFFFFFFL)); Ind2 Rsp]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
-    ;InsB0 (Addq, [~$7; ~%Rsp]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
-    ;InsB0 (Cmpq, [~$2; ~$1]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag
-    ;InsB0 (Set Gt, [Ind2 Rsp]);InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag;InsFrag]
-
 let student_instruction_tests_christian = [
   ("cc_sarq_0", cc_from_to 2 cc_sarq_0 (false, false, false) (false, false, false));
   ("cc_sarq_1", cc_from_to 2 cc_sarq_1 (false, false, false) (false, false, false));
@@ -658,9 +648,6 @@ let student_instruction_tests_christian = [
   ("cc_sub_1", cso_test 2 cso_sub_1 true); 
   ("setb_1", machine_test "only to change the lowest byte" 3 setb_1 (fun m -> 
        m.regs.(rind Rax) = 0xFFFFFFFFFFFFFF01L
-     ));  
-  ("setb_2", machine_test "only to change the lowest byte" 4 setb_2 (fun m -> 
-       m.mem.(0xffff) = Byte(Char.chr 0)
      ));  
 ]
 (* ##### end: tests christian ##### *)
@@ -693,9 +680,9 @@ let fib_rec n = [ gtext "main"
 
 (* gcd_loop: computing the gcd of 2 numbers with a loop instead of recursively *)
 let gcd_loop a b = [ gtext "main"
-                      (* move a to rdi, and b to rsi *)
-                      [ Movq,  [~$a; ~%Rdi]
-                      ; Movq,  [~$b; ~%Rsi]
+                       (* move a to rdi, and b to rsi *)
+                       [ Movq,  [~$a; ~%Rdi]
+                       ; Movq,  [~$b; ~%Rsi]
                        ; Cmpq, [~$0; ~%Rsi]
                        ; J Ge, [Ind3 (Lit 8L, Rip)] (* If input was positive: no negation needed *)
                        ; Negq, [~%Rsi] (* otherwise negate input / make it positive *)
@@ -704,26 +691,26 @@ let gcd_loop a b = [ gtext "main"
                        ; Negq, [~%Rdi]
                        ; Callq, [~$$"gcd"]
                        ; Retq,  []
-                      ]
-                  ; text "gcd"
+                       ]
+                   ; text "gcd"
                        [ Cmpq, [~%Rdi; ~%Rsi] (* we want a > b, if that is not the case: swap them *)
                        ; J Le, [Ind3 (Lit 32L, Rip)]
-                      (* swap section *)
-                      ; Movq, [~%Rsi; ~%R10]
-                      ; Movq, [~%Rdi; ~%Rsi]
-                      ; Movq, [~%R10; ~%Rdi]
-                      (* if the smaller one of the variables is 0, then we return :D *)
-                      ; Cmpq, [~$0; ~%Rsi]
-                      ; J Eq, [~$$"return"]
-                      (* otherwise sub b from a, then get back to loop *)
-                      ; Subq, [~%Rsi; ~%Rdi]
-                      ; Jmp, [~$$"gcd"]
-                      ]
-                  ; text "return" (* return section: return a *)
-                      [ Movq, [~%Rdi; ~%Rax]
-                      ; Retq, []
-                      ]
-                  ]
+                       (* swap section *)
+                       ; Movq, [~%Rsi; ~%R10]
+                       ; Movq, [~%Rdi; ~%Rsi]
+                       ; Movq, [~%R10; ~%Rdi]
+                       (* if the smaller one of the variables is 0, then we return :D *)
+                       ; Cmpq, [~$0; ~%Rsi]
+                       ; J Eq, [~$$"return"]
+                       (* otherwise sub b from a, then get back to loop *)
+                       ; Subq, [~%Rsi; ~%Rdi]
+                       ; Jmp, [~$$"gcd"]
+                       ]
+                   ; text "return" (* return section: return a *)
+                       [ Movq, [~%Rdi; ~%Rax]
+                       ; Retq, []
+                       ]
+                   ]
 (* NOTE: to show off how good our assemble function is, we arranged the sections as bad as possible *)
 let gcd_rec a b = [ text "exita"
                       [ Movq,  [~%Rsi; ~%Rax]
@@ -799,6 +786,7 @@ let student_instruction_tests_roman = [
   ("it_gcd5", program_test (gcd_loop (-2) 3) 1L);
   ("it_gcd6", program_test (gcd_loop 12 (-21)) 3L);
   ("it_gcd7", program_test (gcd_loop (-78624) (-20736)) 864L);
+  *)
 ]
 (* ##### end: tests roman ##### *)
 
