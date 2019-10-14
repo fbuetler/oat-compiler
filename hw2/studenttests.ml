@@ -19,7 +19,7 @@ let opcode_to_string (op:opcode) : string =
     | Sarq -> "Sarq"
     | Shlq -> "Shlq"
     | Shrq -> "Shrq"
-    | Set _ -> "cc"
+    | Set _ -> "Set"
     | Leaq -> "Leaq"
     | Movq -> "Movq"
     | Pushq -> "Pushq"
@@ -28,7 +28,7 @@ let opcode_to_string (op:opcode) : string =
     | Callq -> "Callq"
     | Retq -> "Retq"
     | Jmp -> "Jmp"
-    | J _ -> "cc"
+    | J _ -> "J"
   end
 
 let make_instr_test (label:string) (instructions:ins list) (check: mach -> bool) =
@@ -792,11 +792,62 @@ let student_instruction_tests_roman = [
 
 (* ##### end: tests christian ##### *)
 
+let run_debug (m:mach) : int64 = 
+  while m.regs.(rind Rip) <> exit_addr do
+    let op_str = opcode_to_string @@ fst @@ get_instr m in
+    print_string @@ (op_str ^ "\n");
+    step m
+  done;
+  m.regs.(rind Rax)
+
+let program_test_debug (p:prog) (ans:int64) () =
+  print_string ("begin program_test_debug\n");
+  let res = assemble p |> load |> run_debug in
+  if res <> ans
+  then failwith (Printf.sprintf("Expected %Ld but got %Ld") ans res)
+  else ();
+  print_string ("\n")
+
+let make_sub_parse_test (inp:string) (ans:int) = 
+  let prog = [ gtext "main"
+                 [ Movq, [~$$"input"; ~%Rcx]
+                 ; Callq,  [~$$"takeLit"]
+                 ;Retq,  []
+                 ]
+             ; text "takeLit"
+                 [ Movq, [~$0; ~%Rax]
+                 ]
+             ; text "takeLit.loopStart"
+                 [ Movq, [Ind2 Rcx; ~%Rdx]
+                 ; Andq, [~$255; ~%Rdx]
+                 ; Subq, [~$48; ~%Rdx]
+                 ; J Lt, [~$$"takeLit.end"]
+                 ; Movq, [~%Rdx; ~%R08]
+                 ; Subq, [~$9; ~%R08]
+                 ; J Gt, [~$$"takeLit.end"]
+                 ; Imulq, [~$10; ~%Rax]
+                 ; Addq, [~%Rdx; ~%Rax]
+                 ; Incq, [~%Rcx]
+                 ; Jmp, [~$$"takeLit.loopStart"]
+                 ]
+             ; text "takeLit.end"
+                 [ Retq,  []
+                 ]
+             ; data "input"
+                 [ Asciz inp ]
+             ] in
+  ("sub_parse (" ^ inp ^ ")", program_test prog (Int64.of_int ans))
+
+
 let provided_tests : suite = [
-  Test ("student_instruction_tests_flo", student_instruction_tests_flo);
-  Test ("student_instruction_tests_philippe", student_instruction_tests_philippe);
-  Test ("student_instruction_tests_jan", student_instruction_tests_jan);
-  Test ("student_instruction_tests_christian", student_instruction_tests_christian);
-  Test ("student_instruction_tests_roman", student_instruction_tests_roman);
-  Test ("Student-Provided Big Test for Part III: Score recorded as PartIIITestCase", []);
+  (* Test ("student_instruction_tests_flo", student_instruction_tests_flo);
+     Test ("student_instruction_tests_philippe", student_instruction_tests_philippe);
+     Test ("student_instruction_tests_jan", student_instruction_tests_jan);
+     Test ("student_instruction_tests_christian", student_instruction_tests_christian);
+     Test ("student_instruction_tests_roman", student_instruction_tests_roman); *)
+  Test ("Student-Provided Big Test for Part III: Score recorded as PartIIITestCase", [
+      make_sub_parse_test "5" 5;
+      make_sub_parse_test "84" 84;
+      make_sub_parse_test "84walrus" 84;
+    ]);
 ] 
