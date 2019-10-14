@@ -692,16 +692,22 @@ let fib_rec n = [ gtext "main"
                 ]
 
 (* gcd_loop: computing the gcd of 2 numbers with a loop instead of recursively *)
-let gcd_rec a b = [ gtext "main"
+let gcd_loop a b = [ gtext "main"
                       (* move a to rdi, and b to rsi *)
                       [ Movq,  [~$a; ~%Rdi]
                       ; Movq,  [~$b; ~%Rsi]
+                       ; Cmpq, [~$0; ~%Rsi]
+                       ; J Ge, [Ind3 (Lit 8L, Rip)] (* If input was positive: no negation needed *)
+                       ; Negq, [~%Rsi] (* otherwise negate input / make it positive *)
+                       ; Cmpq, [~$0; ~%Rdi] (* and the same for the other input *)
+                       ; J Ge, [Ind3 (Lit 8L, Rip)]
+                       ; Negq, [~%Rdi]
+                       ; Callq, [~$$"gcd"]
+                       ; Retq,  []
                       ]
                   ; text "gcd"
-                      (* to try something new, we do a stupid jump via a stupid indirect *)
-                      [ Movq, [~$48; ~%R15]
-                      ; Cmpq, [~%Rdi; ~%Rsi] (* we want a >= b, if that is not the case: swap them *)
-                      ; J Lt, [Ind3 (Lbl "gcd", Rsi)]
+                       [ Cmpq, [~%Rdi; ~%Rsi] (* we want a > b, if that is not the case: swap them *)
+                       ; J Le, [Ind3 (Lit 32L, Rip)]
                       (* swap section *)
                       ; Movq, [~%Rsi; ~%R10]
                       ; Movq, [~%Rdi; ~%Rsi]
@@ -728,10 +734,10 @@ let gcd_rec a b = [ text "exita"
                       ; Movq,  [~$b; ~%Rsi]
                       (* if negaitve inputs were given, negate them (make them positive) *)
                       ; Cmpq, [~$0; ~%Rsi]
-                      ; J Ge, [Ind3 (Lit 16L, Rip)] (* If input was positive: no negation needed *)
+                      ; J Ge, [Ind3 (Lit 8L, Rip)] (* If input was positive: no negation needed *)
                       ; Negq, [~%Rsi] (* otherwise negate input / make it positive *)
                       ; Cmpq, [~$0; ~%Rdi] (* and the same for the other input *)
-                      ; J Ge, [Ind3 (Lit 16L, Rip)]
+                      ; J Ge, [Ind3 (Lit 8L, Rip)]
                       ; Negq, [~%Rdi]
                       ; Callq, [~$$"gcd"]
                       ; Retq,  []
@@ -747,7 +753,7 @@ let gcd_rec a b = [ text "exita"
                       ; Cmpq, [~$0; ~%Rdi] (* compare a with 0  *)
                       ; J Eq, [~$$"exita"] (* If a = 0: return b*)
                       ; Cmpq, [~%Rsi; ~%Rdi] (* compute a - b *)
-                      ; J Le, [Ind3 (Lit 32L, Rip)] (* if a <= b, then skip next 3 instructions*)
+                      ; J Le, [Ind3 (Lit 24L, Rip)] (* if a <= b, then skip next 3 instructions*)
                       (* CASE: a >= b: return gcd(a - b, b) *)
                       ; Subq, [~%Rsi; ~%Rdi]
                       ; Callq, [~$$"gcd"]
@@ -785,15 +791,14 @@ let student_instruction_tests_roman = [
   ("rec_gcd5", program_test (gcd_rec (-2) 3) 1L);
   ("rec_gcd6", program_test (gcd_rec 12 (-21)) 3L);
   ("rec_gcd7", program_test (gcd_rec (-78624) (-20736)) 864L);
-  ("it_gcd1", program_test (gcd_rec 1 1) 1L);
-  ("it_gcd2", program_test (gcd_rec 2 3) 1L);
-  ("it_gcd3", program_test (gcd_rec 12 21) 3L);
-  ("it_gcd4", program_test (gcd_rec 78624 20736) 864L);
+  ("it_gcd1", program_test (gcd_loop 1 1) 1L);
+  ("it_gcd2", program_test (gcd_loop 2 3) 1L);
+  ("it_gcd3", program_test (gcd_loop 12 21) 3L);
+  ("it_gcd4", program_test (gcd_loop 78624 20736) 864L);
   (* repeat the previous three tests, just with some negative inputs*)
-  ("it_gcd5", program_test (gcd_rec (-2) 3) 1L);
-  ("it_gcd6", program_test (gcd_rec 12 (-21)) 3L);
-  ("it_gcd7", program_test (gcd_rec (-78624) (-20736)) 864L);
-  *)
+  ("it_gcd5", program_test (gcd_loop (-2) 3) 1L);
+  ("it_gcd6", program_test (gcd_loop 12 (-21)) 3L);
+  ("it_gcd7", program_test (gcd_loop (-78624) (-20736)) 864L);
 ]
 (* ##### end: tests roman ##### *)
 
