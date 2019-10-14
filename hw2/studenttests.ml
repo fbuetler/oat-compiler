@@ -793,8 +793,14 @@ let student_instruction_tests_roman = [
 (* ##### end: tests christian ##### *)
 
 let run_debug (m:mach) : int64 = 
+  let call_depth = ref 0 in
   while m.regs.(rind Rip) <> exit_addr do
-    print_string @@ ((string_of_ins @@ get_instr m) ^ "\n");
+    Printf.printf "%d %s\n" !call_depth (string_of_ins @@ get_instr m);
+    begin match get_instr m with
+      | Callq, _ -> call_depth := !call_depth + 1
+      | Retq, _ -> call_depth := !call_depth - 1
+      | _ -> ()
+    end;
     step m
   done;
   m.regs.(rind Rax)
@@ -810,11 +816,38 @@ let program_test_debug (p:prog) (ans:int64) () =
 let make_sub_parse_test (inp:string) (ans:int) = 
   let prog = [ gtext "main"
                  [ Movq, [~$$"input"; ~%Rcx]
-                 ; Callq,  [~$$"takeLit"]
+                 ; Callq,  [~$$"takeExpr"]
                  ;Retq,  []
                  ]
+
+             ; text "takeExpr"
+                 [ Callq, [~$$"takeSide"]
+                 ; Retq, []
+                 ]
+
+             ; text "takeSide"
+                 [ Movq, [Ind2 Rcx; ~%Rdx]
+                 ; Andq, [~$255; ~%Rdx]
+                 ; Cmpq, [~$40; ~%Rdx]
+                 ; J Neq, [~$$"takeSide.lit"]
+                 ]
+             ; text "takeSide.paren"
+                 [ Incq, [~%Rcx]
+                 ; Callq, [~$$"takeExpr"]
+                 ; Incq, [~%Rcx]
+                 ; Jmp, [~$$"takeSide.end"]
+                 ]
+             ; text "takeSide.lit"
+                 [ Callq, [~$$"takeLit"]
+                 ; Jmp, [~$$"takeSide.end"]
+                 ]
+             ; text "takeSide.end"
+                 [ Retq,  []
+                 ]
+
              ; text "takeLit"
-                 [ Movq, [~$0; ~%Rax]
+                 [  Pushq, [~%R08]
+                 ; Movq, [~$0; ~%Rax]
                  ]
              ; text "takeLit.loopStart"
                  [ Movq, [Ind2 Rcx; ~%Rdx]
@@ -830,12 +863,19 @@ let make_sub_parse_test (inp:string) (ans:int) =
                  ; Jmp, [~$$"takeLit.loopStart"]
                  ]
              ; text "takeLit.end"
-                 [ Retq,  []
+                 [ Popq, [~%R08]
+                 ; Retq,  []
                  ]
+
+             ; text "debug"
+                 [ Movq, [~$123; ~%Rax]
+                 ; Retq,  []
+                 ]
+
              ; data "input"
                  [ Asciz inp ]
              ] in
-  ("sub_parse (" ^ inp ^ ")", program_test prog (Int64.of_int ans))
+  ("sub_parse " ^ inp, program_test_debug prog (Int64.of_int ans))
 
 
 let provided_tests : suite = [
@@ -848,5 +888,7 @@ let provided_tests : suite = [
       make_sub_parse_test "5" 5;
       make_sub_parse_test "84" 84;
       make_sub_parse_test "84walrus" 84;
+      make_sub_parse_test "(5)" 5;
+      make_sub_parse_test "5-3" 2;
     ]);
 ] 
