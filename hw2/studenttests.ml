@@ -794,8 +794,7 @@ let student_instruction_tests_roman = [
 
 let run_debug (m:mach) : int64 = 
   while m.regs.(rind Rip) <> exit_addr do
-    let op_str = opcode_to_string @@ fst @@ get_instr m in
-    print_string @@ (op_str ^ "\n");
+    print_string @@ ((string_of_ins @@ get_instr m) ^ "\n");
     step m
   done;
   m.regs.(rind Rax)
