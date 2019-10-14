@@ -19,7 +19,7 @@ let opcode_to_string (op:opcode) : string =
     | Sarq -> "Sarq"
     | Shlq -> "Shlq"
     | Shrq -> "Shrq"
-    | Set _ -> "cc"
+    | Set _ -> "Set"
     | Leaq -> "Leaq"
     | Movq -> "Movq"
     | Pushq -> "Pushq"
@@ -28,7 +28,7 @@ let opcode_to_string (op:opcode) : string =
     | Callq -> "Callq"
     | Retq -> "Retq"
     | Jmp -> "Jmp"
-    | J _ -> "cc"
+    | J _ -> "J"
   end
 
 let make_instr_test (label:string) (instructions:ins list) (check: mach -> bool) =
@@ -126,27 +126,6 @@ let binary_search n = [ gtext "main"
                           ; Quad (Lit 99L)
                           ]
                       ]
-
-let student_instruction_tests = [
-  (* array = [7,13,27,33,42,54,61,69,82,99] *)
-
-  ("binarysearch7", program_test (binary_search 7) 0L);
-  ("binarysearch13", program_test (binary_search 13) 1L);
-  ("binarysearch27", program_test (binary_search 27) 2L);
-  ("binarysearch33", program_test (binary_search 33) 3L);
-  ("binarysearch42", program_test (binary_search 42) 4L);
-  ("binarysearch54", program_test (binary_search 54) 5L);
-  ("binarysearch61", program_test (binary_search 61) 6L);
-  ("binarysearch69", program_test (binary_search 69) 7L);
-  ("binarysearch82", program_test (binary_search 82) 8L);
-  ("binarysearch99", program_test (binary_search 99) 9L);
-
-  ("binarysearch1000", program_test (binary_search 1000) (-1L));
-  ("binarysearch1", program_test (binary_search 1) (-1L));
-  ("binarysearch0", program_test (binary_search 0) (-1L));
-  ("binarysearch", program_test (binary_search (-1)) (-1L));
-  ("binarysearch-22", program_test (binary_search (-22)) (-1L));
-]
 
 let student_instruction_tests_flo = [
   make_bin_op_test Addq 123123L 42424242L 42547365L {fo=false; fs=false; fz=false}; (* random add *)
@@ -870,11 +849,120 @@ let student_instruction_tests_roman = [
 
 (* ##### end: tests christian ##### *)
 
+let run_debug (m:mach) : int64 = 
+  let call_depth = ref 0 in
+  while m.regs.(rind Rip) <> exit_addr do
+    Printf.printf "%d %s\n" !call_depth (string_of_ins @@ get_instr m);
+    begin match get_instr m with
+      | Callq, _ -> call_depth := !call_depth + 1
+      | Retq, _ -> call_depth := !call_depth - 1
+      | _ -> ()
+    end;
+    step m
+  done;
+  m.regs.(rind Rax)
+
+let program_test_debug (p:prog) (ans:int64) () =
+  print_string ("begin program_test_debug\n");
+  let res = assemble p |> load |> run_debug in
+  if res <> ans
+  then failwith (Printf.sprintf("Expected %Ld but got %Ld") ans res)
+  else ();
+  print_string ("\n")
+
+let make_sub_parse_test (inp:string) (ans:int) = 
+  let prog = [ gtext "main"
+                 [ Movq, [~$$"input"; ~%Rcx]
+                 ; Callq,  [~$$"takeExpr"]
+                 ;Retq,  []
+                 ]
+
+             ; text "takeExpr"
+                 [ Callq, [~$$"takeSide"]
+                 ; Retq, []
+                 ]
+
+             ; text "takeSide"
+                 [ Movq, [Ind2 Rcx; ~%Rdx]
+                 ; Andq, [~$255; ~%Rdx]
+                 ; Cmpq, [~$40; ~%Rdx]
+                 ; J Neq, [~$$"takeSide.lit"]
+                 ]
+             ; text "takeSide.paren"
+                 [ Incq, [~%Rcx]
+                 ; Callq, [~$$"takeExpr"]
+                 ; Incq, [~%Rcx]
+                 ; Jmp, [~$$"takeSide.end"]
+                 ]
+             ; text "takeSide.lit"
+                 [ Callq, [~$$"takeLit"]
+                 ; Jmp, [~$$"takeSide.end"]
+                 ]
+             ; text "takeSide.end"
+                 [ Retq,  []
+                 ]
+
+             ; text "takeLit"
+                 [  Pushq, [~%R08]
+                 ; Movq, [~$0; ~%Rax]
+                 ]
+             ; text "takeLit.loopStart"
+                 [ Movq, [Ind2 Rcx; ~%Rdx]
+                 ; Andq, [~$255; ~%Rdx]
+                 ; Subq, [~$48; ~%Rdx]
+                 ; J Lt, [~$$"takeLit.end"]
+                 ; Movq, [~%Rdx; ~%R08]
+                 ; Subq, [~$9; ~%R08]
+                 ; J Gt, [~$$"takeLit.end"]
+                 ; Imulq, [~$10; ~%Rax]
+                 ; Addq, [~%Rdx; ~%Rax]
+                 ; Incq, [~%Rcx]
+                 ; Jmp, [~$$"takeLit.loopStart"]
+                 ]
+             ; text "takeLit.end"
+                 [ Popq, [~%R08]
+                 ; Retq,  []
+                 ]
+
+             ; text "debug"
+                 [ Movq, [~$123; ~%Rax]
+                 ; Retq,  []
+                 ]
+
+             ; data "input"
+                 [ Asciz inp ]
+             ] in
+  ("sub_parse " ^ inp, program_test_debug prog (Int64.of_int ans))
+
+
 let provided_tests : suite = [
   Test ("student_instruction_tests_flo", student_instruction_tests_flo);
   Test ("student_instruction_tests_philippe", student_instruction_tests_philippe);
   Test ("student_instruction_tests_jan", student_instruction_tests_jan);
   Test ("student_instruction_tests_christian", student_instruction_tests_christian);
   Test ("student_instruction_tests_roman", student_instruction_tests_roman);
-  Test ("Student-Provided Big Test for Part III: Score recorded as PartIIITestCase", student_instruction_tests);
+  Test ("Student-Provided Big Test for Part III: Score recorded as PartIIITestCase", [
+      make_sub_parse_test "5" 5;
+      make_sub_parse_test "84" 84;
+      make_sub_parse_test "84walrus" 84;
+      make_sub_parse_test "(5)" 5;
+      make_sub_parse_test "5-3" 2;
+
+      (* array = [7,13,27,33,42,54,61,69,82,99] *)
+      ("binarysearch7", program_test (binary_search 7) 0L);
+      ("binarysearch13", program_test (binary_search 13) 1L);
+      ("binarysearch27", program_test (binary_search 27) 2L);
+      ("binarysearch33", program_test (binary_search 33) 3L);
+      ("binarysearch42", program_test (binary_search 42) 4L);
+      ("binarysearch54", program_test (binary_search 54) 5L);
+      ("binarysearch61", program_test (binary_search 61) 6L);
+      ("binarysearch69", program_test (binary_search 69) 7L);
+      ("binarysearch82", program_test (binary_search 82) 8L);
+      ("binarysearch99", program_test (binary_search 99) 9L);
+      ("binarysearch1000", program_test (binary_search 1000) (-1L));
+      ("binarysearch1", program_test (binary_search 1) (-1L));
+      ("binarysearch0", program_test (binary_search 0) (-1L));
+      ("binarysearch", program_test (binary_search (-1)) (-1L));
+      ("binarysearch-22", program_test (binary_search (-22)) (-1L));
+    ]);
 ] 
