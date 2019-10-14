@@ -228,13 +228,13 @@ let arith_un_op (operation: int64 -> Int64_overflow.t) (src:operand) (m:mach) : 
   set_flags res.overflow res.value m;
   save_res res.value src m
 
-let shift_op (operation: int64 -> int -> int64) (decide_fo: int64 -> bool) (amt:operand) (dest:operand) (m:mach) : unit =
+let shift_op (operation: int64 -> int -> int64) (decide_fo: int64 -> bool -> bool) (amt:operand) (dest:operand) (m:mach) : unit =
   let input = interpret_val dest m in
   let amt_val = Int64.to_int @@ interpret_val amt m in
   let output = operation input amt_val in
   begin match amt_val with
     | 0 -> ()
-    | 1 -> set_flags (decide_fo input) output m
+    | 1 -> set_flags (decide_fo input m.flags.fo) output m
     | _ -> set_flags m.flags.fo output m
   end;
   save_res output dest m
@@ -269,13 +269,13 @@ let interpret_instr_base (instr:ins) (m:mach) : unit =
     | Notq, [src] -> save_res (Int64.lognot @@ interpret_val src m) src m
     (* Bit-manipulation Instructions *)
     | Sarq, [amt; dest] ->
-      let decide_fo _ = false in
+      let decide_fo _ _ = false in
       shift_op Int64.shift_right decide_fo amt dest m
     | Shlq, [amt; dest] -> 
-      let decide_fo input = (msb_as_bool input) <> (msb_as_bool @@ Int64.shift_left input 1) in
+      let decide_fo input fo = ((msb_as_bool input) <> (msb_as_bool @@ Int64.shift_left input 1)) || fo in
       shift_op Int64.shift_left decide_fo amt dest m
     | Shrq, [amt; dest] ->
-      let decide_fo input= msb_as_bool input in
+      let decide_fo input _ = msb_as_bool input in
       shift_op Int64.shift_right_logical decide_fo amt dest m
     | Set cc, [dest] ->
       let b = if interp_cnd m.flags cc then Int64.one else Int64.zero in
