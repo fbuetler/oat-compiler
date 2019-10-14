@@ -941,11 +941,6 @@ let make_sub_parse_test (inp:string) (ans:int) =
                  ; Retq,  []
                  ]
 
-             ; text "debug"
-                 [ Movq, [~$123; ~%Rax]
-                 ; Retq,  []
-                 ]
-
              ; data "input"
                  [ Asciz inp ]
              ] in
