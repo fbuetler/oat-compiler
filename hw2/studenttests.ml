@@ -817,12 +817,28 @@ let make_sub_parse_test (inp:string) (ans:int) =
   let prog = [ gtext "main"
                  [ Movq, [~$$"input"; ~%Rcx]
                  ; Callq,  [~$$"takeExpr"]
-                 ;Retq,  []
+                 ; Retq,  []
                  ]
 
              ; text "takeExpr"
                  [ Callq, [~$$"takeSide"]
-                 ; Retq, []
+                 ; Movq, [Ind2 Rcx; ~%Rdx]
+                 ; Andq, [~$255; ~%Rdx]
+                 ; Cmpq, [~$45; ~%Rdx]
+                 ; J Neq, [~$$"takeExpr.lit"]
+                 ; Incq, [~%Rcx]
+                 ; Pushq, [~%Rax]
+                 ; Callq, [~$$"takeSide"]
+                 ; Popq, [~%R08]
+                 ; Subq, [~%Rax; ~%R08]
+                 ; Movq, [~%R08; ~%Rax]
+                 ; Jmp, [~$$"takeExpr.end"]
+                 ]
+             ; text "takeExpr.lit"
+                 [ Popq, [~%R08]
+                 ]
+             ; text "takeExpr.end"
+                 [ Retq,  []
                  ]
 
              ; text "takeSide"
@@ -835,6 +851,7 @@ let make_sub_parse_test (inp:string) (ans:int) =
                  [ Incq, [~%Rcx]
                  ; Callq, [~$$"takeExpr"]
                  ; Incq, [~%Rcx]
+                 (* ; Movq, [~$5; ~%Rax] *)
                  ; Jmp, [~$$"takeSide.end"]
                  ]
              ; text "takeSide.lit"
@@ -875,7 +892,7 @@ let make_sub_parse_test (inp:string) (ans:int) =
              ; data "input"
                  [ Asciz inp ]
              ] in
-  ("sub_parse " ^ inp, program_test_debug prog (Int64.of_int ans))
+  ("sub_parse " ^ inp, program_test prog (Int64.of_int ans))
 
 
 let provided_tests : suite = [
@@ -890,5 +907,12 @@ let provided_tests : suite = [
       make_sub_parse_test "84walrus" 84;
       make_sub_parse_test "(5)" 5;
       make_sub_parse_test "5-3" 2;
+      make_sub_parse_test "(5-3)" 2;
+      make_sub_parse_test "(10-1)-5" 4;
+      make_sub_parse_test "9-(10-5)" 4;
+      make_sub_parse_test "9-((12-2)-5)" 4;
+      make_sub_parse_test "(10-1)-5" 4;
+      make_sub_parse_test "9-(10-5)" 4;
+      make_sub_parse_test "9-((12-2)-5)" 4;
     ]);
 ] 
