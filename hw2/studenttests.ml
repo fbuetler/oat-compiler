@@ -971,6 +971,10 @@ let provided_tests : suite = [
       make_sub_parse_test "(10-1)-5" 4;
       make_sub_parse_test "9-(10-5)" 4;
       make_sub_parse_test "9-((12-2)-5)" 4;
+      make_sub_parse_test "(7-(1-2))-((12-2)-5)" 3;
+      make_sub_parse_test "((7-(1-2))-((12-2)-5))" 3;
+      make_sub_parse_test "(1-(1-(1-(1-1))))" 1;
+      make_sub_parse_test "((((1-1)-1)-1)-1)" (-3);
 
       (* array = [7,13,27,33,42,54,61,69,82,99] *)
       ("binarysearch7", program_test (binary_search 7) 0L);
