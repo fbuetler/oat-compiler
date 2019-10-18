@@ -6,7 +6,7 @@ test: main.native
 
 .PHONY: main.native
 main.native:
-	ocamlbuild -Is util,x86,ll,grading -libs unix,str,nums main.native -use-menhir
+	ocamlbuild -use-ocamlfind -Is util,x86,ll,grading -libs unix,str main.native -use-menhir
 
 .PHONY: clean
 clean:
