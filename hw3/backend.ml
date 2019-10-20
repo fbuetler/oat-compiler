@@ -22,6 +22,8 @@ let compile_cnd = function
   | Ll.Sgt -> X86.Gt
   | Ll.Sge -> X86.Ge
 
+(* Defines sets of strings *)
+module SS = Set.Make(String)
 
 (* locals and layout -------------------------------------------------------- *)
 
@@ -249,6 +251,12 @@ let arg_loc (n : int) : operand =
     (* +2 since we ignore "saved RBP" and "return address" https://eli.thegreenplace.net/images/2011/08/x64_frame_nonleaf.png *)
   end
 
+(* ids_from_block returns a set of all uids used in a block*)
+let ids_from_block (b: block) : SS.t =
+  List.fold_left
+    (fun set el -> SS.add el set)
+    SS.empty
+    ((fst b.term)::(List.map fst b.insns))
 
 (* We suggest that you create a helper function that computes the 
    stack layout for a given function declaration.
@@ -260,7 +268,10 @@ let arg_loc (n : int) : operand =
 
 *)
 let stack_layout (args: Ll.uid list) ((block, lbled_blocks): cfg) : layout =
-  failwith "stack_layout not implemented"
+  let blocks = block::(List.map snd lbled_blocks) in
+  let ids_from_blocks = List.fold_left (fun set b -> SS.union set @@ ids_from_block b) SS.empty blocks in
+  let ids = List.sort String.compare @@ (args @ (SS.elements ids_from_blocks)) in
+  List.mapi (fun i id -> (id, Ind3 (Lit (Int64.of_int @@ -8 * (i + 1)), Rbp))) ids
 
 (* The code for the entry-point of a function must do several things:
 
