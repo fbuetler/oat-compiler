@@ -306,7 +306,7 @@ let compile_fdecl tdecls name { f_ty; f_param; f_cfg } : X86.prog =
   [
     {
       lbl = name;
-      global = false;
+      global = true;
       asm = Text (List.concat [initialization_asm; copy_vars_asm]);
     };
   ]
