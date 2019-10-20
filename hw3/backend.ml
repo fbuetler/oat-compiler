@@ -220,7 +220,13 @@ let compile_insn ctxt (uid, i) : X86.ins list =
 *)
 let compile_terminator ctxt t: ins list =
   begin match t with
-    | Ret (Void, _) -> [(* TODO *)]
+    | Ret (Void, _) -> [
+        (* based on the following line from http://tldp.org/LDP/LG/issue94/ramankutty.html*)
+        (* "movl %ebp, %esp; popl %ebp ret" *)
+        Movq, [~%Rbp; ~%Rsp];
+        Popq, [~%Rbp];
+        Retq, [];
+      ]
     | _ -> failwith "compile_terminator not implemented for this terminator"
   end
 
