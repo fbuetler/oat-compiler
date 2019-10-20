@@ -300,9 +300,10 @@ let compile_fdecl tdecls name { f_ty; f_param; f_cfg } : X86.prog =
     (* make space for everything we will have on the stack (assumes layout has no empty space between items) *)
     Addq, [~$(List.length layout); ~%Rsp];
   ] in
-  let copy_vars_asm = [
-    (* TODO copy variables to stack *)
-  ] in
+  let copy_vars_asm =
+    List.mapi
+      (fun i p -> Movq, [arg_loc i; lookup layout p])
+      f_param in
   [
     {
       lbl = name;
