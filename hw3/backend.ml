@@ -259,7 +259,7 @@ let arg_loc (n : int) : operand =
    - see the discusion about locals 
 
 *)
-let stack_layout args (block, lbled_blocks) : layout =
+let stack_layout (args: Ll.uid list) ((block, lbled_blocks): cfg) : layout =
   failwith "stack_layout not implemented"
 
 (* The code for the entry-point of a function must do several things:
@@ -279,6 +279,7 @@ let stack_layout args (block, lbled_blocks) : layout =
      to hold all of the local stack slots.
 *)
 let compile_fdecl tdecls name { f_ty; f_param; f_cfg } =
+  let layout = stack_layout f_param f_cfg in 
   failwith "compile_fdecl unimplemented"
 
 
