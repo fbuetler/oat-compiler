@@ -251,7 +251,7 @@ let arg_loc (n : int) : operand =
     (* +2 since we ignore "saved RBP" and "return address" https://eli.thegreenplace.net/images/2011/08/x64_frame_nonleaf.png *)
   end
 
-(* ids_from_block returns a set of all uids used in a block*)
+(* ids_from_block returns a set of all uids assigned to in a block*)
 let ids_from_block (b: block) : SS.t =
   List.fold_left
     (fun set el -> SS.add el set)
