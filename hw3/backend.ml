@@ -140,7 +140,7 @@ let compile_call ctxt fop args =
      Your function should simply return 0 in those cases
 *)
 let rec size_ty tdecls t : int =
-failwith "size_ty not implemented"
+  failwith "size_ty not implemented"
 
 
 
@@ -156,22 +156,22 @@ failwith "size_ty not implemented"
 
    4. subsequent indices are interpreted according to the type t:
 
-     - if t is a struct, the index must be a constant n and it 
+   - if t is a struct, the index must be a constant n and it 
        picks out the n'th element of the struct. [ NOTE: the offset
        within the struct of the n'th element is determined by the 
        sizes of the types of the previous elements ]
 
-     - if t is an array, the index can be any operand, and its
+   - if t is an array, the index can be any operand, and its
        value determines the offset within the array.
- 
-     - if t is any other type, the path is invalid
+
+   - if t is any other type, the path is invalid
 
    5. if the index is valid, the remainder of the path is computed as
       in (4), but relative to the type f the sub-element picked out
       by the path so far
 *)
 let compile_gep ctxt (op : Ll.ty * Ll.operand) (path: Ll.operand list) : ins list =
-failwith "compile_gep not implemented"
+  failwith "compile_gep not implemented"
 
 
 
@@ -199,7 +199,7 @@ failwith "compile_gep not implemented"
    - Bitcast: does nothing interesting at the assembly level
 *)
 let compile_insn ctxt (uid, i) : X86.ins list =
-      failwith "compile_insn not implemented"
+  failwith "compile_insn not implemented"
 
 
 
@@ -241,7 +241,13 @@ let compile_lbl_block lbl ctxt blk : elem =
    [ NOTE: the first six arguments are numbered 0 .. 5 ]
 *)
 let arg_loc (n : int) : operand =
-failwith "arg_loc not implemented"
+  let regs = [Rdi; Rsi; Rdx; Rcx; R08; R09] in
+  begin match List.nth_opt regs n with
+    | Some v -> Reg v
+    | None -> Ind3 (Lit (Int64.of_int @@ 8 * (n-6+2)), Rbp)
+    (* -6 since the 6th argument is the first one to be passed on the stack instead of in registers *)
+    (* +2 since we ignore "saved RBP" and "return address" https://eli.thegreenplace.net/images/2011/08/x64_frame_nonleaf.png *)
+  end
 
 
 (* We suggest that you create a helper function that computes the 
@@ -254,7 +260,7 @@ failwith "arg_loc not implemented"
 
 *)
 let stack_layout args (block, lbled_blocks) : layout =
-failwith "stack_layout not implemented"
+  failwith "stack_layout not implemented"
 
 (* The code for the entry-point of a function must do several things:
 
@@ -273,7 +279,7 @@ failwith "stack_layout not implemented"
      to hold all of the local stack slots.
 *)
 let compile_fdecl tdecls name { f_ty; f_param; f_cfg } =
-failwith "compile_fdecl unimplemented"
+  failwith "compile_fdecl unimplemented"
 
 
 
