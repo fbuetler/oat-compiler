@@ -2,6 +2,7 @@
 
 open Ll
 open X86
+open Asm
 
 (* Overview ----------------------------------------------------------------- *)
 
@@ -289,9 +290,26 @@ let stack_layout (args: Ll.uid list) ((block, lbled_blocks): cfg) : layout =
    - the function entry code should allocate the stack storage needed
      to hold all of the local stack slots.
 *)
-let compile_fdecl tdecls name { f_ty; f_param; f_cfg } =
+let compile_fdecl tdecls name { f_ty; f_param; f_cfg } : X86.prog =
   let layout = stack_layout f_param f_cfg in 
-  failwith "compile_fdecl unimplemented"
+  let initialization_asm: ins list = [ (* based on section 9 of http://tldp.org/LDP/LG/issue94/ramankutty.html *)
+    (* save the old base pointer, so we can restore it when returnig *)
+    Pushq, [~%Rbp];
+    (* our stack starts where the old one ended *)
+    Movq, [~%Rsp; ~%Rbp];
+    (* make space for everything we will have on the stack (assumes layout has no empty space between items) *)
+    Addq, [~$(List.length layout); ~%Rsp];
+  ] in
+  let copy_vars_asm = [
+    (* TODO copy variables to stack *)
+  ] in
+  [
+    {
+      lbl = name;
+      global = false;
+      asm = Text (List.concat [initialization_asm; copy_vars_asm]);
+    };
+  ]
 
 
 
