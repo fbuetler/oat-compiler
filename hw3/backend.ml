@@ -58,12 +58,20 @@ type layout = (uid * X86.operand) list
    calculations) and a stack layout. *)
 type ctxt = { tdecls : (tid * ty) list
             ; layout : layout
+            ; f_name : string
             ; f_lbl_max_length : int
             }
 
 (* useful for looking up items in tdecls or layouts *)
 let lookup m x = List.assoc x m
 
+let rec pad_string (padding:string) (len:int) (s:string): string =
+  if len > String.length s 
+  then pad_string padding len (s^padding)
+  else s
+
+let lbl_for_asm (ctxt:ctxt) (lbl:lbl) : X86.lbl = 
+  pad_string "_" ctxt.f_lbl_max_length ctxt.f_name ^"_"^ lbl
 
 (* compiling operands  ------------------------------------------------------ *)
 
@@ -262,6 +270,9 @@ let compile_terminator ctxt t: ins list =
         Popq, [~%Rbp];
         Retq, [];
       ]
+    | Br lbl -> [
+        Jmp, [~$$(lbl_for_asm ctxt lbl)];
+      ]
     | _ -> failwith "compile_terminator not implemented for this terminator"
   end
 
@@ -319,14 +330,6 @@ let stack_layout (args: Ll.uid list) ((block, lbled_blocks): cfg) : layout =
   let ids = List.sort String.compare @@ (args @ (SS.elements ids_from_blocks)) in
   List.mapi (fun i id -> (id, Ind3 (Lit (Int64.of_int @@ -8 * (i + 1)), Rbp))) ids
 
-let rec pad_string (padding:string) (len:int) (s:string): string =
-  if len > String.length s 
-  then pad_string padding len (s^padding)
-  else s
-
-let lbl_for_asm (ctxt:ctxt) (f_name:gid) (lbl:lbl) : X86.lbl = 
-  pad_string "_" ctxt.f_lbl_max_length f_name ^"_"^ lbl
-
 (* The code for the entry-point of a function must do several things:
 
    - since our simple compiler maps local %uids to stack slots,
@@ -345,7 +348,12 @@ let lbl_for_asm (ctxt:ctxt) (f_name:gid) (lbl:lbl) : X86.lbl =
 *)
 let compile_fdecl tdecls f_lbl_max_length name { f_ty; f_param; f_cfg } : X86.prog =
   let layout = stack_layout f_param f_cfg in 
-  let ctxt: ctxt = {tdecls = tdecls; layout = layout; f_lbl_max_length = f_lbl_max_length} in
+  let ctxt: ctxt = {
+    tdecls = tdecls;
+    layout = layout;
+    f_name = name;
+    f_lbl_max_length = f_lbl_max_length;
+  } in
   let initialization_asm: ins list = [ (* based on section 9 of http://tldp.org/LDP/LG/issue94/ramankutty.html *)
     (* save the old base pointer, so we can restore it when returnig *)
     Pushq, [~%Rbp];
@@ -369,7 +377,7 @@ let compile_fdecl tdecls f_lbl_max_length name { f_ty; f_param; f_cfg } : X86.pr
         ]);
     };
   ] @ List.map (
-    fun (lbl, block) -> compile_lbl_block (lbl_for_asm ctxt name lbl) ctxt block
+    fun (lbl, block) -> compile_lbl_block (lbl_for_asm ctxt lbl) ctxt block
   ) @@ snd f_cfg
 
 
