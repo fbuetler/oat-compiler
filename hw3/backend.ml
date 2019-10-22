@@ -356,10 +356,10 @@ let compile_fdecl tdecls name { f_ty; f_param; f_cfg } : X86.prog =
       asm = Text (List.concat [
           initialization_asm;
           copy_vars_asm;
-          compile_block ctxt @@ fst f_cfg
+          compile_block ctxt @@ fst f_cfg;
         ]);
     };
-  ]
+  ] @ List.map (fun (lbl, block) -> compile_lbl_block lbl ctxt block) @@ snd f_cfg
 
 
 
