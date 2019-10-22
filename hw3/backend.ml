@@ -210,12 +210,12 @@ let compile_gep ctxt (op : Ll.ty * Ll.operand) (path: Ll.operand list) : ins lis
 *)
 let compile_insn ctxt (uid, i) : X86.ins list =
   let comp_op = compile_operand ctxt in
+  let dest = lookup ctxt.layout uid in
   begin match i with
     | Binop (Add, _, b, a) -> [
         comp_op ~%Rbx b;
-        comp_op ~%Rax a;
-        Addq, [~%Rbx; ~%Rax];
-        Movq, [~%Rax; lookup ctxt.layout uid]
+        comp_op dest a;
+        Addq, [~%Rbx; dest];
       ]
     | _ -> failwith "compile_terminator not implemented for this terminator"
   end
