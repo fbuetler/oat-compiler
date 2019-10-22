@@ -85,13 +85,12 @@ let common_flags = "-Wno-override-module"
 let clang_ll_mode = "-S"
 let as_mode = "-c" 
 let opt_level = ref "-O1"
-let no_pie = "-nopie"
 let clang args =
   Printf.sprintf "clang %s -o " (String.concat " " args)
 
 let clang_cmd () = clang [clang_ll_mode; !opt_level; common_flags; !platform_flags]
 let as_cmd ()    = clang [as_mode; !opt_level; common_flags; !platform_flags]
-let link_cmd ()  = clang [common_flags; !opt_level; !platform_flags; no_pie]
+let link_cmd ()  = clang [common_flags; !opt_level; !platform_flags]
 
 
 (* filename munging --------------------------------------------------------- *)

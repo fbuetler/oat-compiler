@@ -6,8 +6,6 @@ open Asm
 
 (* TODO check that we are following calling conventions everywhere (eg. callee-saved vs caller-saved registers) *)
 
-(* TODO IMPORTANT Remove platform.ml hacks (introduced in this commit) after our Moodle question is anwered *)
-
 (* Overview ----------------------------------------------------------------- *)
 
 (* We suggest that you spend some time understinging this entire file and 
