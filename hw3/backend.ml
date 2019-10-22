@@ -248,6 +248,7 @@ end
 *)
 let compile_insn ctxt (uid, i) : X86.ins list =
   let comp_op = compile_operand ctxt in
+  let dest = lookup ctxt.layout uid in
   begin match i with
     | Binop (bop, _, a, b) -> [
         comp_op ~%Rcx b;
@@ -255,14 +256,26 @@ let compile_insn ctxt (uid, i) : X86.ins list =
         ll_bop_to_opcode bop, [~%Rcx; ~%Rax];
         Movq, [~%Rax; lookup ctxt.layout uid]
       ]
-    | Icmp (cnd, _, a, b) -> 
-      let dest = lookup ctxt.layout uid in
-      [
+    | Icmp (cnd, _, a, b) -> [
         comp_op ~%Rcx b;
         comp_op ~%Rax a;
         Cmpq, [~%Rcx; ~%Rax];
         Movq, [~$0; dest];
         Set (ll_cnd_to_asm cnd), [dest];
+      ]
+    | Alloca ty -> [
+        Addq, [~$(size_ty ctxt.tdecls ty); ~%Rsp];
+        Movq, [~%Rsp; dest];
+      ]
+    | Store (ty, src, dst) -> [
+        comp_op ~%Rcx src;
+        comp_op ~%Rax dst;
+        Movq, [~%Rcx; Ind2 Rax];
+      ]
+    | Load (ty, src) -> [
+        comp_op ~%Rcx src;
+        Movq, [Ind2 Rcx; ~%Rax];
+        Movq, [~%Rax; dest];
       ]
     | _ -> failwith "compile_insn not implemented for this instruction"
   end
