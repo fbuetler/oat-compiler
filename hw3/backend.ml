@@ -434,9 +434,13 @@ let compile_fdecl tdecls f_lbl_max_length name { f_ty; f_param; f_cfg } : X86.pr
     Addq, [~$(8 * List.length layout); ~%Rsp];
   ] in
   let copy_vars_asm =
-    List.mapi
-      (fun i p -> Movq, [arg_loc_base Rbp i; lookup layout p])
-      f_param in
+    f_param
+    |> List.mapi (fun i p -> [
+          Movq, [arg_loc_base Rbp i; ~%Rax];
+          Movq, [~%Rax; lookup layout p];
+        ])
+    |> List.concat
+  in
   [
     {
       lbl = Platform.mangle name;
