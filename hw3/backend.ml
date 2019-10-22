@@ -105,13 +105,12 @@ let lbl_for_asm (ctxt:ctxt) (lbl:lbl) : X86.lbl =
 *)
 let compile_operand ctxt (dest: X86.operand) : Ll.operand -> ins =
   function op -> 
-    let xop = begin match op with
-      | Null -> ~$0
-      | Const v -> Imm (Lit v)
-      | Id id -> lookup ctxt.layout id
-      | Gid gid -> Imm (Lbl (Platform.mangle gid))
-    end in
-    Movq, [xop; dest]
+    begin match op with
+      | Null -> Movq, [~$0; dest]
+      | Const v -> Movq, [Imm (Lit v); dest]
+      | Id id -> Movq, [lookup ctxt.layout id; dest]
+      | Gid gid -> Leaq, [Ind3(Lbl (Platform.mangle gid), Rip); ~%Rax]
+    end
 
 
 
