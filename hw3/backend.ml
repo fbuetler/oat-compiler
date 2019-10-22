@@ -309,7 +309,7 @@ let compile_fdecl tdecls name { f_ty; f_param; f_cfg } : X86.prog =
     (* our stack starts where the old one ended *)
     Movq, [~%Rsp; ~%Rbp];
     (* make space for everything we will have on the stack (assumes layout has no empty space between items) *)
-    Addq, [~$(List.length layout); ~%Rsp];
+    Addq, [~$(8 * List.length layout); ~%Rsp];
   ] in
   let copy_vars_asm =
     List.mapi
