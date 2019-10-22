@@ -91,8 +91,12 @@ let lookup m x = List.assoc x m
    the X86 instruction that moves an LLVM operand into a designated
    destination (usually a register).  
 *)
-let compile_operand ctxt dest : Ll.operand -> ins =
-  function _ -> failwith "compile_operand unimplemented"
+let compile_operand ctxt (dest: X86.operand) : Ll.operand -> ins =
+  function op -> begin match op with
+      | Null -> Movq, [~$0; dest]
+      | Const v -> Movq, [Imm (Lit v); dest]
+      | _ -> failwith "compile_operand not implemented for this operand"
+    end
 
 
 
@@ -220,7 +224,13 @@ let compile_insn ctxt (uid, i) : X86.ins list =
 *)
 let compile_terminator ctxt t: ins list =
   begin match t with
-    | Ret (Void, _) -> [
+    | Ret (_, operand) -> [
+        compile_operand ctxt ~%Rax (
+          begin match operand with
+            | Some v -> v
+            | None -> Const 0L
+          end
+        );
         (* based on the following line from http://tldp.org/LDP/LG/issue94/ramankutty.html*)
         (* "movl %ebp, %esp; popl %ebp ret" *)
         Movq, [~%Rbp; ~%Rsp];
