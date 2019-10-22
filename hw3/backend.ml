@@ -58,6 +58,7 @@ type layout = (uid * X86.operand) list
    calculations) and a stack layout. *)
 type ctxt = { tdecls : (tid * ty) list
             ; layout : layout
+            ; f_lbl_max_length : int
             }
 
 (* useful for looking up items in tdecls or layouts *)
@@ -318,6 +319,14 @@ let stack_layout (args: Ll.uid list) ((block, lbled_blocks): cfg) : layout =
   let ids = List.sort String.compare @@ (args @ (SS.elements ids_from_blocks)) in
   List.mapi (fun i id -> (id, Ind3 (Lit (Int64.of_int @@ -8 * (i + 1)), Rbp))) ids
 
+let rec pad_string (padding:string) (len:int) (s:string): string =
+  if len > String.length s 
+  then pad_string padding len (s^padding)
+  else s
+
+let lbl_for_asm (ctxt:ctxt) (f_name:gid) (lbl:lbl) : X86.lbl = 
+  pad_string "_" ctxt.f_lbl_max_length f_name ^"_"^ lbl
+
 (* The code for the entry-point of a function must do several things:
 
    - since our simple compiler maps local %uids to stack slots,
@@ -334,9 +343,9 @@ let stack_layout (args: Ll.uid list) ((block, lbled_blocks): cfg) : layout =
    - the function entry code should allocate the stack storage needed
      to hold all of the local stack slots.
 *)
-let compile_fdecl tdecls name { f_ty; f_param; f_cfg } : X86.prog =
+let compile_fdecl tdecls f_lbl_max_length name { f_ty; f_param; f_cfg } : X86.prog =
   let layout = stack_layout f_param f_cfg in 
-  let ctxt: ctxt = {tdecls = tdecls; layout = layout} in
+  let ctxt: ctxt = {tdecls = tdecls; layout = layout; f_lbl_max_length = f_lbl_max_length} in
   let initialization_asm: ins list = [ (* based on section 9 of http://tldp.org/LDP/LG/issue94/ramankutty.html *)
     (* save the old base pointer, so we can restore it when returnig *)
     Pushq, [~%Rbp];
@@ -359,7 +368,9 @@ let compile_fdecl tdecls name { f_ty; f_param; f_cfg } : X86.prog =
           compile_block ctxt @@ fst f_cfg;
         ]);
     };
-  ] @ List.map (fun (lbl, block) -> compile_lbl_block lbl ctxt block) @@ snd f_cfg
+  ] @ List.map (
+    fun (lbl, block) -> compile_lbl_block (lbl_for_asm ctxt name lbl) ctxt block
+  ) @@ snd f_cfg
 
 
 
@@ -380,5 +391,6 @@ and compile_gdecl (_, g) = compile_ginit g
 (* compile_prog ------------------------------------------------------------- *)
 let compile_prog {tdecls; gdecls; fdecls} : X86.prog =
   let g = fun (lbl, gdecl) -> Asm.data (Platform.mangle lbl) (compile_gdecl gdecl) in
-  let f = fun (name, fdecl) -> compile_fdecl tdecls name fdecl in
+  let philippe_likes_it_correct = List.fold_left max 0 @@ List.map (fun s -> String.length (fst s)) fdecls in
+  let f = fun (name, fdecl) -> compile_fdecl tdecls philippe_likes_it_correct name fdecl in
   (List.map g gdecls) @ (List.map f fdecls |> List.flatten)
