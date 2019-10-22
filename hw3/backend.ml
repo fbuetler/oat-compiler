@@ -371,24 +371,6 @@ let compile_lbl_block lbl ctxt blk : elem =
 (* compile_fdecl ------------------------------------------------------------ *)
 
 
-(* This helper function computes the location of the nth incoming
-   function argument: either in a register or relative to %rbp,
-   according to the calling conventions.  You might find it useful for
-   compile_fdecl.
-
-   [ NOTE: the first six arguments are numbered 0 .. 5 ]
-*)
-let arg_loc_base (base: reg) (n : int) : operand =
-  let regs = [Rdi; Rsi; Rdx; Rcx; R08; R09] in
-  begin match List.nth_opt regs n with
-    | Some v -> Reg v
-    | None -> Ind3 (Lit (Int64.of_int @@ 8 * (n-6+2)), base)
-    (* -6 since the 6th argument is the first one to be passed on the stack instead of in registers *)
-    (* +2 since we ignore "saved RBP" and "return address" https://eli.thegreenplace.net/images/2011/08/x64_frame_nonleaf.png *)
-  end
-
-let arg_loc = arg_loc_base Rbp
-
 (* ids_from_block returns a set of all uids assigned to in a block*)
 let ids_from_block (b: block) : SS.t =
   List.fold_left
