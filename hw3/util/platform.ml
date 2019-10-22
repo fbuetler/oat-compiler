@@ -85,12 +85,13 @@ let common_flags = "-Wno-override-module"
 let clang_ll_mode = "-S"
 let as_mode = "-c" 
 let opt_level = ref "-O1"
+let no_pie = "-nopie"
 let clang args =
   Printf.sprintf "clang %s -o " (String.concat " " args)
 
 let clang_cmd () = clang [clang_ll_mode; !opt_level; common_flags; !platform_flags]
 let as_cmd ()    = clang [as_mode; !opt_level; common_flags; !platform_flags]
-let link_cmd ()  = clang [common_flags; !opt_level; !platform_flags]
+let link_cmd ()  = clang [common_flags; !opt_level; !platform_flags; no_pie]
 
 
 (* filename munging --------------------------------------------------------- *)
@@ -123,8 +124,8 @@ let gen_name (basedir:string) (basen:string) (baseext:string) : string =
     let nfn = sprintf "%s/%s%s%s" basedir basen
         (if ofs = 0 then "" else "_"^(string_of_int ofs)) baseext
     in
-      try ignore (stat nfn); nocollide (ofs + 1)
-      with Unix_error (ENOENT,_,_) -> nfn
+    try ignore (stat nfn); nocollide (ofs + 1)
+    with Unix_error (ENOENT,_,_) -> nfn
   in nocollide 0
 
 
@@ -135,7 +136,7 @@ let ignore_error _ _ = ()
 
 let preprocess (dot_oat:string) (dot_i:string) : unit =
   sh (sprintf "%s%s %s %s" !pp_cmd 
-	(List.fold_left (fun s -> fun i -> s ^ " -I" ^ i) "" !include_paths)
+        (List.fold_left (fun s -> fun i -> s ^ " -I" ^ i) "" !include_paths)
         dot_oat dot_i) raise_error
 
 let clang_compile (dot_ll:string) (dot_s:string) : unit =
@@ -146,9 +147,9 @@ let assemble (dot_s:string) (dot_o:string) : unit =
 
 let link (mods:string list) (out_fn:string) : unit =
   sh (sprintf "%s%s %s %s %s %s" (link_cmd ()) out_fn 
-	(String.concat " " (mods @ !lib_paths))
-	(List.fold_left (fun s -> fun i -> s ^ " -L" ^ i) "" !lib_search_paths)
-	(List.fold_left (fun s -> fun i -> s ^ " -I" ^ i) "" !include_paths)
+        (String.concat " " (mods @ !lib_paths))
+        (List.fold_left (fun s -> fun i -> s ^ " -L" ^ i) "" !lib_search_paths)
+        (List.fold_left (fun s -> fun i -> s ^ " -I" ^ i) "" !include_paths)
         (List.fold_left (fun s -> fun l -> s ^ " -l" ^ l) "" !libs))
     raise_error
 
