@@ -92,11 +92,14 @@ let lookup m x = List.assoc x m
    destination (usually a register).  
 *)
 let compile_operand ctxt (dest: X86.operand) : Ll.operand -> ins =
-  function op -> begin match op with
-      | Null -> Movq, [~$0; dest]
-      | Const v -> Movq, [Imm (Lit v); dest]
+  function op -> 
+    let xop = begin match op with
+      | Null -> ~$0
+      | Const v -> Imm (Lit v)
+      | Id id -> lookup ctxt.layout id
       | _ -> failwith "compile_operand not implemented for this operand"
-    end
+    end in
+    Movq, [xop; dest]
 
 
 
