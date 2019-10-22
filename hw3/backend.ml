@@ -209,7 +209,16 @@ let compile_gep ctxt (op : Ll.ty * Ll.operand) (path: Ll.operand list) : ins lis
    - Bitcast: does nothing interesting at the assembly level
 *)
 let compile_insn ctxt (uid, i) : X86.ins list =
-  failwith "compile_insn not implemented"
+  let comp_op = compile_operand ctxt in
+  begin match i with
+    | Binop (Add, _, b, a) -> [
+        comp_op ~%Rbx b;
+        comp_op ~%Rax a;
+        Addq, [~%Rbx; ~%Rax];
+        Movq, [~%Rax; lookup ctxt.layout uid]
+      ]
+    | _ -> failwith "compile_terminator not implemented for this terminator"
+  end
 
 
 
@@ -248,7 +257,8 @@ let compile_terminator ctxt t: ins list =
 
 (* We have left this helper function here for you to complete. *)
 let compile_block ctxt blk : ins list =
-  compile_terminator ctxt @@ snd blk.term
+  (List.flatten @@ List.map (compile_insn ctxt) blk.insns)
+  @ compile_terminator ctxt @@ snd blk.term
 
 let compile_lbl_block lbl ctxt blk : elem =
   Asm.text lbl (compile_block ctxt blk)
