@@ -205,6 +205,15 @@ let ll_bop_to_opcode (bop: Ll.bop) : X86.opcode = begin match bop with
   | Xor -> Xorq
 end
 
+let ll_cnd_to_asm (cnd: Ll.cnd) : X86.cnd = begin match cnd with
+  | Eq -> Eq
+  | Ne -> Neq
+  | Slt -> Lt
+  | Sle -> Le
+  | Sgt -> Gt
+  | Sge -> Ge
+end
+
 
 (* compiling instructions  -------------------------------------------------- *)
 
@@ -237,6 +246,15 @@ let compile_insn ctxt (uid, i) : X86.ins list =
         comp_op ~%Rax a;
         ll_bop_to_opcode bop, [~%Rcx; ~%Rax];
         Movq, [~%Rax; lookup ctxt.layout uid]
+      ]
+    | Icmp (cnd, _, a, b) -> 
+      let dest = lookup ctxt.layout uid in
+      [
+        comp_op ~%Rcx b;
+        comp_op ~%Rax a;
+        Cmpq, [~%Rcx; ~%Rax];
+        Movq, [~$0; dest];
+        Set (ll_cnd_to_asm cnd), [dest];
       ]
     | _ -> failwith "compile_insn not implemented for this instruction"
   end
@@ -272,6 +290,12 @@ let compile_terminator ctxt t: ins list =
       ]
     | Br lbl -> [
         Jmp, [~$$(lbl_for_asm ctxt lbl)];
+      ]
+    | Cbr (operand, lbl_t, lbl_f) -> [
+        compile_operand ctxt ~%Rax operand;
+        Cmpq, [~$0; ~%Rax];
+        J Neq, [~$$(lbl_for_asm ctxt lbl_t)];
+        J Eq, [~$$(lbl_for_asm ctxt lbl_f)];
       ]
     | _ -> failwith "compile_terminator not implemented for this terminator"
   end
