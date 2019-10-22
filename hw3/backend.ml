@@ -289,7 +289,7 @@ let compile_insn ctxt (uid, i) : X86.ins list =
         Set (ll_cnd_to_asm cnd), [dest];
       ]
     | Alloca ty -> [
-        Addq, [~$(size_ty ctxt.tdecls ty); ~%Rsp];
+        Subq, [~$(size_ty ctxt.tdecls ty); ~%Rsp];
         Movq, [~%Rsp; dest];
       ]
     | Store (ty, src, dst) -> [
@@ -431,7 +431,7 @@ let compile_fdecl tdecls f_lbl_max_length name { f_ty; f_param; f_cfg } : X86.pr
     (* our stack starts where the old one ended *)
     Movq, [~%Rsp; ~%Rbp];
     (* make space for everything we will have on the stack (assumes layout has no empty space between items) *)
-    Addq, [~$(8 * List.length layout); ~%Rsp];
+    Subq, [~$(8 * List.length layout); ~%Rsp];
   ] in
   let copy_vars_asm =
     f_param
