@@ -73,6 +73,7 @@ let rec pad_string (padding:string) (len:int) (s:string): string =
   else s
 
 let lbl_for_asm (ctxt:ctxt) (lbl:lbl) : X86.lbl = 
+  Platform.mangle @@
   pad_string "_" ctxt.f_lbl_max_length ctxt.f_name ^"_"^ lbl
 
 (* compiling operands  ------------------------------------------------------ *)
@@ -437,7 +438,7 @@ let compile_fdecl tdecls f_lbl_max_length name { f_ty; f_param; f_cfg } : X86.pr
       f_param in
   [
     {
-      lbl = name;
+      lbl = Platform.mangle name;
       global = true;
       asm = Text (List.concat [
           initialization_asm;
