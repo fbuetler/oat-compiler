@@ -222,6 +222,12 @@ let ll_cnd_to_asm (cnd: Ll.cnd) : X86.cnd = begin match cnd with
   | Sge -> Ge
 end
 
+let rec drop (n: int) (l: 'a list) : 'a list =
+  begin match l with
+  | [] -> []
+  | h::t -> if n > 0 then drop (n-1) t else t
+  end
+
 (* This helper function computes the location of the nth incoming
    function argument: either in a register or relative to %rbp,
    according to the calling conventions.  You might find it useful for
