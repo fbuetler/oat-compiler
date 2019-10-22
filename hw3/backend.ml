@@ -227,7 +227,7 @@ end
 let rec drop (n: int) (l: 'a list) : 'a list =
   begin match l with
     | [] -> []
-    | h::t -> if n > 0 then drop (n-1) t else t
+    | h::t -> if n > 0 then drop (n-1) t else h::t
   end
 
 (* This helper function computes the location of the nth incoming
