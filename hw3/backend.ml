@@ -109,7 +109,7 @@ let compile_operand ctxt (dest: X86.operand) : Ll.operand -> ins =
       | Null -> ~$0
       | Const v -> Imm (Lit v)
       | Id id -> lookup ctxt.layout id
-      | _ -> failwith "compile_operand not implemented for this operand"
+      | Gid gid -> Imm (Lbl (Platform.mangle gid))
     end in
     Movq, [xop; dest]
 
