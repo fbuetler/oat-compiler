@@ -301,7 +301,6 @@ let stack_layout (args: Ll.uid list) ((block, lbled_blocks): cfg) : layout =
 *)
 let compile_fdecl tdecls name { f_ty; f_param; f_cfg } : X86.prog =
   let layout = stack_layout f_param f_cfg in 
-  Printf.printf "%s" @@ (String.concat "\n" @@ List.map (fun (uid, op) -> uid^"\t:\t"^(string_of_operand op)) layout)^"\n" ; 
   let ctxt: ctxt = {tdecls = tdecls; layout = layout} in
   let initialization_asm: ins list = [ (* based on section 9 of http://tldp.org/LDP/LG/issue94/ramankutty.html *)
     (* save the old base pointer, so we can restore it when returnig *)
