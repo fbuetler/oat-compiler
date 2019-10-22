@@ -159,10 +159,18 @@ let compile_call ctxt fop args =
      Your function should simply return 0 in those cases
 *)
 let rec size_ty tdecls t : int =
-  failwith "size_ty not implemented"
-
-
-
+  let size = size_ty tdecls in
+  begin match t with
+    | Void -> 0
+    | I1 -> 8
+    | I8 -> 0
+    | I64 -> 8
+    | Ptr (ty) -> 8
+    | Struct (ty) -> ty |> List.map size |> List.fold_left (+) 0
+    | Array (len, ty) -> len * size ty
+    | Fun (_, _) -> 0
+    | Namedt (name) -> size @@ lookup tdecls name
+  end
 
 (* Generates code that computes a pointer value.  
 
