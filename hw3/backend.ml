@@ -317,7 +317,9 @@ let compile_insn ctxt (uid, i) : X86.ins list =
         [
           comp_op ~%Rax f;
           Callq, [~%Rax];
+          Movq, [~%Rax; dest];
         ];
+        List.map (fun _ -> Popq, [~%Rax]) @@ drop 6 args;
       ]
     | _ -> failwith "compile_insn not implemented for this instruction"
   end
