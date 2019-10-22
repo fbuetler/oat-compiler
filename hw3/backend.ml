@@ -184,6 +184,18 @@ let compile_gep ctxt (op : Ll.ty * Ll.operand) (path: Ll.operand list) : ins lis
   failwith "compile_gep not implemented"
 
 
+let ll_bop_to_opcode (bop: Ll.bop) : X86.opcode = begin match bop with
+  | Add -> Addq
+  | Sub -> Subq
+  | Mul -> Imulq
+  | Shl -> Shlq
+  | Lshr -> Shrq
+  | Ashr -> Shrq
+  | And -> Andq
+  | Or -> Orq
+  | Xor -> Xorq
+end
+
 
 (* compiling instructions  -------------------------------------------------- *)
 
@@ -212,10 +224,10 @@ let compile_insn ctxt (uid, i) : X86.ins list =
   let comp_op = compile_operand ctxt in
   let dest = lookup ctxt.layout uid in
   begin match i with
-    | Binop (Add, _, b, a) -> [
+    | Binop (bop, _, a, b) -> [
         comp_op ~%Rbx b;
         comp_op dest a;
-        Addq, [~%Rbx; dest];
+        ll_bop_to_opcode bop, [~%Rbx; dest];
       ]
     | _ -> failwith "compile_terminator not implemented for this terminator"
   end
