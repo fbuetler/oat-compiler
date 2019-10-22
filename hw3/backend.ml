@@ -230,7 +230,7 @@ let compile_insn ctxt (uid, i) : X86.ins list =
         ll_bop_to_opcode bop, [~%Rcx; ~%Rax];
         Movq, [~%Rax; lookup ctxt.layout uid]
       ]
-    | _ -> failwith "compile_terminator not implemented for this terminator"
+    | _ -> failwith "compile_insn not implemented for this instruction"
   end
 
 
