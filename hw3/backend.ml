@@ -4,6 +4,8 @@ open Ll
 open X86
 open Asm
 
+(* TODO check that we are following calling conventions everywhere (eg. callee-saved vs caller-saved registers) *)
+
 (* Overview ----------------------------------------------------------------- *)
 
 (* We suggest that you spend some time understinging this entire file and 
@@ -224,8 +226,8 @@ end
 
 let rec drop (n: int) (l: 'a list) : 'a list =
   begin match l with
-  | [] -> []
-  | h::t -> if n > 0 then drop (n-1) t else t
+    | [] -> []
+    | h::t -> if n > 0 then drop (n-1) t else t
   end
 
 (* This helper function computes the location of the nth incoming
@@ -301,15 +303,16 @@ let compile_insn ctxt (uid, i) : X86.ins list =
         Movq, [~%Rax; dest];
       ]
     | Call (_, f, args) -> 
+      (* TODO support call with void return *)
       List.concat [
         List.map (fun _ -> Pushq, [~$0]) @@ drop 6 args;
         [
           Leaq, [Ind3 (Lit (-16L), Rsp); ~%R10];
         ];
         List.concat @@ List.mapi (fun i (_, operand) -> [
-          comp_op ~%Rax operand;
-          Movq, [~%Rax; arg_loc_base R10 i];
-        ]) args;
+              comp_op ~%Rax operand;
+              Movq, [~%Rax; arg_loc_base R10 i];
+            ]) args;
         [
           comp_op ~%Rax f;
           Callq, [~%Rax];
