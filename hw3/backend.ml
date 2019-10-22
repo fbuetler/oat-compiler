@@ -304,13 +304,16 @@ let compile_insn ctxt (uid, i) : X86.ins list =
       List.concat [
         List.map (fun _ -> Pushq, [~$0]) @@ drop 6 args;
         [
-          Pushq, [~%Rip];
-          Leaq, [Ind3 (Lit (-8L), Rsp); ~%R10];
+          Leaq, [Ind3 (Lit (-16L), Rsp); ~%R10];
         ];
         List.concat @@ List.mapi (fun i (_, operand) -> [
           comp_op ~%Rax operand;
-          Movq, [~%Rax; arg_loc_base R10 i]
-        ]) args
+          Movq, [~%Rax; arg_loc_base R10 i];
+        ]) args;
+        [
+          comp_op ~%Rax f;
+          Callq, [~%Rax];
+        ];
       ]
     | _ -> failwith "compile_insn not implemented for this instruction"
   end
