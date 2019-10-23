@@ -109,7 +109,7 @@ let compile_operand ctxt (dest: X86.operand) : Ll.operand -> ins =
       | Null -> Movq, [~$0; dest]
       | Const v -> Movq, [Imm (Lit v); dest]
       | Id id -> Movq, [lookup ctxt.layout id; dest]
-      | Gid gid -> Leaq, [Ind3(Lbl (Platform.mangle gid), Rip); ~%Rax]
+      | Gid gid -> Leaq, [Ind3(Lbl (Platform.mangle gid), Rip); dest]
     end
 
 
