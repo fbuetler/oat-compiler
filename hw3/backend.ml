@@ -196,7 +196,7 @@ let rec gep_helper (ctxt:ctxt) (op_ty: Ll.ty) (path: int list) : int =
         | Namedt tid -> gep_helper ctxt (lookup ctxt.tdecls tid) path
         | Ptr ty -> recurse ty @@ h * size ty
         | Array (_, ty) -> recurse ty @@ h * size ty
-        | Struct _ -> failwith "not implemented Struct"
+        | Struct tys -> List.fold_left (fun sum ty -> sum + size ty) 0 @@ take h tys
         | Void -> failwith "not implemented Void"
         | I1 -> failwith "not implemented I1"
         | I8 -> failwith "not implemented I8"
@@ -359,7 +359,6 @@ let compile_insn ctxt (uid, i) : X86.ins list =
         compile_gep ctxt (op_ty, ~%Rax) path;
         Movq, [~%Rax; dest];
       ]
-    | _ -> failwith "compile_insn not implemented for this instruction"
   end
 
 
