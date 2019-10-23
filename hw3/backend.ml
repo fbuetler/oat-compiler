@@ -28,6 +28,18 @@ let compile_cnd = function
 (* Defines sets of strings *)
 module SS = Set.Make(String)
 
+let rec drop (n: int) (l: 'a list) : 'a list =
+  begin match l with
+    | [] -> []
+    | h::t -> if n > 0 then drop (n-1) t else h::t
+  end
+
+let rec take (n: int) (l: 'a list) : 'a list =
+  begin match l with
+    | [] -> []
+    | h::t -> if n > 0 then h::(take (n-1) t) else []
+  end
+
 (* locals and layout -------------------------------------------------------- *)
 
 (* One key problem in compiling the LLVM IR is how to map its local
@@ -247,12 +259,6 @@ let ll_cnd_to_asm (cnd: Ll.cnd) : X86.cnd = begin match cnd with
   | Sgt -> Gt
   | Sge -> Ge
 end
-
-let rec drop (n: int) (l: 'a list) : 'a list =
-  begin match l with
-    | [] -> []
-    | h::t -> if n > 0 then drop (n-1) t else h::t
-  end
 
 (* This helper function computes the location of the nth incoming
    function argument: either in a register or relative to %rbp,
