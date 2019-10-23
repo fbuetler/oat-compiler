@@ -197,11 +197,7 @@ let rec gep_helper (ctxt:ctxt) (op_ty: Ll.ty) (path: int list) : int =
         | Ptr ty -> recurse ty @@ h * size ty
         | Array (_, ty) -> recurse ty @@ h * size ty
         | Struct tys -> List.fold_left (fun sum ty -> sum + size ty) 0 @@ take h tys
-        | Void -> failwith "not implemented Void"
-        | I1 -> failwith "not implemented I1"
-        | I8 -> failwith "not implemented I8"
-        | I64 -> failwith "not implemented I64"
-        | Fun _ -> failwith "not implemented Fun"
+        | _ -> failwith "gep: unsupported type"
       end
     | [] -> 0
   end
