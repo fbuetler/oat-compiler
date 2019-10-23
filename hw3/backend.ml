@@ -187,18 +187,22 @@ let rec size_ty tdecls t : int =
   end
 
 
-let rec gep_helper (ctxt:ctxt) (op_ty: Ll.ty) (path: int list) : int list =
+let rec gep_helper (ctxt:ctxt) (op_ty: Ll.ty) (path: int option list) : int list =
   let size = size_ty ctxt.tdecls in
   begin match path with
     | h::tail -> 
       let recurse next_ty offset = offset::(gep_helper ctxt next_ty tail) in
       begin match op_ty with
         | Namedt tid -> gep_helper ctxt (lookup ctxt.tdecls tid) path
-        | Ptr ty -> recurse ty @@ h * size ty
-        | Array (_, ty) -> recurse ty @@ h * size ty
+        | Ptr ty -> recurse ty @@ size ty
+        | Array (_, ty) -> recurse ty @@ size ty
         | Struct tys -> 
-          let offset = List.fold_left (fun sum ty -> sum + size ty) 0 @@ take h tys in
-          recurse (List.nth tys h) offset
+          let h_const = begin match h with
+            | Some v -> v
+            | None -> failwith "index operand must be a constant when indexing into struct"
+          end in
+          let offset = List.fold_left (fun sum ty -> sum + size ty) 0 @@ take h_const tys in
+          recurse (List.nth tys h_const) offset
         | _ -> failwith "gep: unsupported type"
       end
     | [] -> []
@@ -229,14 +233,17 @@ let rec gep_helper (ctxt:ctxt) (op_ty: Ll.ty) (path: int list) : int list =
       in (4), but relative to the type f the sub-element picked out
       by the path so far
 *)
-let rec compile_gep (ctxt:ctxt) (op : Ll.ty * X86.operand) (path: Ll.operand list) : ins =
+let rec compile_gep (ctxt:ctxt) (op : Ll.ty * X86.operand) (ll_path: Ll.operand list) (asm_path: X86.ins list) : ins list =
   let op_to_const el = begin match el with
-    | Const v -> Int64.to_int v
-    | _ -> failwith "gep path must use constants"
+    | Const v -> Some (Int64.to_int v)
+    | _ -> None
   end in
-  let factors = gep_helper ctxt (fst op) (List.map op_to_const path) in
-  let offset = List.fold_left (+) 0 factors in
-  Addq, [~$offset; snd op]
+  let factors = gep_helper ctxt (fst op) (List.map op_to_const ll_path) in
+  List.concat @@ List.map2 (fun factor load -> [
+        load;
+        Imulq, [~$factor; ~%Rcx];
+        Addq, [~%Rcx; snd op];
+      ]) factors asm_path
 
 let ll_bop_to_opcode (bop: Ll.bop) : X86.opcode = begin match bop with
   | Add -> Addq
@@ -353,10 +360,10 @@ let compile_insn ctxt (uid, i) : X86.ins list =
         comp_op ~%Rax operand;
         Movq, [~%Rax; dest];
       ]
-    | Gep (op_ty, op_v, path) -> [
-        comp_op ~%Rax op_v;
-        compile_gep ctxt (op_ty, ~%Rax) path;
-        Movq, [~%Rax; dest];
+    | Gep (op_ty, op_v, path) -> List.concat [
+        [comp_op ~%Rax op_v];
+        compile_gep ctxt (op_ty, ~%Rax) path @@ List.map (comp_op ~%Rcx) path;
+        [Movq, [~%Rax; dest]];
       ]
   end
 
