@@ -174,6 +174,26 @@ let rec size_ty tdecls t : int =
     | Namedt (name) -> size @@ lookup tdecls name
   end
 
+
+let rec gep_helper (ctxt:ctxt) (op_ty: Ll.ty) (path: int list) : int =
+  let size = size_ty ctxt.tdecls in
+  begin match path with
+    | h::tail -> 
+      let recurse next_ty offset = offset + gep_helper ctxt next_ty tail in
+      begin match op_ty with
+        | Namedt tid -> gep_helper ctxt (lookup ctxt.tdecls tid) path
+        | Ptr ty -> recurse ty @@ h * size ty
+        | Array (_, ty) -> recurse ty @@ h * size ty
+        | Struct _ -> failwith "not implemented Struct"
+        | Void -> failwith "not implemented Void"
+        | I1 -> failwith "not implemented I1"
+        | I8 -> failwith "not implemented I8"
+        | I64 -> failwith "not implemented I64"
+        | Fun _ -> failwith "not implemented Fun"
+      end
+    | [] -> 0
+  end
+
 (* Generates code that computes a pointer value.  
 
    1. op must be of pointer type: t*
@@ -199,9 +219,13 @@ let rec size_ty tdecls t : int =
       in (4), but relative to the type f the sub-element picked out
       by the path so far
 *)
-let compile_gep ctxt (op : Ll.ty * Ll.operand) (path: Ll.operand list) : ins list =
-  failwith "compile_gep not implemented"
-
+let rec compile_gep (ctxt:ctxt) (op : Ll.ty * X86.operand) (path: Ll.operand list) : ins =
+  let op_to_const el = begin match el with
+    | Const v -> Int64.to_int v
+    | _ -> failwith "gep path must use constants"
+  end in
+  let offset = gep_helper ctxt (fst op) (List.map op_to_const path) in
+  Addq, [~$offset; snd op]
 
 let ll_bop_to_opcode (bop: Ll.bop) : X86.opcode = begin match bop with
   | Add -> Addq
@@ -322,6 +346,11 @@ let compile_insn ctxt (uid, i) : X86.ins list =
       ]
     | Bitcast (_, operand, _) -> [
         comp_op ~%Rax operand;
+        Movq, [~%Rax; dest];
+      ]
+    | Gep (op_ty, op_v, path) -> [
+        comp_op ~%Rax op_v;
+        compile_gep ctxt (op_ty, ~%Rax) path;
         Movq, [~%Rax; dest];
       ]
     | _ -> failwith "compile_insn not implemented for this instruction"
