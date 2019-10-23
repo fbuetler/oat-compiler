@@ -187,22 +187,22 @@ let rec size_ty tdecls t : int =
   end
 
 
-let rec gep_helper (ctxt:ctxt) (op_ty: Ll.ty) (path: int option list) : int list =
+let rec gep_helper (ctxt:ctxt) (op_ty: Ll.ty) (path: int option list) : (int * int) list =
   let size = size_ty ctxt.tdecls in
   begin match path with
     | h::tail -> 
-      let recurse next_ty offset = offset::(gep_helper ctxt next_ty tail) in
+      let recurse next_ty = gep_helper ctxt next_ty tail in
       begin match op_ty with
         | Namedt tid -> gep_helper ctxt (lookup ctxt.tdecls tid) path
-        | Ptr ty -> recurse ty @@ size ty
-        | Array (_, ty) -> recurse ty @@ size ty
+        | Ptr ty -> (size ty, 0)::(recurse ty)
+        | Array (_, ty) -> (size ty, 0)::(recurse ty)
         | Struct tys -> 
           let h_const = begin match h with
             | Some v -> v
             | None -> failwith "index operand must be a constant when indexing into struct"
           end in
           let offset = List.fold_left (fun sum ty -> sum + size ty) 0 @@ take h_const tys in
-          recurse (List.nth tys h_const) offset
+          (0, offset)::(recurse @@ List.nth tys h_const)
         | _ -> failwith "gep: unsupported type"
       end
     | [] -> []
@@ -239,9 +239,10 @@ let rec compile_gep (ctxt:ctxt) (op : Ll.ty * X86.operand) (ll_path: Ll.operand 
     | _ -> None
   end in
   let factors = gep_helper ctxt (fst op) (List.map op_to_const ll_path) in
-  List.concat @@ List.map2 (fun factor load -> [
+  List.concat @@ List.map2 (fun (factor, offset) load -> [
         load;
         Imulq, [~$factor; ~%Rcx];
+        Addq, [~$offset; ~%Rcx];
         Addq, [~%Rcx; snd op];
       ]) factors asm_path
 
