@@ -320,6 +320,10 @@ let compile_insn ctxt (uid, i) : X86.ins list =
         ];
         List.map (fun _ -> Popq, [~%Rax]) @@ drop 6 args;
       ]
+    | Bitcast (_, operand, _) -> [
+        comp_op ~%Rax operand;
+        Movq, [~%Rax; dest];
+      ]
     | _ -> failwith "compile_insn not implemented for this instruction"
   end
 
