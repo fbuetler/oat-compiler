@@ -252,7 +252,7 @@ let ll_bop_to_opcode (bop: Ll.bop) : X86.opcode = begin match bop with
   | Mul -> Imulq
   | Shl -> Shlq
   | Lshr -> Shrq
-  | Ashr -> Shrq
+  | Ashr -> Sarq
   | And -> Andq
   | Or -> Orq
   | Xor -> Xorq
