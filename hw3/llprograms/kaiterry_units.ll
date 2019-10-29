@@ -51,4 +51,3 @@ then1:
 else1:
   ret i64 0
 }
-

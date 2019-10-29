@@ -1,4 +1,4 @@
-define i64 @rsa_decrypt(i64 %c) {
+define i64 @main(i64 %c) {
   %_b__3 = alloca i64
   store i64 %c, i64* %_b__3
   %_e__1 = alloca i64

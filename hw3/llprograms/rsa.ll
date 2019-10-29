@@ -1,4 +1,4 @@
-define i64 @rsa_decrypt(i64 %c) {
+define i64 @main(i64 %c) {
   %p = add i64 56807, 0
   %q = add i64 51683, 0
   %n = mul i64 %p, %q
