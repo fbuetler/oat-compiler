@@ -144,6 +144,24 @@ let compile_operand ctxt (dest: X86.operand) : Ll.operand -> ins =
 
    [ NOTE: Don't forget to preserve caller-save registers (only if
    needed). ]
+
+   Summary:
+   [check] The first six integer or pointer arguments are passed 
+   in registers RDI, RSI, RDX, RCX, R8, R9
+   additional arguments are passed on the stack
+
+   [check] Integer return values up to 64 bits in size are stored in RAX
+
+   If the callee wishes to use registers RBX, RBP, and R12–R15, 
+   it must restore their original values before returning control to the caller
+
+   All other registers must be saved by the caller if it wishes to preserve their values:
+   RAX, R10, R11 (and registers used for arguments)
+
+   It is the caller's responsibility to clean up arguments
+   pushed onto the stack, so you must free the stack space after the
+   call returns.
+
 *)
 let compile_call ctxt fop args =
   failwith "compile_call not implemented"
