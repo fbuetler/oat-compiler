@@ -169,6 +169,9 @@ let large_tests = [ "llprograms/list1.ll", 3L
                   ; "llprograms/factrect.ll", 120L
                   ]
 
+let tests_florian = ["llprograms/own/call_void_return.ll", 42L
+                    ; "llprograms/own/calling_conv.ll", 27L
+                    ]
 
 let tests : suite =
   [ GradedTest("size_ty tests", 5, size_ty_tests)
@@ -182,6 +185,7 @@ let tests : suite =
   ; GradedTest("large tests", 10, executed large_tests)
   ; GradedTest("hidden large tests", 18, hidden_large_tests)
   ; GradedTest("io tests", 10, executed_io io_tests)
+  ; GradedTest("own tests", 0, executed tests_florian)
   ]
 
 
