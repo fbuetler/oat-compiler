@@ -1,0 +1,3 @@
+void f(int[][] x) {
+  var test = -!~x[0][0];
+}

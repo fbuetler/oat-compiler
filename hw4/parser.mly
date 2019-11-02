@@ -66,9 +66,9 @@ let loc (startpos:Lexing.position) (endpos:Lexing.position) (elt:'a) : 'a node =
 %left STAR     
 
 %nonassoc LPAREN   /* ( */
-%nonassoc LBRACKET /* [ */
 %nonassoc TILDE    /* ~ */
 %nonassoc BANG     /* ! */
+%nonassoc LBRACKET /* [ */
 
 /* ---------------------------------------------------------------------- */
 
