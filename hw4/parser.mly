@@ -9,11 +9,14 @@ let loc (startpos:Lexing.position) (endpos:Lexing.position) (elt:'a) : 'a node =
 /* Declare your tokens here. */
 %token EOF
 %token <int64>  INT
+%token TRUE
+%token FALSE
 %token NULL
 %token <string> STRING
 %token <string> IDENT
 
 %token TINT     /* int */
+%token TBOOL    /* bool */
 %token TVOID    /* void */
 %token TSTRING  /* string */
 %token IF       /* if */
@@ -100,6 +103,7 @@ arglist:
     
 ty:
   | TINT   { TInt }
+  | TBOOL   { TBool }
   | r=rtyp { TRef r } 
 
 
@@ -137,6 +141,8 @@ ty:
 gexp:
   | t=ty NULL  { loc $startpos $endpos @@ CNull t }
   | i=INT      { loc $startpos $endpos @@ CInt i } 
+  | TRUE       { loc $startpos $endpos @@ CBool true } 
+  | FALSE      { loc $startpos $endpos @@ CBool false } 
 
 lhs:  
   | id=IDENT            { loc $startpos $endpos @@ Id id }
@@ -146,6 +152,8 @@ lhs:
 exp:
   | i=INT               { loc $startpos $endpos @@ CInt i }
   | t=ty NULL           { loc $startpos $endpos @@ CNull t }
+  | TRUE                { loc $startpos $endpos @@ CBool true } 
+  | FALSE               { loc $startpos $endpos @@ CBool false } 
   | e1=exp b=bop e2=exp { loc $startpos $endpos @@ Bop (b, e1, e2) }
   | u=uop e=exp         { loc $startpos $endpos @@ Uop (u, e) }
   | id=IDENT            { loc $startpos $endpos @@ Id id }

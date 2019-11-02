@@ -29,6 +29,9 @@
   ("null", NULL);
   ("void", TVOID);
   ("int", TINT);
+  ("bool", TBOOL);
+  ("true", TRUE);
+  ("false", FALSE);
   ("string", TSTRING);
   ("else", ELSE);
   ("if", IF);
@@ -144,7 +147,6 @@ rule token = parse
   | "<<" | ">>" | ">>>" | "<" | "<=" | ">" | ">=" | '&' | '|' | "[&]" | "[|]"
   | "!=" | '!' | '~' | '(' | ')' | '[' | ']' 
     { create_token lexbuf }
-
 
   | _ as c { unexpected_char lexbuf c }
 

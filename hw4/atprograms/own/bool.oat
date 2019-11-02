@@ -1,0 +1,6 @@
+int f ( bool thing ) {
+  var other = false;
+  var more = other & true;
+  return 0 ;
+}
+
