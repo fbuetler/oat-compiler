@@ -172,6 +172,7 @@ exp:
   | NEW t=ty LBRACKET RBRACKET LBRACE es=separated_list(COMMA, exp) RBRACE
                         { loc $startpos $endpos @@ CArr (t, es) }
   | s=STRING            { loc $startpos $endpos @@ CStr s }
+  | ge=gexp             { ge }
 
 vdecl:
   | VAR id=IDENT EQ init=exp { (id, init) }

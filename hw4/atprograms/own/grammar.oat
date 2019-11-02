@@ -6,9 +6,9 @@ global tobe = true;
 global ornottobe = false;
 global arr = int[]{27, 15, 42};
 
-/* int f(int x, bool b, string s, () -> void f, (int, bool) -> string ff, int[] arr)  {
+int f(int x, bool b, string s , int[] arr)  {
   return s;
-} */
+}
 
 void g(){
   return;
@@ -40,8 +40,8 @@ void exp() {
   var el = arr[0];
   var fcall = program(2, new string[]{"V", "I", "S"});
   var arr_zero = new string[5];
-  /* var nested = new (int[])[5]; */
-  /* var spec_array = int[]{1, 2}; */
+  var nested = new int[][5];
+  var spec_array = int[]{1, 2};
 }
 
 void stmt() {
