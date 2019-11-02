@@ -144,6 +144,8 @@ gexp:
   | i=INT      { loc $startpos $endpos @@ CInt i } 
   | TRUE       { loc $startpos $endpos @@ CBool true } 
   | FALSE      { loc $startpos $endpos @@ CBool false } 
+  | t=ty LBRACKET RBRACKET LBRACE es=separated_list(COMMA, exp) RBRACE
+               { loc $startpos $endpos @@ CArr (t ,es) }
 
 lhs:  
   | id=IDENT            { loc $startpos $endpos @@ Id id }
