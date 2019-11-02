@@ -241,7 +241,14 @@ let cmp_function_ctxt (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
    in well-formed programs. (The constructors starting with C). 
 *)
 let cmp_global_ctxt (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
-  failwith "cmp_global_ctxt unimplemented"
+  let f curc decl : Ctxt.t = begin match decl with
+    | Gvdecl { elt = { name; init } } -> 
+      let t, op, _ = cmp_exp c init in
+      Ctxt.add curc name (t, op)
+    | Gfdecl node -> curc
+  end in
+  List.fold_left f c p 
+
 
 (* Compile a function declaration in global context c. Return the LLVMlite cfg
    and a list of global declarations containing the string literals appearing
