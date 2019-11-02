@@ -163,7 +163,10 @@ exp:
   | e=exp LPAREN es=separated_list(COMMA, exp) RPAREN
                         { loc $startpos $endpos @@ Call (e,es) }
   | LPAREN e=exp RPAREN { e } 
-  | NEW t=ty LBRACKET e=exp RBRACKET { loc $startpos $endpos @@ NewArr (t, e) }
+  | NEW t=ty LBRACKET e=exp RBRACKET
+                        { loc $startpos $endpos @@ NewArr (t, e) }
+  | NEW t=ty LBRACKET RBRACKET LBRACE es=separated_list(COMMA, exp) RBRACE
+                        { loc $startpos $endpos @@ CArr (t, es) }
 
 vdecl:
   | VAR id=IDENT EQ init=exp { (id, init) }
