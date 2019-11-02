@@ -27,9 +27,21 @@ let loc (startpos:Lexing.position) (endpos:Lexing.position) (elt:'a) : 'a node =
 %token RBRACE   /* } */
 %token PLUS     /* + */
 %token DASH     /* - */
-%token STAR     /* * */
+%token STAR   /* * */
 %token EQEQ     /* == */
+%token LEFTLEFT
+%token RIGHTRIGHT
+%token RIGHTRIGHTRIGHT
+%token LEFT
+%token LEFTEQ 
+%token RIGHT
+%token RIGHTEQ
 %token EQ       /* = */
+%token BANGEQ
+%token AND
+%token OR
+%token BOXAND
+%token BOXOR
 %token LPAREN   /* ( */
 %token RPAREN   /* ) */
 %token LBRACKET /* [ */
@@ -38,14 +50,20 @@ let loc (startpos:Lexing.position) (endpos:Lexing.position) (elt:'a) : 'a node =
 %token BANG     /* ! */
 %token GLOBAL   /* global */
 
+%left BOXOR
+%left BOXAND
+%left OR
+%left AND
+%left EQEQ BANGEQ
+%left LEFT LEFTEQ RIGHT RIGHTEQ
+%left LEFTLEFT RIGHTRIGHT RIGHTRIGHTRIGHT
+%left PLUS DASH 
+%left STAR     
 
-
-%left PLUS DASH
-%left STAR
-%nonassoc BANG
-%nonassoc TILDE
-%nonassoc LBRACKET
-%nonassoc LPAREN
+%nonassoc LPAREN   /* ( */
+%nonassoc LBRACKET /* [ */
+%nonassoc TILDE    /* ~ */
+%nonassoc BANG     /* ! */
 
 /* ---------------------------------------------------------------------- */
 
@@ -98,6 +116,18 @@ ty:
   | DASH   { Sub }
   | STAR   { Mul }
   | EQEQ   { Eq } 
+  | LEFTLEFT { Shl }
+  | RIGHTRIGHT  { Shr }
+  | RIGHTRIGHTRIGHT  { Sar }
+  | LEFT  { Lt }
+  | LEFTEQ  { Lte }
+  | RIGHT  { Gt }
+  | RIGHTEQ  { Gte }
+  | BANGEQ  { Neq }
+  | AND  { And }
+  | OR  { Or }
+  | BOXAND  { IAnd }
+  | BOXOR  { IOr }
 
 %inline uop:
   | DASH  { Neg }

@@ -45,6 +45,19 @@
   ( "+", PLUS);
   ( "-", DASH);
   ( "*", STAR);
+  ( "==", EQEQ); 
+  ( "<<", LEFTLEFT); 
+  ( ">>", RIGHTRIGHT); 
+  ( ">>>", RIGHTRIGHTRIGHT); 
+  ( "<", LEFT); 
+  ( "<=", LEFTEQ); 
+  ( ">", RIGHT); 
+  ( ">=", RIGHTEQ); 
+  ( "!=", BANGEQ); 
+  ( "&", AND); 
+  ( "|", OR); 
+  ( "[&]", BOXAND); 
+  ( "[|]", BOXOR); 
   ( "=", EQ);
   ( "==", EQEQ);
   ( "!", BANG);
@@ -128,8 +141,10 @@ rule token = parse
   | newline { newline lexbuf; token lexbuf }
 
   | ';' | ',' | '{' | '}' | '+' | '-' | '*' | '=' | "==" 
+  | "<<" | ">>" | ">>>" | "<" | "<=" | ">" | ">=" | '&' | '|' | "[&]" | "[|]"
   | "!=" | '!' | '~' | '(' | ')' | '[' | ']' 
     { create_token lexbuf }
+
 
   | _ as c { unexpected_char lexbuf c }
 
