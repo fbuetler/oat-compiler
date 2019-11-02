@@ -52,6 +52,7 @@ let loc (startpos:Lexing.position) (endpos:Lexing.position) (elt:'a) : 'a node =
 %token TILDE    /* ~ */
 %token BANG     /* ! */
 %token GLOBAL   /* global */
+%token NEW      /* new */
 
 %left BOXOR
 %left BOXAND
@@ -162,6 +163,7 @@ exp:
   | e=exp LPAREN es=separated_list(COMMA, exp) RPAREN
                         { loc $startpos $endpos @@ Call (e,es) }
   | LPAREN e=exp RPAREN { e } 
+  | NEW t=ty LBRACKET e=exp RBRACKET { loc $startpos $endpos @@ NewArr (t, e) }
 
 vdecl:
   | VAR id=IDENT EQ init=exp { (id, init) }
