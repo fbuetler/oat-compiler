@@ -262,7 +262,16 @@ let cmp_global_ctxt (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
    4. Use cfg_of_stream to produce a LLVMlite cfg from 
 *)
 let cmp_fdecl (c:Ctxt.t) (f:Ast.fdecl node) : Ll.fdecl * (Ll.gid * Ll.gdecl) list =
-  ({ f_ty = ([], cmp_ret_ty f.elt.frtyp); f_param = []; f_cfg = ({insns = []; term = ("", Br "")} ,[]) }, [])
+  let ret_ty = cmp_ret_ty f.elt.frtyp in
+  let body = cfg_of_stream @@ cmp_block c ret_ty f.elt.body in
+  (
+    { 
+      f_ty = (List.map (fun (ty, _) -> cmp_ty ty) f.elt.args, ret_ty); 
+      f_param = List.map snd f.elt.args; 
+      f_cfg = fst body
+    },
+    snd body 
+  ) 
 
 (* Compile a global initializer, returning the resulting LLVMlite global
    declaration, and a list of additional global declarations.
