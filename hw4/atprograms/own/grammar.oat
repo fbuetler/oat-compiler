@@ -1,0 +1,95 @@
+global animal = "walrus";
+global answer = 42;
+global ups = int null;
+global nada = string null;
+global tobe = true;
+global ornottobe = false;
+global arr = int[]{27, 15, 42};
+
+int f(int x, bool b, string s, () -> void f, (int, bool) -> string ff, int[] arr)  {
+  return s;
+}
+
+void g(){
+  return;
+}
+
+void ops() {
+  var a = 1;
+  var b = 2;
+  var c = a*b-a+2>>22<<29>>>10;
+  var d = (a<=b) & (a<b) & (a>=b) & (a>b) & (a==b) & (a!=b);
+  var e = (1[&]4) [|] (2);
+  var f = -a;
+  var g = !true;
+  var f = ~99;
+}
+
+void lhs() {
+  var a = 23;
+  a = 27;
+  arr[1]=42;
+}
+
+void exp() {
+  var a = 2;
+  var b = a;
+  var s = "VIS";
+  var t = true;
+  var f = false;
+  var el = arr[0];
+  var fcall = program(2, new string[]{"V", "I", "S"});
+  var arr_zero = new string[5];
+  var nested = new (int[])[5];
+  var spec_array = int[]{1, 2};
+}
+
+void stmt() {
+  program(2, new string[]{"V", "I", "S"});
+  if (true) {
+    var asd = 66;
+  }
+  if (false){
+    var stugg = 34;
+  } else {
+    var duda = 34324;
+  }
+  if (false){
+    var stugg = 34;
+  } else if (true) {
+    var duda = 34324;
+  } else if (true) {
+    var duda = 34324;
+  }
+  if (false){
+    var stugg = 34;
+  } else if (true) {
+    var duda = 34324;
+  } else if (true) {
+    var duda = 34324;
+  } else {
+    var test = "string";
+  }
+  for (;;) {
+    program(1, string[]{});
+  }
+  for (var i = 0; i < 10; i = i + 1) {
+    program(1, string[]{});
+  }
+  for (var i = 0, var j = 10; i < j; i = i + 1 + j / 4) {
+    program(1, string[]{});
+  }
+  for (var i = 0, var j = 10;; i = i + 1 + j / 4) {
+    program(1, string[]{});
+  }
+  for (var i = 0, var j = 10; i < j;) {
+    program(1, string[]{});
+  }
+  for (var i = 0, var j = 10; i < j; stmt()) {
+    program(1, string[]{});
+  }
+}
+
+int program (int argc, string[] argv) {
+  return f(1, 2);
+}
