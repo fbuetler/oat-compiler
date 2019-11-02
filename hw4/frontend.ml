@@ -262,8 +262,7 @@ let cmp_global_ctxt (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
    4. Use cfg_of_stream to produce a LLVMlite cfg from 
 *)
 let cmp_fdecl (c:Ctxt.t) (f:Ast.fdecl node) : Ll.fdecl * (Ll.gid * Ll.gdecl) list =
-  failwith "cmp_fdecl not implemented"
-
+  ({ f_ty = ([], cmp_ret_ty f.elt.frtyp); f_param = []; f_cfg = ({insns = []; term = ("", Br "")} ,[]) }, [])
 
 (* Compile a global initializer, returning the resulting LLVMlite global
    declaration, and a list of additional global declarations.
