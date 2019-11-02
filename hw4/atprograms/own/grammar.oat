@@ -41,7 +41,8 @@ void exp() {
   var fcall = program(2, new string[]{"V", "I", "S"});
   var arr_zero = new string[5];
   var nested = new int[][5];
-  var spec_array = int[]{1, 2};
+  /* TODO ask if this should be allowed: */
+  /* var spec_array = int[]{1, 2}; */
 }
 
 void stmt() {

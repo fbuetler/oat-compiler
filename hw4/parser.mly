@@ -145,7 +145,7 @@ gexp:
   | i=INT      { loc $startpos $endpos @@ CInt i } 
   | TRUE       { loc $startpos $endpos @@ CBool true } 
   | FALSE      { loc $startpos $endpos @@ CBool false } 
-  | t=ty LBRACKET RBRACKET LBRACE es=separated_list(COMMA, exp) RBRACE
+  | t=ty LBRACKET RBRACKET LBRACE es=separated_list(COMMA, gexp) RBRACE
                { loc $startpos $endpos @@ CArr (t ,es) }
   | s=STRING   { loc $startpos $endpos @@ CStr s }
 
@@ -172,7 +172,6 @@ exp:
   | NEW t=ty LBRACKET RBRACKET LBRACE es=separated_list(COMMA, exp) RBRACE
                         { loc $startpos $endpos @@ CArr (t, es) }
   | s=STRING            { loc $startpos $endpos @@ CStr s }
-  | ge=gexp             { ge }
 
 vdecl:
   | VAR id=IDENT EQ init=exp { (id, init) }
