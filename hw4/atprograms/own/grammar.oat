@@ -6,9 +6,9 @@ global tobe = true;
 global ornottobe = false;
 global arr = int[]{27, 15, 42};
 
-int f(int x, bool b, string s, () -> void f, (int, bool) -> string ff, int[] arr)  {
+/* int f(int x, bool b, string s, () -> void f, (int, bool) -> string ff, int[] arr)  {
   return s;
-}
+} */
 
 void g(){
   return;
@@ -40,8 +40,8 @@ void exp() {
   var el = arr[0];
   var fcall = program(2, new string[]{"V", "I", "S"});
   var arr_zero = new string[5];
-  var nested = new (int[])[5];
-  var spec_array = int[]{1, 2};
+  /* var nested = new (int[])[5]; */
+  /* var spec_array = int[]{1, 2}; */
 }
 
 void stmt() {
@@ -71,22 +71,25 @@ void stmt() {
     var test = "string";
   }
   for (;;) {
-    program(1, string[]{});
+    program(1, new string[]{});
   }
-  for (var i = 0; i < 10; i = i + 1) {
-    program(1, string[]{});
+  for (var i = 0; i < 10; i = i + 1;) {
+    program(1, new string[]{});
   }
-  for (var i = 0, var j = 10; i < j; i = i + 1 + j / 4) {
-    program(1, string[]{});
+  for (var i = 0, var j = 10; i < j; i = i + 1 + j;) {
+    program(1, new string[]{});
   }
-  for (var i = 0, var j = 10;; i = i + 1 + j / 4) {
-    program(1, string[]{});
+  for (var i = 0, var j = 10;; i = i + 1 + j;) {
+    program(1, new string[]{});
   }
   for (var i = 0, var j = 10; i < j;) {
-    program(1, string[]{});
+    program(1, new string[]{});
   }
-  for (var i = 0, var j = 10; i < j; stmt()) {
-    program(1, string[]{});
+  for (var i = 0, var j = 10; i < j; stmt();) {
+    program(1, new string[]{});
+  }
+  for (var i = 0, var j = 10; i < j; for (var k = 0; i < k; k = k + 1;) { stmt(); stmt(); }) {
+    program(1, new string[]{});
   }
 }
 
