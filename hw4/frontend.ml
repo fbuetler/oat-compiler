@@ -277,7 +277,19 @@ let cmp_fdecl (c:Ctxt.t) (f:Ast.fdecl node) : Ll.fdecl * (Ll.gid * Ll.gdecl) lis
      be an array of pointers to arrays emitted as additional global declarations
 *)
 let rec cmp_gexp c (e:Ast.exp node) : Ll.gdecl * (Ll.gid * Ll.gdecl) list =
-  failwith "cmp_init not implemented"
+  begin match e.elt with
+    | CNull ty -> (((cmp_ty ty), GNull) , [])
+    | CBool v -> ((I1, GInt (if v then 1L else 0L)) , [])
+    | CInt v -> ((I64, GInt v) , [])
+    | CStr s -> ((Ptr I8, GString s) , [])
+    | CArr _ -> failwith "cmp_gexp not implemented CArr"
+    | NewArr _ -> failwith "cmp_gexp not supported: NewArr"
+    | Id _ -> failwith "cmp_gexp not supported: Id"
+    | Index _ -> failwith "cmp_gexp not supported: Index"
+    | Call _ -> failwith "cmp_gexp not supported: Call"
+    | Bop _ -> failwith "cmp_gexp not supported: Bop"
+    | Uop _ -> failwith "cmp_gexp not supported: Uop"
+  end
 
 
 (* Oat internals function context ------------------------------------------- *)
