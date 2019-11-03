@@ -155,8 +155,42 @@ let oat_alloc_array (t:Ast.ty) (size:Ll.operand) : Ll.ty * operand * stream =
     [ arr_id, Call(arr_ty, Gid "oat_alloc_array", [I64, size])
     ; ans_id, Bitcast(arr_ty, Id arr_id, ans_ty) ]
 
+let cmp_exp_as (c:Ctxt.t) (exp: Ast.exp node) (ty:Ll.ty) : Ll.operand * stream = 
+  begin match exp.elt with
+    | CNull ty -> failwith "cmp_exp_as CNull not implemented"
+    | CBool b -> failwith "cmp_exp_as CBool not implemented"
+    | CInt i -> failwith "cmp_exp_as CInt not implemented"
+    | CStr s -> failwith "cmp_exp_as CStr not implemented"
+    | CArr (ty, expl) -> failwith "cmp_exp_as CArr not implemented"
+    | _ -> failwith "case not implemented"
+  end
 
+let bin_op (c:Ctxt.t) (op: Ast.binop) (left: Ast.exp node) (right: Ast.exp node) :  Ll.ty * Ll.operand * stream  =
+  begin match op with 
+    | Add -> failwith "not implemented Add" 
+    | Sub -> failwith "not implemented Sub" 
+    | Mul -> failwith "not implemented Mul" 
+    | Eq -> failwith "not implemented Eq" 
+    | Neq -> failwith "not implemented Neq" 
+    | Lt -> failwith "not implemented Lt" 
+    | Lte -> failwith "not implemented Lte" 
+    | Gt -> failwith "not implemented Gt" 
+    | Gte -> failwith "not implemented Gte" 
+    | And -> failwith "not implemented And" 
+    | Or -> failwith "not implemented Or" 
+    | IAnd -> failwith "not implemented IAnd" 
+    | IOr -> failwith "not implemented IOr" 
+    | Shl -> failwith "not implemented Shl" 
+    | Shr -> failwith "not implemented Shr" 
+    | Sar -> failwith "not implemented Sar" 
+  end
 
+let un_op (c:Ctxt.t) (op: Ast.unop) (left: Ast.exp node) : Ll.ty * Ll.operand * stream =
+  begin match op with
+    | Neg -> failwith "not implemented Neg"
+    | Lognot -> failwith "not implemented Lognot"
+    | Bitnot -> failwith "not implemented Bitnot"
+  end
 
 (* Compiles an expression exp in context c, outputting the Ll operand that will
    recieve the value of the expression, and the stream of instructions
@@ -179,8 +213,19 @@ let oat_alloc_array (t:Ast.ty) (size:Ll.operand) : Ll.ty * operand * stream =
 
 *)
 let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
-  failwith "cmp_exp unimplemented"    
-
+   begin match exp.elt with
+    | CNull ty -> failwith "CNull not implemented "
+    | CBool b -> failwith "CBool not implemented"
+    | CInt i -> failwith "CInt not implemented"
+    | CStr s -> failwith "CStr not implemented"
+    | CArr (ty, expl) -> failwith "CArr not implemented"
+    | NewArr (ty, exp) -> failwith "NewArr not implemented"
+    | Id id -> failwith "Id not implemented"
+    | Index (exp, exp1) -> failwith "Index not implemented"
+    | Call (retty, args) -> failwith "Call not implemented"
+    | Bop (op, left, right) -> bin_op c op left right
+    | Uop (op, left) -> un_op c op left
+  end
 
 (* Compile a statement in context c with return typ rt. Return a new context, 
    possibly extended with new local bindings, and the instruction stream
@@ -207,9 +252,29 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
      compiling the Id or Index expression. Instead of loading the resulting
      pointer, you just need to store to it!
 
+    type elt = 
+      | L of Ll.lbl             (* block labels *)
+      | I of uid * Ll.insn      (* instruction *)
+      | T of Ll.terminator      (* block terminators *)
+      | G of gid * Ll.gdecl     (* hoisted globals (usually strings) *)
+      | E of uid * Ll.insn      (* hoisted entry block instructions *)
+
+    type stream = elt list
+
 *)
 let rec cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
-  failwith "cmp_stmt not implemented"
+ begin match stmt.elt with 
+    | Assn (lhs, rhs) -> failwith "Assn not implemented"
+    | Decl (id, exp) -> failwith "Decl not implemented" 
+    | Ret exp -> begin match exp with 
+      | None -> (c, [T (Ret (Void, None))])
+      | Some e -> failwith "Ret exp not implemented"
+      end
+    | SCall (ret, args) -> failwith "SCall not implemented"
+    | If (cond, ifblock, elseblock) -> failwith "If not implemented"
+    | For (vdecl, cond, update, body) -> failwith "For not implemented"
+    | While (cond, body) -> failwith "While not implemented"
+  end
 
 
 (* Compile a series of statements *)
