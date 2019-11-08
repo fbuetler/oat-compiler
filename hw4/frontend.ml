@@ -219,7 +219,7 @@ and bin_op (c:Ctxt.t) (op: Ast.binop) (left: Ast.exp node) (right: Ast.exp node)
   let l (opcode: Ll.bop):  Ll.ty * Ll.operand * stream  = 
     (I1, Id result, [I (result, Binop(opcode, I1, left_op, right_op))] @ right_stream @ left_stream) in
   let c (opcode: Ll.cnd): Ll.ty * Ll.operand * stream = 
-    (I1, Id result, [I (result, Icmp(opcode, I1, left_op, right_op))] @ right_stream @ left_stream) in
+    (I1, Id result, [I (result, Icmp(opcode, left_ty, left_op, right_op))] @ right_stream @ left_stream) in
   begin match op with 
     | Add -> b Add
     | Sub -> b Sub
@@ -301,7 +301,12 @@ let rec cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
     | SCall (ret, args) -> failwith "SCall not implemented"
     | If (cond, ifblock, elseblock) -> failwith "If not implemented"
     | For (vdecl, cond, update, body) -> failwith "For not implemented"
-    | While (cond, body) -> failwith "While not implemented"
+    | While (cond, body) -> 
+      let cond_lbl = gensym "cond" in 
+      let body_lbl = gensym "body" in
+      let end_lbl = gensym "end" in
+      let cond_ty, cond_op, cond_stream = cmp_exp c cond in
+      (c, [L end_lbl; T (Br cond_lbl)] @ cmp_block c Void body @ [L body_lbl] @ [T (Cbr (cond_op, body_lbl, end_lbl))] @ cond_stream @ [L cond_lbl; T (Br cond_lbl)])
   end
 
 

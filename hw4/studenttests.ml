@@ -10,6 +10,7 @@ let uop_tests = [
   ("atprograms/own/neg.oat", "", "3");
   ("atprograms/own/lognot.oat", "", "1");
   ("atprograms/own/bitnot.oat", "", "2");
+  ("atprograms/own/whilefalse.oat", "", "27");
 ]
 
 let provided_tests : suite = [
