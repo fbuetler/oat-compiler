@@ -286,6 +286,13 @@ and un_op (c:Ctxt.t) (op: Ast.unop) (left: Ast.exp node) : Ll.ty * Ll.operand * 
 
 *)
 let rec cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
+  let create_if cond block = 
+    let running = gensym "running" in
+    cmp_block c rt [
+      no_loc (Decl (running, no_loc (CBool true)));
+      no_loc (While (no_loc (Bop (And, cond, no_loc (Id running))), block @ [no_loc (Assn (no_loc(Id running), no_loc (CBool false)))]));
+    ]
+  in 
   begin match stmt.elt with 
     | Assn (lhs, rhs) -> 
       let lhs_oat_id = begin match lhs.elt with
@@ -306,7 +313,8 @@ let rec cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
           (c, [T (Ret (ty, Some op))] @ stream)
       end
     | SCall (ret, args) -> failwith "SCall not implemented"
-    | If (cond, ifblock, elseblock) -> failwith "If not implemented"
+    | If (cond, ifblock, elseblock) ->
+      (c, create_if (no_loc (Uop (Lognot, cond))) elseblock @ create_if cond ifblock)
     | For (vdecl, cond, update, body) -> failwith "For not implemented"
     | While (cond, body) -> 
       let cond_lbl = gensym "cond" in 
@@ -367,8 +375,11 @@ let cmp_global_ctxt (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
    4. Use cfg_of_stream to produce a LLVMlite cfg from 
 *)
 let cmp_fdecl (c:Ctxt.t) (f:Ast.fdecl node) : Ll.fdecl * (Ll.gid * Ll.gdecl) list =
+  let useless = gensym "useless" in
   let ret_ty = cmp_ret_ty f.elt.frtyp in
-  let body = cfg_of_stream @@ cmp_block c ret_ty f.elt.body in
+  let body = cfg_of_stream @@
+    [T (Br useless); L useless; T (Br useless)] @
+    cmp_block c ret_ty f.elt.body in
   (
     { 
       f_ty = (List.map (fun (ty, _) -> cmp_ty ty) f.elt.args, ret_ty); 
