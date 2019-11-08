@@ -195,7 +195,15 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
     | NewArr (ty, exp) -> failwith "NewArr not implemented"
     | Id id -> 
       let ty, op = (Ctxt.lookup id c) in
-      (ty, op, [])
+      begin match op with
+        | Id uid -> let name = gensym id in
+          let inner_ty = begin match ty with
+            | Ptr x -> x
+            | _ -> failwith "expected pointer"
+          end in
+          (inner_ty, Id name, [I (name, Load (ty, op))])
+        | _ -> (ty, op, [])
+      end
     | Index (exp, exp1) -> failwith "Index not implemented"
     | Call (retty, args) -> failwith "Call not implemented"
     | Bop (op, left, right) -> bin_op c op left right
@@ -280,7 +288,10 @@ and un_op (c:Ctxt.t) (op: Ast.unop) (left: Ast.exp node) : Ll.ty * Ll.operand * 
 let rec cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
   begin match stmt.elt with 
     | Assn (lhs, rhs) -> failwith "Assn not implemented"
-    | Decl (id, exp) -> failwith "Decl not implemented" 
+    | Decl (oat_id, exp) -> 
+      let ll_id = gensym oat_id in
+      let ty, op, stream = cmp_exp c exp in
+      (Ctxt.add c oat_id (Ptr ty, Id ll_id), [I ("", Store (ty, op, Id ll_id)); E (ll_id, Alloca ty)] @ stream)
     | Ret exp -> 
       begin match exp with 
         | None -> (c, [T (Ret (Void, None))])
