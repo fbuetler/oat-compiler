@@ -193,7 +193,9 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
     | CStr s -> failwith "CStr not implemented"
     | CArr (ty, expl) -> failwith "CArr not implemented"
     | NewArr (ty, exp) -> failwith "NewArr not implemented"
-    | Id id -> failwith "Id not implemented"
+    | Id id -> 
+      let ty, op = (Ctxt.lookup id c) in
+      (ty, op, [])
     | Index (exp, exp1) -> failwith "Index not implemented"
     | Call (retty, args) -> failwith "Call not implemented"
     | Bop (op, left, right) -> bin_op c op left right
@@ -203,23 +205,30 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
 and bin_op (c:Ctxt.t) (op: Ast.binop) (left: Ast.exp node) (right: Ast.exp node) :  Ll.ty * Ll.operand * stream  =
   let left_ty, left_op, left_stream = cmp_exp c left in
   let right_ty, right_op, right_stream = cmp_exp c right in
+  let result = gensym "result" in
+  let b (opcode: Ll.bop):  Ll.ty * Ll.operand * stream  = 
+    (I64, Id result, [I (result, Binop(opcode, I64, left_op, right_op))] @ right_stream @ left_stream) in
+  let l (opcode: Ll.bop):  Ll.ty * Ll.operand * stream  = 
+    (I1, Id result, [I (result, Binop(opcode, I1, left_op, right_op))] @ right_stream @ left_stream) in
+  let c (opcode: Ll.cnd): Ll.ty * Ll.operand * stream = 
+    (I1, Id result, [I (result, Icmp(opcode, I1, left_op, right_op))] @ right_stream @ left_stream) in
   begin match op with 
-    | Add -> (I64, left_op, left_stream @ right_stream)
-    | Sub -> failwith "not implemented Sub" 
-    | Mul -> failwith "not implemented Mul" 
-    | Eq -> failwith "not implemented Eq" 
-    | Neq -> failwith "not implemented Neq" 
-    | Lt -> failwith "not implemented Lt" 
-    | Lte -> failwith "not implemented Lte" 
-    | Gt -> failwith "not implemented Gt" 
-    | Gte -> failwith "not implemented Gte" 
-    | And -> failwith "not implemented And" 
-    | Or -> failwith "not implemented Or" 
-    | IAnd -> failwith "not implemented IAnd" 
-    | IOr -> failwith "not implemented IOr" 
-    | Shl -> failwith "not implemented Shl" 
-    | Shr -> failwith "not implemented Shr" 
-    | Sar -> failwith "not implemented Sar" 
+    | Add -> b Add
+    | Sub -> b Sub
+    | Mul -> b Mul
+    | Eq -> c Eq
+    | Neq -> c Ne
+    | Lt -> c Slt
+    | Lte -> c Sle
+    | Gt -> c Sgt
+    | Gte -> c Sge
+    | And -> b And
+    | Or -> b Or
+    | IAnd -> l And
+    | IOr -> l And
+    | Shl -> b Shl
+    | Shr -> b Lshr
+    | Sar -> b Ashr
   end
 
 and un_op (c:Ctxt.t) (op: Ast.unop) (left: Ast.exp node) : Ll.ty * Ll.operand * stream =
@@ -272,7 +281,7 @@ let rec cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
       begin match exp with 
         | None -> (c, [T (Ret (Void, None))])
         | Some exp -> let ty, op, stream = cmp_exp c exp in
-          (c, [T (Ret (ty, Some op))])
+          (c, [T (Ret (ty, Some op))] @ stream)
       end
     | SCall (ret, args) -> failwith "SCall not implemented"
     | If (cond, ifblock, elseblock) -> failwith "If not implemented"
