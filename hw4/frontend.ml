@@ -219,7 +219,7 @@ and bin_op (c:Ctxt.t) (op: Ast.binop) (left: Ast.exp node) (right: Ast.exp node)
   let l (opcode: Ll.bop):  Ll.ty * Ll.operand * stream  = 
     (I1, Id result, [I (result, Binop(opcode, I1, left_op, right_op))] @ right_stream @ left_stream) in
   let c (opcode: Ll.cnd): Ll.ty * Ll.operand * stream = 
-    (I1, Id result, [I (result, Icmp(opcode, left_ty, left_op, right_op))] @ right_stream @ left_stream) in
+    (I1, Id result, [I (result, Icmp(opcode, I64, left_op, right_op))] @ right_stream @ left_stream) in
   begin match op with 
     | Add -> b Add
     | Sub -> b Sub
@@ -230,10 +230,10 @@ and bin_op (c:Ctxt.t) (op: Ast.binop) (left: Ast.exp node) (right: Ast.exp node)
     | Lte -> c Sle
     | Gt -> c Sgt
     | Gte -> c Sge
-    | And -> b And
-    | Or -> b Or
-    | IAnd -> l And
-    | IOr -> l And
+    | And -> l And
+    | Or -> l Or
+    | IAnd -> b And
+    | IOr -> b And
     | Shl -> b Shl
     | Shr -> b Lshr
     | Sar -> b Ashr
