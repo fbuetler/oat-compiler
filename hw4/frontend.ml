@@ -214,8 +214,8 @@ let un_op (c:Ctxt.t) (op: Ast.unop) (left: Ast.exp node) : Ll.ty * Ll.operand * 
 *)
 let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
   begin match exp.elt with
-    | CNull ty -> failwith "CNull not implemented "
-    | CBool b -> failwith "CBool not implemented"
+    | CNull ty -> (cmp_ty ty, Const 0L, [])
+    | CBool b -> (I1, Const (if b then 1L else 0L), [])
     | CInt i -> (I64, Const i, [])
     | CStr s -> failwith "CStr not implemented"
     | CArr (ty, expl) -> failwith "CArr not implemented"
