@@ -213,10 +213,10 @@ let un_op (c:Ctxt.t) (op: Ast.unop) (left: Ast.exp node) : Ll.ty * Ll.operand * 
 
 *)
 let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
-   begin match exp.elt with
+  begin match exp.elt with
     | CNull ty -> failwith "CNull not implemented "
     | CBool b -> failwith "CBool not implemented"
-    | CInt i -> failwith "CInt not implemented"
+    | CInt i -> (I64, Const i, [])
     | CStr s -> failwith "CStr not implemented"
     | CArr (ty, expl) -> failwith "CArr not implemented"
     | NewArr (ty, exp) -> failwith "NewArr not implemented"
@@ -263,12 +263,14 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
 
 *)
 let rec cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
- begin match stmt.elt with 
+  begin match stmt.elt with 
     | Assn (lhs, rhs) -> failwith "Assn not implemented"
     | Decl (id, exp) -> failwith "Decl not implemented" 
-    | Ret exp -> begin match exp with 
-      | None -> (c, [T (Ret (Void, None))])
-      | Some e -> failwith "Ret exp not implemented"
+    | Ret exp -> 
+      begin match exp with 
+        | None -> (c, [T (Ret (Void, None))])
+        | Some exp -> let ty, op, stream = cmp_exp c exp in
+          (c, [T (Ret (ty, Some op))])
       end
     | SCall (ret, args) -> failwith "SCall not implemented"
     | If (cond, ifblock, elseblock) -> failwith "If not implemented"
