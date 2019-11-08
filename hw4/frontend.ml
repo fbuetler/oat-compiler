@@ -287,7 +287,14 @@ and un_op (c:Ctxt.t) (op: Ast.unop) (left: Ast.exp node) : Ll.ty * Ll.operand * 
 *)
 let rec cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
   begin match stmt.elt with 
-    | Assn (lhs, rhs) -> failwith "Assn not implemented"
+    | Assn (lhs, rhs) -> 
+      let lhs_oat_id = begin match lhs.elt with
+        | Id x -> x
+        | _ -> "unsupported lhs" (* TODO implement array lookups *)
+      end in
+      let _, lhs_ll_op = Ctxt.lookup lhs_oat_id c in
+      let ty, op, stream = cmp_exp c rhs in
+      (c, [I ("", Store (ty, op, lhs_ll_op))] @ stream)
     | Decl (oat_id, exp) -> 
       let ll_id = gensym oat_id in
       let ty, op, stream = cmp_exp c exp in
