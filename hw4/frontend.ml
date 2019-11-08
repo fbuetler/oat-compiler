@@ -165,33 +165,6 @@ let cmp_exp_as (c:Ctxt.t) (exp: Ast.exp node) (ty:Ll.ty) : Ll.operand * stream =
     | _ -> failwith "case not implemented"
   end
 
-let bin_op (c:Ctxt.t) (op: Ast.binop) (left: Ast.exp node) (right: Ast.exp node) :  Ll.ty * Ll.operand * stream  =
-  begin match op with 
-    | Add -> failwith "not implemented Add" 
-    | Sub -> failwith "not implemented Sub" 
-    | Mul -> failwith "not implemented Mul" 
-    | Eq -> failwith "not implemented Eq" 
-    | Neq -> failwith "not implemented Neq" 
-    | Lt -> failwith "not implemented Lt" 
-    | Lte -> failwith "not implemented Lte" 
-    | Gt -> failwith "not implemented Gt" 
-    | Gte -> failwith "not implemented Gte" 
-    | And -> failwith "not implemented And" 
-    | Or -> failwith "not implemented Or" 
-    | IAnd -> failwith "not implemented IAnd" 
-    | IOr -> failwith "not implemented IOr" 
-    | Shl -> failwith "not implemented Shl" 
-    | Shr -> failwith "not implemented Shr" 
-    | Sar -> failwith "not implemented Sar" 
-  end
-
-let un_op (c:Ctxt.t) (op: Ast.unop) (left: Ast.exp node) : Ll.ty * Ll.operand * stream =
-  begin match op with
-    | Neg -> failwith "not implemented Neg"
-    | Lognot -> failwith "not implemented Lognot"
-    | Bitnot -> failwith "not implemented Bitnot"
-  end
-
 (* Compiles an expression exp in context c, outputting the Ll operand that will
    recieve the value of the expression, and the stream of instructions
    implementing the expression. 
@@ -225,6 +198,35 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
     | Call (retty, args) -> failwith "Call not implemented"
     | Bop (op, left, right) -> bin_op c op left right
     | Uop (op, left) -> un_op c op left
+  end
+
+and bin_op (c:Ctxt.t) (op: Ast.binop) (left: Ast.exp node) (right: Ast.exp node) :  Ll.ty * Ll.operand * stream  =
+  let left_ty, left_op, left_stream = cmp_exp c left in
+  let right_ty, right_op, right_stream = cmp_exp c right in
+  begin match op with 
+    | Add -> (I64, left_op, left_stream @ right_stream)
+    | Sub -> failwith "not implemented Sub" 
+    | Mul -> failwith "not implemented Mul" 
+    | Eq -> failwith "not implemented Eq" 
+    | Neq -> failwith "not implemented Neq" 
+    | Lt -> failwith "not implemented Lt" 
+    | Lte -> failwith "not implemented Lte" 
+    | Gt -> failwith "not implemented Gt" 
+    | Gte -> failwith "not implemented Gte" 
+    | And -> failwith "not implemented And" 
+    | Or -> failwith "not implemented Or" 
+    | IAnd -> failwith "not implemented IAnd" 
+    | IOr -> failwith "not implemented IOr" 
+    | Shl -> failwith "not implemented Shl" 
+    | Shr -> failwith "not implemented Shr" 
+    | Sar -> failwith "not implemented Sar" 
+  end
+
+and un_op (c:Ctxt.t) (op: Ast.unop) (left: Ast.exp node) : Ll.ty * Ll.operand * stream =
+  begin match op with
+    | Neg -> failwith "not implemented Neg"
+    | Lognot -> failwith "not implemented Lognot"
+    | Bitnot -> failwith "not implemented Bitnot"
   end
 
 (* Compile a statement in context c with return typ rt. Return a new context, 
