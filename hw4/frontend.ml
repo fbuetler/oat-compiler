@@ -232,10 +232,14 @@ and bin_op (c:Ctxt.t) (op: Ast.binop) (left: Ast.exp node) (right: Ast.exp node)
   end
 
 and un_op (c:Ctxt.t) (op: Ast.unop) (left: Ast.exp node) : Ll.ty * Ll.operand * stream =
+  let inner_ty, inner_op, stream = cmp_exp c left in
+  let result = gensym "result" in
+  let u (ret_ty: Ll.ty) (instr: Ll.insn): Ll.ty * Ll.operand * stream  = 
+    (ret_ty, Id result, [I (result, instr)] @ stream) in
   begin match op with
-    | Neg -> failwith "not implemented Neg"
-    | Lognot -> failwith "not implemented Lognot"
-    | Bitnot -> failwith "not implemented Bitnot"
+    | Neg -> u I64 (Binop(Sub, I64, Const 0L, inner_op))
+    | Lognot -> u I1 (Icmp(Eq, I1, inner_op, Const 0L))
+    | Bitnot -> u I64 (Binop(Xor, I64, Const Int64.min_int, inner_op))
   end
 
 (* Compile a statement in context c with return typ rt. Return a new context, 
