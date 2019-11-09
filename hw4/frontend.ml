@@ -195,13 +195,16 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
     | NewArr (ty, exp) -> failwith "NewArr not implemented"
     | Id id -> 
       let ty, op = (Ctxt.lookup id c) in
+      let load_by_id id : Ll.ty * Ll.operand * stream =
+        let name = gensym id in
+        let inner_ty = begin match ty with
+          | Ptr x -> x
+          | _ -> failwith "expected pointer"
+        end in
+        (inner_ty, Id name, [I (name, Load (ty, op))]) in
       begin match op with
-        | Id uid -> let name = gensym id in
-          let inner_ty = begin match ty with
-            | Ptr x -> x
-            | _ -> failwith "expected pointer"
-          end in
-          (inner_ty, Id name, [I (name, Load (ty, op))])
+        | Id uid -> load_by_id uid
+        | Gid gid -> load_by_id gid
         | _ -> (ty, op, [])
       end
     | Index (exp, exp1) -> failwith "Index not implemented"
@@ -356,8 +359,8 @@ let cmp_function_ctxt (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
 let cmp_global_ctxt (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
   let f curc decl : Ctxt.t = begin match decl with
     | Gvdecl { elt = { name; init } } -> 
-      let t, op, _ = cmp_exp c init in
-      Ctxt.add curc name (t, op)
+      let ty, _, _ = cmp_exp c init in
+      Ctxt.add curc name (Ptr ty, Gid name)
     | Gfdecl node -> curc
   end in
   List.fold_left f c p 
@@ -417,11 +420,17 @@ let cmp_fdecl (c_entry:Ctxt.t) (f:Ast.fdecl node) : Ll.fdecl * (Ll.gid * Ll.gdec
      be an array of pointers to arrays emitted as additional global declarations
 *)
 let rec cmp_gexp c (e:Ast.exp node) : Ll.gdecl * (Ll.gid * Ll.gdecl) list =
+  (*
+    From https://llvm.org/docs/LangRef.html#global-variables
+    "Global variables always define a pointer to their “content” type because they describe a region of memory, and all memory objects in LLVM are accessed through pointers."
+
+    See hw3/llprograms/global1.ll for an example
+  *)
   begin match e.elt with
-    | CNull ty -> (((cmp_ty ty), GNull) , [])
+    | CNull ty -> (((cmp_ty ty), GNull) , []) (* TODO May need to be Ptr *)
     | CBool v -> ((I1, GInt (if v then 1L else 0L)) , [])
     | CInt v -> ((I64, GInt v) , [])
-    | CStr s -> ((Ptr I8, GString s) , [])
+    | CStr s -> ((Ptr I8, GString s), []) (* TODO May not need to Ptr *)
     | CArr _ -> failwith "cmp_gexp not implemented CArr"
     | NewArr _ -> failwith "cmp_gexp not supported: NewArr"
     | Id _ -> failwith "cmp_gexp not supported: Id"
