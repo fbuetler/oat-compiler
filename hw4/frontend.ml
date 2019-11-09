@@ -332,7 +332,20 @@ let rec cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
     | SCall (ret, args) -> failwith "SCall not implemented"
     | If (cond, ifblock, elseblock) ->
       (c, create_if (no_loc (Uop (Lognot, cond))) elseblock @ create_if cond ifblock)
-    | For (vdecl, cond, update, body) -> failwith "For not implemented"
+    | For (vdecls, cond, update, body) -> 
+      let while_cond = begin match cond with
+        | Some x -> x
+        | None -> no_loc (CBool true)
+      end in 
+      let while_update = begin match update with
+        | Some x -> x
+        | None -> no_loc (If (no_loc (CBool false), [], []))
+      end in
+      let block_content = (
+        List.map (fun d -> Decl d) vdecls @
+        [While (while_cond, body @ [while_update])]
+      ) in
+      (c, cmp_block c rt @@ List.map no_loc block_content)
     | While (cond, body) -> 
       let cond_lbl = gensym "cond" in 
       let body_lbl = gensym "body" in
