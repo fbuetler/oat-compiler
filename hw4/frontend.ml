@@ -329,7 +329,9 @@ let rec cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
         | Some exp -> let ty, op, stream = cmp_exp c exp in
           (c, [T (Ret (ty, Some op))] @ stream)
       end
-    | SCall (ret, args) -> failwith "SCall not implemented"
+    | SCall (ret, args) -> 
+      let _, _, stream = cmp_exp c @@ no_loc (Call (ret, args)) in
+      (c, stream)
     | If (cond, ifblock, elseblock) ->
       (c, create_if (no_loc (Uop (Lognot, cond))) elseblock @ create_if cond ifblock)
     | For (vdecls, cond, update, body) -> 
