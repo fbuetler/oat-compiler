@@ -186,13 +186,36 @@ let cmp_exp_as (c:Ctxt.t) (exp: Ast.exp node) (ty:Ll.ty) : Ll.operand * stream =
 
 *)
 let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
+  let eval_exprs exprs = 
+    let ops, stream = List.fold_left (fun (cur_ops, cur_stream) arg -> 
+        let ty, op, stream = cmp_exp c arg in
+        ((ty, op) :: cur_ops, stream @ cur_stream)
+      ) ([], []) exprs in
+    (List.rev ops, stream) in
   begin match exp.elt with
     | CNull ty -> (cmp_ty ty, Const 0L, [])
     | CBool b -> (I1, Const (if b then 1L else 0L), [])
     | CInt i -> (I64, Const i, [])
     | CStr s -> failwith "CStr not implemented"
-    | CArr (ty, expl) -> failwith "CArr not implemented"
-    | NewArr (ty, exp) -> failwith "NewArr not implemented"
+    | CArr (ty, expl) ->
+      (* TODO Assign the array to a local temporarily, so indexing is possible *)
+      let a_ty, a_op, a_stream = cmp_exp c @@
+        no_loc (NewArr (ty, no_loc (CInt (Int64.of_int @@ List.length expl)))) in
+      let eval_ops, eval_stream = eval_exprs expl in
+      failwith "not implemented fully"
+    (* let copy_stream: stream = List.flatten @@ List.mapi (fun i e -> 
+        let _, stmt_stream = cmp_stmt c Void @@ no_loc (
+            Assn (Index ((), CInt (Int64.of_int i)), ())
+          ) in
+        stmt_stream
+       ) eval_ops
+       in 
+       (a_ty, a_op, copy_stream @ eval_stream @ a_stream) *)
+    | NewArr (ty, exp) ->
+      (* TODO Should the elements be zero-initialized? *)
+      let _, s_op, s_stream = cmp_exp c exp in
+      let a_ty, a_op, a_stream = oat_alloc_array ty s_op in
+      (a_ty, a_op, a_stream @ s_stream)
     | Id id -> 
       let ty, op = (Ctxt.lookup id c) in
       let load_by_id id : Ll.ty * Ll.operand * stream =
@@ -218,11 +241,8 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
         | _ -> failwith @@ f_name ^ " not bound to a function"
       end in
       let retval = gensym "retval" in
-      let arg_ops, arg_stream = List.fold_left (fun (cur_ops, cur_stream) arg -> 
-          let ty, op, stream = cmp_exp c arg in
-          ((ty, op) :: cur_ops, stream @ cur_stream)
-        ) ([], []) args in
-      (ret_ty, Id retval, [I (retval, Call (ret_ty, Gid f_name, List.rev arg_ops))] @ arg_stream)
+      let arg_ops, arg_stream = eval_exprs args in
+      (ret_ty, Id retval, [I (retval, Call (ret_ty, Gid f_name, arg_ops))] @ arg_stream)
     | Bop (op, left, right) -> bin_op c op left right
     | Uop (op, left) -> un_op c op left
   end
@@ -302,7 +322,7 @@ and un_op (c:Ctxt.t) (op: Ast.unop) (left: Ast.exp node) : Ll.ty * Ll.operand * 
     type stream = elt list
 
 *)
-let rec cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
+and cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
   begin match stmt.elt with 
     | Assn (lhs, rhs) -> 
       let lhs_oat_id = begin match lhs.elt with
