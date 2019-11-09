@@ -198,19 +198,14 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
     | CInt i -> (I64, Const i, [])
     | CStr s -> failwith "CStr not implemented"
     | CArr (ty, expl) ->
-      (* TODO Assign the array to a local temporarily, so indexing is possible *)
-      let a_ty, a_op, a_stream = cmp_exp c @@
-        no_loc (NewArr (ty, no_loc (CInt (Int64.of_int @@ List.length expl)))) in
-      let eval_ops, eval_stream = eval_exprs expl in
-      failwith "not implemented fully"
-    (* let copy_stream: stream = List.flatten @@ List.mapi (fun i e -> 
-        let _, stmt_stream = cmp_stmt c Void @@ no_loc (
-            Assn (Index ((), CInt (Int64.of_int i)), ())
-          ) in
-        stmt_stream
-       ) eval_ops
-       in 
-       (a_ty, a_op, copy_stream @ eval_stream @ a_stream) *)
+      let arr_id = no_loc (Id (gensym "arr")) in
+      let new_exp = no_loc (NewArr (ty, no_loc (CInt (Int64.of_int @@ List.length expl)))) in
+      let created_c, create_stream = cmp_stmt c Void (no_loc (Assn (arr_id, new_exp))) in
+      let a_ty, a_op, a_stream = cmp_exp created_c arr_id in
+      let block_stream = cmp_block created_c Void (List.mapi (fun i e -> 
+          no_loc (Assn (no_loc (Index (arr_id, no_loc (CInt (Int64.of_int i)))), e))
+        ) expl) in
+      (a_ty, a_op, a_stream @ block_stream @ create_stream)
     | NewArr (ty, exp) ->
       (* TODO Should the elements be zero-initialized? *)
       let _, s_op, s_stream = cmp_exp c exp in
