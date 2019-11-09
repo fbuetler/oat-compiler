@@ -208,7 +208,18 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
         | _ -> (ty, op, [])
       end
     | Index (exp, exp1) -> failwith "Index not implemented"
-    | Call (retty, args) -> failwith "Call not implemented"
+    | Call (f_exp, args) -> 
+      let f_name = begin match f_exp.elt with
+        | Id x -> x
+        | _ -> failwith "calling a non-identifier expression as a function is not supported"
+      end in
+      let ret_ty = begin match Ctxt.lookup f_name c with
+        | Ptr (Fun (_, ret)), _ -> ret
+        | _ -> failwith @@ f_name ^ " not bound to a function"
+      end in
+      let retval = gensym "retval" in
+      (* TODO pass arguments *)
+      (ret_ty, Id retval, [I (retval, Call (ret_ty, Gid f_name, []))])
     | Bop (op, left, right) -> bin_op c op left right
     | Uop (op, left) -> un_op c op left
   end
