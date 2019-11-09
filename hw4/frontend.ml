@@ -362,6 +362,17 @@ let cmp_global_ctxt (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
   end in
   List.fold_left f c p 
 
+let cmp_farg (c: Ctxt.t) ((ast_ty, external_name): (Ast.ty * Ast.id)) : (Ctxt.t * stream) =
+  let local_name = gensym external_name in
+  let ll_ty = cmp_ty ast_ty in
+  (
+    Ctxt.add c local_name (Ptr ll_ty, Id local_name),
+    [
+      I ("", Store (ll_ty, Id external_name, Id local_name));
+      E (local_name, Alloca ll_ty);
+    ]
+  )
+
 
 (* Compile a function declaration in global context c. Return the LLVMlite cfg
    and a list of global declarations containing the string literals appearing
@@ -374,12 +385,17 @@ let cmp_global_ctxt (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
    3. Compile the body of the function using cmp_block
    4. Use cfg_of_stream to produce a LLVMlite cfg from 
 *)
-let cmp_fdecl (c:Ctxt.t) (f:Ast.fdecl node) : Ll.fdecl * (Ll.gid * Ll.gdecl) list =
+let cmp_fdecl (c_entry:Ctxt.t) (f:Ast.fdecl node) : Ll.fdecl * (Ll.gid * Ll.gdecl) list =
+  let c_body, arg_copy_stream = List.fold_left (fun (c_cur, stream) arg -> 
+      let next_c, extra_stream = cmp_farg c_cur arg in
+      (next_c, extra_stream @ stream)
+    ) (c_entry, []) f.elt.args in
   let useless = gensym "useless" in
   let ret_ty = cmp_ret_ty f.elt.frtyp in
   let body = cfg_of_stream @@
     [T (Br useless); L useless; T (Br useless)] @
-    cmp_block c ret_ty f.elt.body in
+    cmp_block c_body ret_ty f.elt.body @ (* TODO use ctx with locals *)
+    arg_copy_stream in
   (
     { 
       f_ty = (List.map (fun (ty, _) -> cmp_ty ty) f.elt.args, ret_ty); 
