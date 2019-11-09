@@ -303,13 +303,6 @@ and un_op (c:Ctxt.t) (op: Ast.unop) (left: Ast.exp node) : Ll.ty * Ll.operand * 
 
 *)
 let rec cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
-  let create_if cond block = 
-    let running = gensym "running" in
-    cmp_block c rt [
-      no_loc (Decl (running, no_loc (CBool true)));
-      no_loc (While (no_loc (Bop (And, cond, no_loc (Id running))), block @ [no_loc (Assn (no_loc(Id running), no_loc (CBool false)))]));
-    ]
-  in 
   begin match stmt.elt with 
     | Assn (lhs, rhs) -> 
       let lhs_oat_id = begin match lhs.elt with
@@ -332,8 +325,13 @@ let rec cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
     | SCall (ret, args) -> 
       let _, _, stream = cmp_exp c @@ no_loc (Call (ret, args)) in
       (c, stream)
-    | If (cond, ifblock, elseblock) ->
-      (c, create_if (no_loc (Uop (Lognot, cond))) elseblock @ create_if cond ifblock)
+    | If (cond_exp, ifblock, elseblock) ->
+      let cond_val = gensym "cond_val" in 
+      let if_c, cond_stream = cmp_stmt c rt @@ no_loc (Decl (cond_val, cond_exp)) in
+      (c,
+       cmp_if if_c (no_loc (Uop (Lognot, no_loc (Id cond_val)))) elseblock @
+       cmp_if if_c (no_loc (Id cond_val)) ifblock @
+       cond_stream)
     | For (vdecls, cond, update, body) -> 
       let while_cond = begin match cond with
         | Some x -> x
@@ -364,6 +362,12 @@ and cmp_block (c:Ctxt.t) (rt:Ll.ty) (stmts:Ast.block) : stream =
       c, code >@ stmt_code
     ) (c,[]) stmts
 
+and cmp_if c cond block : stream  = 
+  let running = gensym "running" in
+  cmp_block c Void [
+    no_loc (Decl (running, no_loc (CBool true)));
+    no_loc (While (no_loc (Bop (And, cond, no_loc (Id running))), block @ [no_loc (Assn (no_loc(Id running), no_loc (CBool false)))]));
+  ]
 
 
 (* Adds each function identifer to the context at an
