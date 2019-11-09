@@ -214,12 +214,15 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
         | _ -> failwith "calling a non-identifier expression as a function is not supported"
       end in
       let ret_ty = begin match Ctxt.lookup f_name c with
-        | Ptr (Fun (_, ret)), _ -> ret
+        | Ptr (Fun (args, ret)), _ -> ret
         | _ -> failwith @@ f_name ^ " not bound to a function"
       end in
       let retval = gensym "retval" in
-      (* TODO pass arguments *)
-      (ret_ty, Id retval, [I (retval, Call (ret_ty, Gid f_name, []))])
+      let arg_ops, arg_stream = List.fold_left (fun (cur_ops, cur_stream) arg -> 
+          let ty, op, stream = cmp_exp c arg in
+          ((ty, op) :: cur_ops, stream @ cur_stream)
+        ) ([], []) args in
+      (ret_ty, Id retval, [I (retval, Call (ret_ty, Gid f_name, List.rev arg_ops))] @ arg_stream)
     | Bop (op, left, right) -> bin_op c op left right
     | Uop (op, left) -> un_op c op left
   end
