@@ -1,0 +1,15 @@
+global x = 0;
+
+int f(int new_x) {
+  x = new_x;
+  return 0;
+}
+
+void g(int a, int b, int c) {
+  return;
+}
+
+int program(int argc, string[] args) {
+  g(f(1), f(2), f(3));
+  return x;
+}

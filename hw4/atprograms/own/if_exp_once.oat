@@ -1,0 +1,17 @@
+global x = 0;
+
+bool f() {
+  x = x + 1;
+  return false;
+}
+
+int program(int argc, string[] args) {
+  if (f()) {
+  }
+  if (f()) {
+
+  } else {
+
+  }
+  return x;
+}

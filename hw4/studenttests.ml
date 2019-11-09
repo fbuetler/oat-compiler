@@ -11,6 +11,9 @@ let uop_tests = [
   ("atprograms/own/lognot.oat", "", "1");
   ("atprograms/own/bitnot.oat", "", "2");
   ("atprograms/own/whilefalse.oat", "", "27");
+  ("atprograms/own/call_arg_order.oat", "", "3");
+  ("atprograms/own/array_exp_order.oat", "", "3");
+  ("atprograms/own/if_exp_once.oat", "", "2");
 ]
 
 let provided_tests : suite = [
