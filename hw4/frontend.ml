@@ -362,13 +362,13 @@ let cmp_global_ctxt (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
   end in
   List.fold_left f c p 
 
-let cmp_farg (c: Ctxt.t) ((ast_ty, external_name): (Ast.ty * Ast.id)) : (Ctxt.t * stream) =
-  let local_name = gensym external_name in
+let cmp_farg (c: Ctxt.t) ((ast_ty, oat_name): (Ast.ty * Ast.id)) : (Ctxt.t * stream) =
+  let local_name = gensym oat_name in
   let ll_ty = cmp_ty ast_ty in
   (
-    Ctxt.add c local_name (Ptr ll_ty, Id local_name),
+    Ctxt.add c oat_name (Ptr ll_ty, Id local_name),
     [
-      I ("", Store (ll_ty, Id external_name, Id local_name));
+      I ("", Store (ll_ty, Id oat_name, Id local_name));
       E (local_name, Alloca ll_ty);
     ]
   )
@@ -394,7 +394,7 @@ let cmp_fdecl (c_entry:Ctxt.t) (f:Ast.fdecl node) : Ll.fdecl * (Ll.gid * Ll.gdec
   let ret_ty = cmp_ret_ty f.elt.frtyp in
   let body = cfg_of_stream @@
     [T (Br useless); L useless; T (Br useless)] @
-    cmp_block c_body ret_ty f.elt.body @ (* TODO use ctx with locals *)
+    cmp_block c_body ret_ty f.elt.body @
     arg_copy_stream in
   (
     { 
