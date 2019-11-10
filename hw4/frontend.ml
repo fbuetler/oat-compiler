@@ -389,12 +389,10 @@ and cmp_lhs c lhs : (Ll.operand * stream) =
     | Index (recv_exp, idx_exp) ->
       let recv_ty, recv_op, recv_stream = cmp_exp c recv_exp in
       let _, idx_op, idx_stream = cmp_exp c idx_exp in
-      let el_ty = begin match recv_ty with
-        | Ptr (Struct [I64; Array (_, x) ]) -> x
-        | _ -> failwith "unsupported reciever type in index expression"
-      end in
       let el = gensym "el" in
-      (Id el, idx_stream @ recv_stream)
+      (Id el, [
+          I (el, Gep (recv_ty, recv_op, [Const 0L; Const 1L; idx_op]))
+        ] @ idx_stream @ recv_stream)
     | _ -> failwith "unsupported lhs"
   end
 
