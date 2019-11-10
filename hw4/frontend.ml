@@ -198,9 +198,10 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
     | CInt i -> (I64, Const i, [])
     | CStr s -> failwith "CStr not implemented"
     | CArr (ty, expl) ->
-      let arr_id = no_loc (Id (gensym "arr")) in
+      let arr_name = gensym "arr" in
+      let arr_id = no_loc (Id arr_name) in
       let new_exp = no_loc (NewArr (ty, no_loc (CInt (Int64.of_int @@ List.length expl)))) in
-      let created_c, create_stream = cmp_stmt c Void (no_loc (Assn (arr_id, new_exp))) in
+      let created_c, create_stream = cmp_stmt c Void (no_loc (Decl (arr_name, new_exp))) in
       let a_ty, a_op, a_stream = cmp_exp created_c arr_id in
       let block_stream = cmp_block created_c Void (List.mapi (fun i e -> 
           no_loc (Assn (no_loc (Index (arr_id, no_loc (CInt (Int64.of_int i)))), e))
@@ -322,7 +323,7 @@ and cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
     | Assn (lhs, rhs) -> 
       let lhs_oat_id = begin match lhs.elt with
         | Id x -> x
-        | _ -> "unsupported lhs" (* TODO implement array lookups *)
+        | _ -> failwith "unsupported lhs" (* TODO implement array lookups *)
       end in
       let _, lhs_ll_op = Ctxt.lookup lhs_oat_id c in
       let ty, op, stream = cmp_exp c rhs in
