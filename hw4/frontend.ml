@@ -187,6 +187,7 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
     begin match ty with
       | Ptr inner_ty -> (inner_ty, Id value, [I (value, Load (ty, op))])
       | Array (_, I8) -> (Ptr I8, Id value, [I (value, Bitcast (Ptr ty, op, Ptr I8))])
+      | Struct _ -> (Ptr ty, op, [])
       | _ -> failwith "expected pointer or array (global string)"
     end in
   begin match exp.elt with
@@ -415,23 +416,6 @@ let cmp_function_ctxt (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
       | _ -> c
     ) c p 
 
-(* Populate a context with bindings for global variables 
-   mapping OAT identifiers to LLVMlite gids and their types.
-
-   Only a small subset of OAT expressions can be used as global initializers
-   in well-formed programs. (The constructors starting with C). 
-*)
-let cmp_global_ctxt (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
-  let f curc decl : Ctxt.t = begin match decl with
-    | Gvdecl { elt = { name; init = { elt = (CStr s) } } } -> 
-      Ctxt.add curc name (Array (String.length s + 1, I8), Gid name)
-    | Gvdecl { elt = { name; init } } -> 
-      let ty, _, _ = cmp_exp c init in
-      Ctxt.add curc name (Ptr ty, Gid name)
-    | Gfdecl node -> curc
-  end in
-  List.fold_left f c p 
-
 let cmp_farg (c: Ctxt.t) ((ast_ty, oat_name): (Ast.ty * Ast.id)) : (Ctxt.t * stream) =
   let local_name = gensym oat_name in
   let ll_ty = cmp_ty ast_ty in
@@ -498,7 +482,9 @@ let rec cmp_gexp c (e:Ast.exp node) : Ll.gdecl * (Ll.gid * Ll.gdecl) list =
     | CBool v -> ((I1, GInt (if v then 1L else 0L)) , [])
     | CInt v -> ((I64, GInt v) , [])
     | CStr s -> ((Array (String.length s + 1, I8), GString s), [])
-    | CArr _ -> failwith "cmp_gexp not implemented CArr"
+    | CArr _ -> 
+      let _, decl, extra = cmp_garr c e in
+      (decl, extra)
     | NewArr _ -> failwith "cmp_gexp not supported: NewArr"
     | Id _ -> failwith "cmp_gexp not supported: Id"
     | Index _ -> failwith "cmp_gexp not supported: Index"
@@ -506,6 +492,49 @@ let rec cmp_gexp c (e:Ast.exp node) : Ll.gdecl * (Ll.gid * Ll.gdecl) list =
     | Bop _ -> failwith "cmp_gexp not supported: Bop"
     | Uop _ -> failwith "cmp_gexp not supported: Uop"
   end
+
+and cmp_garr c (e: Ast.exp node) : Ll.ty * Ll.gdecl * (Ll.gid * Ll.gdecl) list = 
+  begin match e.elt with
+    | CArr (_, elem_exprs) -> 
+      let elem_ty, elem_decls, extra = List.fold_left (fun (cur_tys, cur_elem_decls, cur_extra) expr ->
+          let ty, decl, new_extra = cmp_garr c expr in
+          (ty, decl :: cur_elem_decls, new_extra @ cur_extra)
+        ) (I64, [], []) elem_exprs in (* HACK assume empty global arrays contain I64s *)
+      let l = List.length elem_exprs in
+      let inner_arr_ty = Array (l, elem_ty) in
+      let struct_arr_ty = Struct([I64; inner_arr_ty]) in
+      (struct_arr_ty,
+       (struct_arr_ty, GStruct ([
+            (I64, GInt (Int64.of_int l));
+            (inner_arr_ty, GArray elem_decls)
+          ])),
+       extra)
+    | _ ->
+      let ty, _, _ = cmp_exp c e in
+      let decl, extra = cmp_gexp c e in
+      (ty, decl, extra)
+  end
+
+
+(* Populate a context with bindings for global variables 
+   mapping OAT identifiers to LLVMlite gids and their types.
+
+   Only a small subset of OAT expressions can be used as global initializers
+   in well-formed programs. (The constructors starting with C). 
+*)
+let cmp_global_ctxt (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
+  let f curc decl : Ctxt.t = begin match decl with
+    | Gvdecl { elt = { name; init = { elt = (CStr s) } } } -> 
+      Ctxt.add curc name (Array (String.length s + 1, I8), Gid name)
+    | Gvdecl { elt = { name; init = { elt = (CArr (l, elems)) } } } -> 
+      let ty, _, _ = cmp_garr c @@ no_loc (CArr (l, elems)) in
+      Ctxt.add curc name (ty, Gid name)
+    | Gvdecl { elt = { name; init } } -> 
+      let ty, _, _ = cmp_exp c init in
+      Ctxt.add curc name (Ptr ty, Gid name)
+    | Gfdecl node -> curc
+  end in
+  List.fold_left f c p 
 
 
 (* Oat internals function context ------------------------------------------- *)
