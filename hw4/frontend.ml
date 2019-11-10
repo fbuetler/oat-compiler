@@ -192,6 +192,13 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
         ((ty, op) :: cur_ops, stream @ cur_stream)
       ) ([], []) exprs in
     (List.rev ops, stream) in
+  let load ty op : Ll.ty * Ll.operand * stream =
+    let value = gensym "value" in
+    let inner_ty = begin match ty with
+      | Ptr x -> x
+      | _ -> failwith "expected pointer"
+    end in
+    (inner_ty, Id value, [I (value, Load (ty, op))]) in
   begin match exp.elt with
     | CNull ty -> (cmp_ty ty, Const 0L, [])
     | CBool b -> (I1, Const (if b then 1L else 0L), [])
@@ -214,19 +221,15 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
       (a_ty, a_op, a_stream @ s_stream)
     | Id id -> 
       let ty, op = (Ctxt.lookup id c) in
-      let load_by_id id : Ll.ty * Ll.operand * stream =
-        let name = gensym id in
-        let inner_ty = begin match ty with
-          | Ptr x -> x
-          | _ -> failwith "expected pointer"
-        end in
-        (inner_ty, Id name, [I (name, Load (ty, op))]) in
       begin match op with
-        | Id uid -> load_by_id uid
-        | Gid gid -> load_by_id gid
+        | Id uid -> load ty op
+        | Gid gid -> load ty op
         | _ -> (ty, op, [])
       end
-    | Index (exp, exp1) -> failwith "Index not implemented"
+    | Index _ ->
+      let lhs_ty, lhs_op, lhs_stream = cmp_lhs c exp in
+      let load_ty, load_op, load_stream = load lhs_ty lhs_op in
+      (load_ty, load_op, load_stream @ lhs_stream)
     | Call (f_exp, args) -> 
       let f_name = begin match f_exp.elt with
         | Id x -> x
@@ -321,7 +324,7 @@ and un_op (c:Ctxt.t) (op: Ast.unop) (left: Ast.exp node) : Ll.ty * Ll.operand * 
 and cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
   begin match stmt.elt with 
     | Assn (lhs, rhs) -> 
-      let lhs_op, lhs_stream = cmp_lhs c lhs in
+      let _, lhs_op, lhs_stream = cmp_lhs c lhs in
       let ty, op, stream = cmp_exp c rhs in
       (c, [I ("", Store (ty, op, lhs_op))] @ stream @ lhs_stream)
     | Decl (oat_id, exp) -> 
@@ -381,16 +384,20 @@ and cmp_if c cond block : stream  =
     no_loc (While (no_loc (Bop (And, cond, no_loc (Id running))), block @ [no_loc (Assn (no_loc(Id running), no_loc (CBool false)))]));
   ]
 
-and cmp_lhs c lhs : (Ll.operand * stream) =
+and cmp_lhs c lhs : (Ll.ty * Ll.operand * stream) =
   begin match lhs.elt with
     | Id lhs_oat_id -> 
-      let _, lhs_ll_op = Ctxt.lookup lhs_oat_id c in
-      (lhs_ll_op, [])
+      let ty, op = Ctxt.lookup lhs_oat_id c in
+      (ty, op, [])
     | Index (recv_exp, idx_exp) ->
       let recv_ty, recv_op, recv_stream = cmp_exp c recv_exp in
       let _, idx_op, idx_stream = cmp_exp c idx_exp in
+      let el_ty = begin match recv_ty with
+        | Ptr (Struct [I64; Array (_, x)]) -> x
+        | _ -> failwith "unsupported receiver type in index expression"
+      end in
       let el = gensym "el" in
-      (Id el, [
+      (Ptr el_ty, Id el, [
           I (el, Gep (recv_ty, recv_op, [Const 0L; Const 1L; idx_op]))
         ] @ idx_stream @ recv_stream)
     | _ -> failwith "unsupported lhs"
