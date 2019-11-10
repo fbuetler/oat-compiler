@@ -378,9 +378,10 @@ void test_parse_various_tags() {
     "<parent><child/></parent>",
     "<  parent > <   child /   > < /  parent >",
     "<parent><child><another/></child></parent>",
-    "<rect stroke  =   'blue'  stroke-width  = '3' / >"
+    "<rect stroke  =   'blue'  stroke-width  = '3' / >",
+    "<parent><child><another with='attr' /></child></parent>"
   };
-  var count = 5;
+  var count = 7;
 
   for (var i = 0; i < count; i = i + 1;) {
     load_input(convert_quotes(inputs[i]));
