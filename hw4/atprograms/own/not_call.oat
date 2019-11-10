@@ -1,0 +1,13 @@
+bool give_truth() {
+  return true;
+}
+
+int program (int argc, string[] argv) {
+  if ((give_truth()) != true) {
+    return 1;
+  }
+  if ((!give_truth()) != false) {
+    return 2;
+  }
+  return 0;
+}
