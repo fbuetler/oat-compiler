@@ -14,7 +14,7 @@ let own_tests = [
   ("atprograms/own/call_arg_order.oat", "", "3");
   ("atprograms/own/array_exp_order.oat", "", "3");
   ("atprograms/own/if_exp_once.oat", "", "2");
-  ("atprograms/own/not_call.oat", "", "2");
+  ("atprograms/own/not_call.oat", "", "0");
   (* TODO add all the tests from atprogrmas/own *)
 ]
 
