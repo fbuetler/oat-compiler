@@ -508,7 +508,7 @@ let rec cmp_gexp c (e:Ast.exp node) : Ll.gdecl * (Ll.gid * Ll.gdecl) list =
 and cmp_garr c (e: Ast.exp node) : Ll.ty * Ll.gdecl * (Ll.gid * Ll.gdecl) list = 
   begin match e.elt with
     | CArr (_, elem_exprs) -> 
-      let elem_ty, elem_decls, extra = List.fold_left (fun (cur_tys, cur_elem_decls, cur_extra) expr ->
+      let elem_ty, elem_decls_rev, extra = List.fold_left (fun (cur_tys, cur_elem_decls, cur_extra) expr ->
           let ty, decl, new_extra = cmp_garr c expr in
           (ty, decl :: cur_elem_decls, new_extra @ cur_extra)
         ) (I64, [], []) elem_exprs in (* HACK assume empty global arrays contain I64s *)
@@ -518,7 +518,7 @@ and cmp_garr c (e: Ast.exp node) : Ll.ty * Ll.gdecl * (Ll.gid * Ll.gdecl) list =
       (struct_arr_ty,
        (struct_arr_ty, GStruct ([
             (I64, GInt (Int64.of_int l));
-            (inner_arr_ty, GArray elem_decls)
+            (inner_arr_ty, GArray (List.rev elem_decls_rev))
           ])),
        extra)
     | _ ->
