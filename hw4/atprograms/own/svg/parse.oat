@@ -221,6 +221,25 @@ void test_divide() {
   return;
 }
 
+void test_take_from_ranges_single(string input, string ranges, int taken) {
+  load_input(input);
+  take_from_ranges(ranges);
+  assert(parse_pos == taken);
+  return;
+}
+
+void test_take_from_ranges() {
+  test_take_from_ranges_single("walrus", "az", 6);
+  test_take_from_ranges_single("Walrus", "az", 0);
+  test_take_from_ranges_single("Walrus", "azAZ", 6);
+  test_take_from_ranges_single("1==1", "<>09", 4);
+  test_take_from_ranges_single("1==1", "<>19", 4);
+  test_take_from_ranges_single("1==1", "<>29", 0);
+  test_take_from_ranges_single("1==1", "<>01", 4);
+  test_take_from_ranges_single("1==1", "<>00", 0);
+  return;
+}
+
 void test_parse_rect() {
   load_input("<rect />");
   var tag = parse_tag();
@@ -262,6 +281,7 @@ void test_parse_various() {
 void run_tests() {
   test_str_eq();
   test_divide();
+  test_take_from_ranges();
   test_parse_rect();
   test_parse_nested();
   test_parse_various();
