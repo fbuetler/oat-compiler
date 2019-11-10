@@ -15,11 +15,16 @@ Strings are stored as int[] for easy manipulation.
 AST nodes (XML tags) are stored as int[][], where node[0][0]
 is ((length of outer array) - 1). This is effectively
 a string[], but those are hard to get the length of.
+
 To allow parsing nested tags, the position of the ">" of
 the opening tag is stored in node[0][1], and the position
 of the "<" of the closing tag is stored in node[0][2]. For
 self closing tags node[0][1] and node[0][2] both contain
 the position of the only ">".
+
+node[1] contains the name of the tag.
+node[1 + 2 * i] contains the name of the i-th attribue (starting at 0).
+node[2 + 2 * i] contains the value of the i-th attribute.
 */
 
 /* assert will segfault if the passed condition is false */
@@ -45,7 +50,7 @@ bool take_whitespace() {
   return did_take;
 }
 
-bool take_string(string s) {
+bool take_this(string s) {
   var len = length_of_string(s);
   var chars = array_of_string(s);
   var i = 0;
@@ -62,20 +67,97 @@ bool take_string(string s) {
   return i == len;
 }
 
+int[] take_lower_letters() {
+  var start_pos = parse_pos;
+  var count = 0;
+  var unmatched = false;
+  while (!unmatched & parse_pos < parse_input_length) {
+    var c = parse_input[parse_pos];
+    if (c >= 97 & c <= 122) {
+      count = count + 1;
+    } else {
+      unmatched = true;
+    }
+    parse_pos = parse_pos + 1;
+  }
+
+  parse_pos = start_pos + count;
+  var out = new int[count];
+  for (var i = 0; i < count; i = i + 1;) {
+    out[i] = parse_input[start_pos + i];
+  }
+  return out;
+}
+
 int[][] parse_tag() {
+  assert(take_this("<"));
   take_whitespace();
-  assert(take_string("<"));
+  var tag_name = take_lower_letters();
   take_whitespace();
-  return new int[][]{new int[]{0}};
+
+  var before_first_close = parse_pos;
+  var is_self_closing = take_this("/");
+  parse_pos = before_first_close;
+  
+  /* TODO parse attributes */
+
+  var attr_count = 0;
+  var output = new int[][2 * attr_count];
+  output[0] = new int[]{2 * attr_count, 0, 0};
+
+  if (is_self_closing) {
+    assert(take_this("/"));
+    take_whitespace();
+    var close_pos = parse_pos;
+    assert(take_this(">"));
+
+    output[0][1] = close_pos;
+    output[0][2] = close_pos;
+    return output;
+  }
+
+  return output;
+}
+
+void load_input(string s) {
+  parse_input = array_of_string(s);
+  parse_input_length = length_of_string(s);
+  parse_pos = 0;
+  return;
+}
+
+void test_parse_rect() {
+  load_input("<rect />");
+  var tag = parse_tag();
+  assert(parse_pos == parse_input_length);
+  return;
+}
+
+void test_parse_nested() {
+  load_input("<parent><child /></parent>");
+  parse_tag();
+  assert(parse_pos == 7); /* TODO */
+  return;
+}
+
+void run_tests() {
+  test_parse_rect();
+  test_parse_nested();
+  return;
 }
 
 int program (int argc, string[] argv) {
-  var input_string = "  <svg>\n<  rect /   > < / svg >";
+  run_tests(); /* TODO remove in final submission */
+  return 0;
+
+  var input_string = "<rect />";
 
   parse_input = array_of_string(input_string);
   parse_input_length = length_of_string(input_string);
 
-  parse_tag();
+  take_whitespace();
+  var tag = parse_tag();
+  take_whitespace();
 
-  return parse_pos;
+  return 0;
 }
