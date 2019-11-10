@@ -193,7 +193,15 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
     | CNull ty -> (cmp_ty ty, Const 0L, [])
     | CBool b -> (I1, Const (if b then 1L else 0L), [])
     | CInt i -> (I64, Const i, [])
-    | CStr s -> failwith "CStr not implemented"
+    | CStr s -> 
+      let arr_name = gensym "string_arr" in
+      let arr_ty = Array (String.length s + 1, I8) in
+      let local_name = gensym "string_ptr" in
+      let stream = [
+        I (local_name, Bitcast (arr_ty, Gid arr_name, Ptr I8));
+        G (arr_name, (arr_ty, GString s));
+      ] in
+      (Ptr I8, (Gid local_name), stream)
     | CArr (ty, expl) ->
       let arr_name = gensym "arr" in
       let arr_id = no_loc (Id arr_name) in
@@ -487,7 +495,7 @@ let rec cmp_gexp c (e:Ast.exp node) : Ll.gdecl * (Ll.gid * Ll.gdecl) list =
     | CNull ty -> (((cmp_ty ty), GNull) , []) (* TODO May need to be Ptr *)
     | CBool v -> ((I1, GInt (if v then 1L else 0L)) , [])
     | CInt v -> ((I64, GInt v) , [])
-    | CStr s -> ((Ptr I8, GString s), [])
+    | CStr s -> ((Array (String.length s + 1, I8), GString s), [])
     | CArr _ -> failwith "cmp_gexp not implemented CArr"
     | NewArr _ -> failwith "cmp_gexp not supported: NewArr"
     | Id _ -> failwith "cmp_gexp not supported: Id"
