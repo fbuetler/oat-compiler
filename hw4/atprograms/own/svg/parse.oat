@@ -13,7 +13,7 @@ global char_gt = 62;
 Strings are stored as int[] for easy manipulation.
 
 AST nodes (XML tags) are stored as int[][], where node[0][0]
-is ((length of outer array) - 1). This is effectively
+is the length of outermost array. This is effectively
 a string[], but those are hard to get the length of.
 
 To allow parsing nested tags, the position of the ">" of
@@ -35,6 +35,39 @@ void assert(bool condition) {
   var a = new int[0];
   a[123456789] = 1;
   return;
+}
+
+bool str_eq(string a, string b) {
+  var a_len = length_of_string(a);
+  var b_len = length_of_string(b);
+  if (a_len != b_len) {
+    return false;
+  }
+
+  var a_chars = array_of_string(a);
+  var b_chars = array_of_string(b);
+
+  for (var i = 0; i < a_len; i = i + 1;) {
+    if (a_chars[i] != b_chars[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/*
+didive calculates (n / d).
+If the resulting value is not an integer, divide fails.
+Not all values of n and d are supported.
+*/
+int divide(int n, int d) {
+  assert((n >= 0) & (d > 0));
+  var x = 0;
+  while (x * d < n) {
+    x = x + 1;
+  }
+  assert(x * d == n);
+  return x;
 }
 
 bool take_whitespace() {
@@ -102,8 +135,10 @@ int[][] parse_tag() {
   /* TODO parse attributes */
 
   var attr_count = 0;
-  var output = new int[][2 * attr_count];
-  output[0] = new int[]{2 * attr_count, 0, 0};
+  var node_len = 2 + 2 * attr_count;
+  var output = new int[][node_len];
+  output[0] = new int[]{node_len, 0, 0};
+  output[1] = tag_name;
 
   if (is_self_closing) {
     assert(take_this("/"));
@@ -114,9 +149,39 @@ int[][] parse_tag() {
     output[0][1] = close_pos;
     output[0][2] = close_pos;
     return output;
-  }
+  } else {
+    var first_close_pos = parse_pos;
+    assert(take_this(">"));
 
-  return output;
+    take_whitespace();
+    parse_tag();
+    take_whitespace();
+
+    var second_open_pos = parse_pos;
+    assert(take_this("<"));
+    take_whitespace();
+    assert(take_this("/"));
+    take_whitespace();
+    assert(take_this(string_of_array(tag_name)));
+    take_whitespace();
+    assert(take_this(">"));
+
+    output[0][1] = first_close_pos;
+    output[0][2] = second_open_pos;
+    return output;
+  }
+}
+
+string node_get_name(int[][] node) {
+  var len = node[0][0];
+  assert(len >= 2);
+  return string_of_array(node[1]);
+}
+
+int node_get_attr_count(int[][] node) {
+  var len = node[0][0];
+  assert(len >= 2);
+  return divide((len - 2), 2);
 }
 
 void load_input(string s) {
@@ -126,21 +191,46 @@ void load_input(string s) {
   return;
 }
 
+void test_str_eq() {
+  assert(str_eq("abc", "abc"));
+  assert(str_eq("", ""));
+  assert(!(str_eq("abc", "ab"))); /* TODO remove useless brackets once compiler supports it */
+  assert(!(str_eq("ab", "abc"))); /* TODO remove useless brackets once compiler supports it */
+  assert(!(str_eq("seal", "walrus"))); /* TODO remove useless brackets once compiler supports it */
+  return;
+}
+
+void test_divide() {
+  assert(divide(0, 1) == 0);
+  assert(divide(0, 5) == 0);
+  assert(divide(1, 1) == 1);
+  assert(divide(2, 1) == 2);
+  assert(divide(6, 3) == 2);
+  assert(divide(100, 20) == 5);
+  return;
+}
+
 void test_parse_rect() {
   load_input("<rect />");
   var tag = parse_tag();
   assert(parse_pos == parse_input_length);
+  assert(node_get_attr_count(tag) == 0);
+  assert(str_eq(node_get_name(tag), "rect"));
   return;
 }
 
 void test_parse_nested() {
   load_input("<parent><child /></parent>");
-  parse_tag();
-  assert(parse_pos == 7); /* TODO */
+  var tag = parse_tag();
+  assert(parse_pos == parse_input_length);
+  assert(node_get_attr_count(tag) == 0);
+  assert(str_eq(node_get_name(tag), "parent"));
   return;
 }
 
 void run_tests() {
+  test_str_eq();
+  test_divide();
   test_parse_rect();
   test_parse_nested();
   return;
