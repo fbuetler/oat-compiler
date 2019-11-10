@@ -321,13 +321,9 @@ and un_op (c:Ctxt.t) (op: Ast.unop) (left: Ast.exp node) : Ll.ty * Ll.operand * 
 and cmp_stmt (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
   begin match stmt.elt with 
     | Assn (lhs, rhs) -> 
-      let lhs_oat_id = begin match lhs.elt with
-        | Id x -> x
-        | _ -> failwith "unsupported lhs" (* TODO implement array lookups *)
-      end in
-      let _, lhs_ll_op = Ctxt.lookup lhs_oat_id c in
+      let lhs_op, lhs_stream = cmp_lhs c lhs in
       let ty, op, stream = cmp_exp c rhs in
-      (c, [I ("", Store (ty, op, lhs_ll_op))] @ stream)
+      (c, [I ("", Store (ty, op, lhs_op))] @ stream @ lhs_stream)
     | Decl (oat_id, exp) -> 
       let ll_id = gensym oat_id in
       let ty, op, stream = cmp_exp c exp in
@@ -384,6 +380,23 @@ and cmp_if c cond block : stream  =
     no_loc (Decl (running, no_loc (CBool true)));
     no_loc (While (no_loc (Bop (And, cond, no_loc (Id running))), block @ [no_loc (Assn (no_loc(Id running), no_loc (CBool false)))]));
   ]
+
+and cmp_lhs c lhs : (Ll.operand * stream) =
+  begin match lhs.elt with
+    | Id lhs_oat_id -> 
+      let _, lhs_ll_op = Ctxt.lookup lhs_oat_id c in
+      (lhs_ll_op, [])
+    | Index (recv_exp, idx_exp) ->
+      let recv_ty, recv_op, recv_stream = cmp_exp c recv_exp in
+      let _, idx_op, idx_stream = cmp_exp c idx_exp in
+      let el_ty = begin match recv_ty with
+        | Ptr (Struct [I64; Array (_, x) ]) -> x
+        | _ -> failwith "unsupported reciever type in index expression"
+      end in
+      let el = gensym "el" in
+      (Id el, idx_stream @ recv_stream)
+    | _ -> failwith "unsupported lhs"
+  end
 
 
 (* Adds each function identifer to the context at an
