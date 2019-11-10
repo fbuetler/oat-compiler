@@ -6,8 +6,10 @@ global char_tab = 9;
 global char_lf = 10;
 global char_cr = 13;
 global char_space = 32;
-global char_lt = 60;
-global char_gt = 62;
+global char_double_quote = 34;
+global char_single_quote = 39;
+
+global char_quote_arr = int[]{34};
 
 /*
 Strings are stored as int[] for easy manipulation.
@@ -55,6 +57,10 @@ bool str_eq(string a, string b) {
   return true;
 }
 
+int char_arr_len(int[] chars) {
+  return length_of_string(string_of_array(chars));
+}
+
 /*
 didive calculates (n / d).
 If the resulting value is not an integer, divide fails.
@@ -68,6 +74,17 @@ int divide(int n, int d) {
   }
   assert(x * d == n);
   return x;
+}
+
+string convert_quotes(string s) {
+  var len = length_of_string(s);
+  var chars = array_of_string(s);
+  for (var i = 0; i < len; i = i + 1;) {
+    if (chars[i] == char_single_quote) {
+      chars[i] = char_double_quote;
+    }
+  }
+  return string_of_array(chars);
 }
 
 bool take_whitespace() {
@@ -98,6 +115,10 @@ bool take_this(string s) {
     }
   }
   return i == len;
+}
+
+bool take_quote() {
+  return take_this(string_of_array(char_quote_arr));
 }
 
 int[] take_from_ranges(string ranges) {
@@ -131,6 +152,28 @@ int[] take_from_ranges(string ranges) {
     out[i] = parse_input[start_pos + i];
   }
   return out;
+}
+
+int[][] parse_attribute() {
+  var old_pos = parse_pos;
+  var failed = false;
+
+  var name = take_from_ranges("azAZ");
+  failed = failed | char_arr_len(name) == 0;
+  take_whitespace();
+  failed = failed | !(take_this("=")); /* TODO remove useless brackets once compiler supports it */
+  take_whitespace();
+  failed = failed | !(take_quote());
+  var value = take_from_ranges(" !#~");
+  failed = failed | !(take_quote());
+
+
+  if (failed) {
+    parse_pos = old_pos;
+    return new int[][]{new int[]{2}, new int[0]};
+  }
+
+  return new int[][]{new int[]{4}, new int[0], name, value};
 }
 
 int[][] parse_tag() {
@@ -232,11 +275,34 @@ void test_take_from_ranges() {
   test_take_from_ranges_single("walrus", "az", 6);
   test_take_from_ranges_single("Walrus", "az", 0);
   test_take_from_ranges_single("Walrus", "azAZ", 6);
+  test_take_from_ranges_single("Walrus!", "azAZ", 6);
   test_take_from_ranges_single("1==1", "<>09", 4);
   test_take_from_ranges_single("1==1", "<>19", 4);
   test_take_from_ranges_single("1==1", "<>29", 0);
   test_take_from_ranges_single("1==1", "<>01", 4);
   test_take_from_ranges_single("1==1", "<>00", 0);
+  return;
+}
+
+void test_parse_attribute_single(string input, int taken, string name, string value) {
+  load_input(convert_quotes(input));
+  var attr = parse_attribute();
+  assert(parse_pos == taken);
+  if (taken == 0) {
+    assert(node_get_attr_count(attr) == 0);
+  } else {
+    assert(node_get_attr_count(attr) == 1);
+    assert(str_eq(string_of_array(attr[2]), name));
+    assert(str_eq(string_of_array(attr[3]), value));
+  }
+  return;
+}
+
+void test_parse_attribute() {
+  test_parse_attribute_single("color='blue'", 12, "color", "blue");
+  test_parse_attribute_single("'color'='blue'", 0, "", "");
+  test_parse_attribute_single("viewBox='0 10 50 20'", 20, "viewBox", "0 10 50 20");
+  test_parse_attribute_single("iAmIn=' space   '", 17, "iAmIn", " space   ");
   return;
 }
 
@@ -260,7 +326,7 @@ void test_parse_nested() {
   return;
 }
 
-void test_parse_various() {
+void test_parse_various_tags() {
   var inputs = new string[]{
     "<rect />",
     "<  rect   /   >",
@@ -282,9 +348,10 @@ void run_tests() {
   test_str_eq();
   test_divide();
   test_take_from_ranges();
+  test_parse_attribute();
   test_parse_rect();
   test_parse_nested();
-  test_parse_various();
+  test_parse_various_tags();
   return;
 }
 
