@@ -100,13 +100,24 @@ bool take_this(string s) {
   return i == len;
 }
 
-int[] take_lower_letters() {
+int[] take_from_ranges(string ranges) {
+  var range_chars = array_of_string(ranges);
+  var range_count = divide(length_of_string(ranges), 2);
+
   var start_pos = parse_pos;
   var count = 0;
   var unmatched = false;
   while (!unmatched & parse_pos < parse_input_length) {
     var c = parse_input[parse_pos];
-    if (c >= 97 & c <= 122) {
+    var matched_now = false;
+
+    for (var i = 0; !matched_now & i < range_count; i = i + 1;) {
+      if (c >= range_chars[2 * i] & c <= range_chars[2 * i + 1]) {
+        matched_now = true;
+      }
+    }
+
+    if (matched_now) {
       count = count + 1;
     } else {
       unmatched = true;
@@ -125,7 +136,7 @@ int[] take_lower_letters() {
 int[][] parse_tag() {
   assert(take_this("<"));
   take_whitespace();
-  var tag_name = take_lower_letters();
+  var tag_name = take_from_ranges("az");
   take_whitespace();
 
   var before_first_close = parse_pos;
@@ -224,6 +235,8 @@ void test_parse_nested() {
   var tag = parse_tag();
   assert(parse_pos == parse_input_length);
   assert(node_get_attr_count(tag) == 0);
+  assert(tag[0][1] == 7);
+  assert(tag[0][2] == 17);
   assert(str_eq(node_get_name(tag), "parent"));
   return;
 }
