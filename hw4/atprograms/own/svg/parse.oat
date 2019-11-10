@@ -158,7 +158,7 @@ int[][] parse_attribute() {
   var old_pos = parse_pos;
   var failed = false;
 
-  var name = take_from_ranges("azAZ");
+  var name = take_from_ranges("azAZ--");
   failed = failed | char_arr_len(name) == 0;
   take_whitespace();
   failed = failed | !(take_this("=")); /* TODO remove useless brackets once compiler supports it */
@@ -182,17 +182,39 @@ int[][] parse_tag() {
   var tag_name = take_from_ranges("az");
   take_whitespace();
 
-  var before_first_close = parse_pos;
-  var is_self_closing = take_this("/");
-  parse_pos = before_first_close;
-  
-  /* TODO parse attributes */
-
+  var before_attrs = parse_pos;
   var attr_count = 0;
+  var maybe_more_attrs = true;
+  while (maybe_more_attrs) {
+    take_whitespace();
+    var attr = parse_attribute();
+    take_whitespace();
+
+    if (node_get_attr_count(attr) == 0) {
+      maybe_more_attrs = false;
+    } else {
+      attr_count = attr_count + 1;
+    }
+  }
+  parse_pos = before_attrs;
+
   var node_len = 2 + 2 * attr_count;
   var output = new int[][node_len];
   output[0] = new int[]{node_len, 0, 0};
   output[1] = tag_name;
+
+  for (var i = 0; i < attr_count; i = i + 1;) {
+    take_whitespace();
+    var attr = parse_attribute();
+    take_whitespace();
+
+    output[2 + 2 * i] = attr[2];
+    output[2 + 2 * i + 1] = attr[3];
+  }
+
+  var before_first_close = parse_pos;
+  var is_self_closing = take_this("/");
+  parse_pos = before_first_close;
 
   if (is_self_closing) {
     assert(take_this("/"));
@@ -303,6 +325,8 @@ void test_parse_attribute() {
   test_parse_attribute_single("'color'='blue'", 0, "", "");
   test_parse_attribute_single("viewBox='0 10 50 20'", 20, "viewBox", "0 10 50 20");
   test_parse_attribute_single("iAmIn=' space   '", 17, "iAmIn", " space   ");
+  test_parse_attribute_single("stroke-width='3'", 16, "stroke-width", "3");
+  test_parse_attribute_single("stroke-width   =   '3'", 22, "stroke-width", "3");
   return;
 }
 
@@ -326,18 +350,40 @@ void test_parse_nested() {
   return;
 }
 
+void test_parse_circle() {
+  var input = "<circle cx='15' cy='5' r='3' stroke='green'
+    stroke-width='3' />";
+  load_input(convert_quotes(input));
+  var tag = parse_tag();
+  assert(parse_pos == parse_input_length);
+  assert(str_eq(node_get_name(tag), "circle"));
+  assert(node_get_attr_count(tag) == 5);
+  assert(str_eq(string_of_array(tag[2]), "cx"));
+  assert(str_eq(string_of_array(tag[3]), "15"));
+  assert(str_eq(string_of_array(tag[4]), "cy"));
+  assert(str_eq(string_of_array(tag[5]), "5"));
+  assert(str_eq(string_of_array(tag[6]), "r"));
+  assert(str_eq(string_of_array(tag[7]), "3"));
+  assert(str_eq(string_of_array(tag[8]), "stroke"));
+  assert(str_eq(string_of_array(tag[9]), "green"));
+  assert(str_eq(string_of_array(tag[10]), "stroke-width"));
+  assert(str_eq(string_of_array(tag[11]), "3"));
+  return;
+}
+
 void test_parse_various_tags() {
   var inputs = new string[]{
     "<rect />",
     "<  rect   /   >",
     "<parent><child/></parent>",
     "<  parent > <   child /   > < /  parent >",
-    "<parent><child><another/></child></parent>"
+    "<parent><child><another/></child></parent>",
+    "<rect stroke  =   'blue'  stroke-width  = '3' / >"
   };
   var count = 5;
 
   for (var i = 0; i < count; i = i + 1;) {
-    load_input(inputs[i]);
+    load_input(convert_quotes(inputs[i]));
     parse_tag();
     assert(parse_pos == parse_input_length);
   }
@@ -351,6 +397,7 @@ void run_tests() {
   test_parse_attribute();
   test_parse_rect();
   test_parse_nested();
+  test_parse_circle();
   test_parse_various_tags();
   return;
 }
