@@ -1,0 +1,40 @@
+/* 15-913-502 Nicole Wenzinger */
+/* 17-913-971 Manuel Hässig */
+
+global n = 10;
+global count = 0;
+global visited = int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+void dfs(int i, bool[][] graph) {
+	count = count + 1;
+    visited[i] = count;
+	for(var j = 0; j < n; j = j + 1;) {
+		if (visited[j] == 0 & graph[i][j]){
+			dfs(j, graph);
+		}
+	}
+	return;
+}
+
+
+int program (int argc, string[] argv){
+	
+	var graph = new bool[][]{
+		new bool[]{false, true, true, false, false, false, false, false, false, false},
+		new bool[]{true, false, false, true, true, false, false, false, false, false},
+		new bool[]{true, false, false, true, false, false, true, false, false, false},
+		new bool[]{false, true, true, false, true, true, false, true, false, false},
+		new bool[]{false, true, false, true, false, false, false, false, true, false},
+		new bool[]{false, false, false, true, false, false, false, false, false, true},
+		new bool[]{false, false, true, false, false, false, false, true, false, false},
+		new bool[]{false, false, false, true, false, false, true, false, false, false},
+		new bool[]{false, false, false, false, true, false, false, false, false, true},
+		new bool[]{false, false, false, false, false, true, false, false, true, false}
+	};
+	dfs(0, graph);
+	
+	for(var i = 0; i < n; i = i + 1;){
+		print_int(visited[i]);
+	}
+	return 0;
+}
