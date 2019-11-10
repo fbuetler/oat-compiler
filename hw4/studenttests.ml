@@ -6,7 +6,7 @@ open Gradedtests
 (* You should also add additional test cases here to help you   *)
 (* debug your program.                                          *)
 
-let uop_tests = [
+let own_tests = [
   ("atprograms/own/neg.oat", "", "3");
   ("atprograms/own/lognot.oat", "", "1");
   ("atprograms/own/bitnot.oat", "", "2");
@@ -17,5 +17,5 @@ let uop_tests = [
 ]
 
 let provided_tests : suite = [
-  Test ("uop tests", executed_oat_file uop_tests);
+  Test ("own tests", executed_oat_file own_tests);
 ] 
