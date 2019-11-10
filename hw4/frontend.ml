@@ -155,16 +155,6 @@ let oat_alloc_array (t:Ast.ty) (size:Ll.operand) : Ll.ty * operand * stream =
     [ arr_id, Call(arr_ty, Gid "oat_alloc_array", [I64, size])
     ; ans_id, Bitcast(arr_ty, Id arr_id, ans_ty) ]
 
-let cmp_exp_as (c:Ctxt.t) (exp: Ast.exp node) (ty:Ll.ty) : Ll.operand * stream = 
-  begin match exp.elt with
-    | CNull ty -> failwith "cmp_exp_as CNull not implemented"
-    | CBool b -> failwith "cmp_exp_as CBool not implemented"
-    | CInt i -> failwith "cmp_exp_as CInt not implemented"
-    | CStr s -> failwith "cmp_exp_as CStr not implemented"
-    | CArr (ty, expl) -> failwith "cmp_exp_as CArr not implemented"
-    | _ -> failwith "case not implemented"
-  end
-
 (* Compiles an expression exp in context c, outputting the Ll operand that will
    recieve the value of the expression, and the stream of instructions
    implementing the expression. 
