@@ -198,10 +198,10 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
       let arr_ty = Array (String.length s + 1, I8) in
       let local_name = gensym "string_ptr" in
       let stream = [
-        I (local_name, Bitcast (arr_ty, Gid arr_name, Ptr I8));
+        I (local_name, Bitcast (Ptr arr_ty, Gid arr_name, Ptr I8));
         G (arr_name, (arr_ty, GString s));
       ] in
-      (Ptr I8, (Gid local_name), stream)
+      (Ptr I8, (Id local_name), stream)
     | CArr (ty, expl) ->
       let arr_name = gensym "arr" in
       let arr_id = no_loc (Id arr_name) in
