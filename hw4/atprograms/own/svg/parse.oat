@@ -228,11 +228,30 @@ void test_parse_nested() {
   return;
 }
 
+void test_parse_various() {
+  var inputs = new string[]{
+    "<rect />",
+    "<  rect   /   >",
+    "<parent><child/></parent>",
+    "<  parent > <   child /   > < /  parent >",
+    "<parent><child><another/></child></parent>"
+  };
+  var count = 5;
+
+  for (var i = 0; i < count; i = i + 1;) {
+    load_input(inputs[i]);
+    parse_tag();
+    assert(parse_pos == parse_input_length);
+  }
+  return;
+}
+
 void run_tests() {
   test_str_eq();
   test_divide();
   test_parse_rect();
   test_parse_nested();
+  test_parse_various();
   return;
 }
 
