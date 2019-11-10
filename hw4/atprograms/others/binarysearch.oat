@@ -1,0 +1,24 @@
+/* 17-914-086, Neville Walo */
+/* 15-915-853, Zur Shmaria */
+
+global arr = int[]{1, 2, 3, 4,5,6,7,8,9,10};
+
+int program(int argc, string[] args) {
+  return binarySearch(0,3,3);
+}
+
+
+int binarySearch(int left, int right, int zahl){
+
+    var middle = left + ((right - left) >> 2) ;
+
+    if(arr[middle] == zahl){
+        return middle;
+    }
+    if(arr[middle] < zahl){
+        return binarySearch(middle+1, right, zahl);
+    }
+
+
+    return binarySearch(left, middle - 1, zahl);
+}

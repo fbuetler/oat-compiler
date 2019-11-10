@@ -1,0 +1,120 @@
+/* 17932880, Jonas Müntener */
+/* 17936188, Siegfried Hartogs */
+
+global inf = 255;
+
+/*Calculates shortest path to a node from a single starting point,
+no negative weights supported */
+int[] dijkstra (int[][] graph, int nodecount, int start){
+  /* Array of visited nodes*/
+  var visited = new int[nodecount];
+  for(var i=0; i<nodecount; i=i+1;){
+    visited[i]=0;
+  }
+  /* Init. distances from start to all other points to values read from graph*/
+  var dist = new int[nodecount];
+  for(var i=0; i<nodecount; i=i+1;){
+    dist[i] = graph[start][i];
+  }
+  /* currently visited node */
+  var current = start;
+  while(true){
+    /* for all neighboring non-visited nodes */
+    for(var i=0; i<nodecount; i=i+1;){
+      if(visited[i]==0 & graph[current][i]!=inf){
+        /* if distances via current node to a neighbor is shorter than old distance, update it */
+        if(dist[current] + graph[current][i] < dist[i]){
+          dist[i] = dist[current] + graph[current][i];
+        }
+      }
+    }
+    visited[current] = 1;
+    /* find unvisited neighbor with smallest distance and set it as current node.
+    If it doesn't exist (all unreachable=inf or no unvisited node), terminate by
+    returning distance vector */
+    var smallest = inf;
+    var nextcur = inf;
+    for(var i=0; i<nodecount; i=i+1;){
+      if(visited[i]==0 & dist[i]<smallest){
+        smallest = dist[i];
+        nextcur = i;
+      }
+    }
+    if(smallest == inf){
+      return dist;
+    } else {
+      current = nextcur;
+    }
+  }
+  return dist;
+}
+
+/* Calculates shortest distances to all nodes from a single source,
+supports negative weights. This implementation assumes no negatives cycles exist. */
+int[] bellman_ford (int [][] graph, int nodecount, int start){
+  var dist = new int[nodecount];
+  for(var i=0; i<nodecount; i=i+1;){
+    dist[i]=inf;
+  }
+  dist[start]=0;
+  var edges = 0;
+  for(var i=0; i<nodecount; i=i+1;){
+    for(var j=0; j<nodecount; j=j+1;){
+      if(graph[i][j]!=inf){
+        edges = edges + 1;
+      }
+    }
+  }
+  for(var k=0; k<edges-1; k=k+1;){
+    for(var i=0; i<nodecount; i=i+1;){
+      for(var j=0; j<nodecount; j=j+1;){
+        if(dist[i] + graph[i][j] < dist[j]) {
+          dist[j] = dist[i] + graph[i][j];
+        }
+      }
+    }
+  }
+  return dist;
+}
+
+int program (int argc, string[] argv) {
+  var res = new int[3];
+
+  var nodecount0 = 5;
+  var start0 = 3;
+  var graph0 = new int[][]{new int[]{0,1,inf,inf,inf},
+                          new int[]{inf,0,1,40,1},
+                          new int[]{inf,inf,0,inf,inf},
+                          new int[]{inf,inf,1,0,inf},
+                          new int[]{inf,1,inf,1,0}};
+
+  var distd0 = dijkstra(graph0, nodecount0, start0);
+  var distbf0 = bellman_ford(graph0, nodecount0, start0);
+  var cmp0=1;
+  for(var i=0; i<nodecount0; i=i+1;){
+    if(distd0[i]!=distbf0[i]) {
+      cmp0=0;
+    }
+  }
+
+  var nodecount1 = 6;
+  var start1 = 2;
+  var graph1 = new int[][]{new int[]{0,7,9,inf,inf,5},
+                          new int[]{7,0,10,15,inf,inf},
+                          new int[]{9,10,0,11,inf,2},
+                          new int[]{inf,15,11,0,6,inf},
+                          new int[]{inf,inf,inf,6,0,9},
+                          new int[]{14,inf,2,inf,9,0}};
+
+  var distd1 = dijkstra(graph1, nodecount1, start1);
+  var distbf1 = bellman_ford(graph1, nodecount1, start1);
+  var cmp1=1;
+  for(var i=0; i<nodecount1; i=i+1;){
+    if(distd1[i]!=distbf1[i]) {
+      cmp1=0;
+    }
+  }
+  /* returns 1 if both graph algorithms calculate the same distances for both graphs
+  from the starting nodes */
+  return cmp0 * cmp1;
+}
