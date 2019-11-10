@@ -155,6 +155,16 @@ let oat_alloc_array (t:Ast.ty) (size:Ll.operand) : Ll.ty * operand * stream =
     [ arr_id, Call(arr_ty, Gid "oat_alloc_array", [I64, size])
     ; ans_id, Bitcast(arr_ty, Id arr_id, ans_ty) ]
 
+(* zero_arr_ty returns a type where all arrays are made zero-length.
+   This is useful so that they match types of arrays whose size is not known at compile time. *)
+let rec zero_arr_ty (ty:Ll.ty) : Ll.ty = begin match ty with
+  | Ptr x -> Ptr (zero_arr_ty x)
+  | Struct x -> Struct (List.map zero_arr_ty x)
+  | Array (_, x) -> Array (0, zero_arr_ty x)
+  | Fun (args, r) -> Fun (List.map zero_arr_ty args, zero_arr_ty r)
+  | _ -> ty
+end
+
 (* Compiles an expression exp in context c, outputting the Ll operand that will
    recieve the value of the expression, and the stream of instructions
    implementing the expression. 
@@ -187,7 +197,9 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
     begin match ty with
       | Ptr inner_ty -> (inner_ty, Id value, [I (value, Load (ty, op))])
       | Array (_, I8) -> (Ptr I8, Id value, [I (value, Bitcast (Ptr ty, op, Ptr I8))])
-      | Struct _ -> (Ptr ty, op, [])
+      | Struct _ -> 
+        let z_ty = zero_arr_ty ty in
+        (Ptr z_ty, Id value, [I (value, Bitcast (Ptr ty, op, Ptr z_ty))])
       | _ -> failwith "expected pointer or array (global string)"
     end in
   begin match exp.elt with
