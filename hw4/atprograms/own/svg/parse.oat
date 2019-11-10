@@ -1,0 +1,81 @@
+global parse_input = int[] null;
+global parse_input_length = 0;
+global parse_pos = 0;
+
+global char_tab = 9;
+global char_lf = 10;
+global char_cr = 13;
+global char_space = 32;
+global char_lt = 60;
+global char_gt = 62;
+
+/*
+Strings are stored as int[] for easy manipulation.
+
+AST nodes (XML tags) are stored as int[][], where node[0][0]
+is ((length of outer array) - 1). This is effectively
+a string[], but those are hard to get the length of.
+To allow parsing nested tags, the position of the ">" of
+the opening tag is stored in node[0][1], and the position
+of the "<" of the closing tag is stored in node[0][2]. For
+self closing tags node[0][1] and node[0][2] both contain
+the position of the only ">".
+*/
+
+/* assert will segfault if the passed condition is false */
+void assert(bool condition) {
+  if (condition) {
+    return;
+  }
+  var a = new int[0];
+  a[123456789] = 1;
+  return;
+}
+
+bool take_whitespace() {
+  var did_take = false;
+  while (parse_pos < parse_input_length) {
+    var c = parse_input[parse_pos];
+    if (c != char_tab & c != char_lf & c != char_cr & c != char_space) {
+      return did_take;
+    }
+    did_take = true;
+    parse_pos = parse_pos + 1;
+  }
+  return did_take;
+}
+
+bool take_string(string s) {
+  var len = length_of_string(s);
+  var chars = array_of_string(s);
+  var i = 0;
+  while (parse_pos < parse_input_length) {
+    if (parse_input[parse_pos] != chars[i]) {
+      return false;
+    }
+    i = i + 1;
+    parse_pos = parse_pos + 1;
+    if (i == len) {
+      return true;
+    }
+  }
+  return i == len;
+}
+
+int[][] parse_tag() {
+  take_whitespace();
+  assert(take_string("<"));
+  take_whitespace();
+  return new int[][]{new int[]{0}};
+}
+
+int program (int argc, string[] argv) {
+  var input_string = "  <svg>\n<  rect /   > < / svg >";
+
+  parse_input = array_of_string(input_string);
+  parse_input_length = length_of_string(input_string);
+
+  parse_tag();
+
+  return parse_pos;
+}
