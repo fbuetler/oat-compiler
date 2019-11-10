@@ -184,11 +184,11 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
     (List.rev ops, stream) in
   let load ty op : Ll.ty * Ll.operand * stream =
     let value = gensym "value" in
-    let inner_ty = begin match ty with
-      | Ptr x -> x
-      | _ -> failwith "expected pointer"
+    begin match ty with
+      | Ptr inner_ty -> (inner_ty, Id value, [I (value, Load (ty, op))])
+      | Array (_, I8) -> (Ptr I8, Id value, [I (value, Bitcast (Ptr ty, op, Ptr I8))])
+      | _ -> failwith "expected pointer or array (global string)"
     end in
-    (inner_ty, Id value, [I (value, Load (ty, op))]) in
   begin match exp.elt with
     | CNull ty -> (cmp_ty ty, Const 0L, [])
     | CBool b -> (I1, Const (if b then 1L else 0L), [])
@@ -423,6 +423,8 @@ let cmp_function_ctxt (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
 *)
 let cmp_global_ctxt (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
   let f curc decl : Ctxt.t = begin match decl with
+    | Gvdecl { elt = { name; init = { elt = (CStr s) } } } -> 
+      Ctxt.add curc name (Array (String.length s + 1, I8), Gid name)
     | Gvdecl { elt = { name; init } } -> 
       let ty, _, _ = cmp_exp c init in
       Ctxt.add curc name (Ptr ty, Gid name)
