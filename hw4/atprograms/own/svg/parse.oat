@@ -19,16 +19,16 @@ global bmp_template = int[]{
   66, 77,        /* Header.Signature             "BM"                                                              */
   0, 0, 0, 0,    /* Header.FileSize              File size in bytes                                                */
   0, 0, 0, 0,    /* Header.reserved              unused (=0)                                                       */
-  0, 0, 0, 0,   /* Header.DataOffset            Offset from beginning of file to the beginning of the bitmap data */
-  0, 0, 0, 40,   /* InfoHeader.Size              Size of InfoHeader =40                                            */
+  0, 0, 0, 0,    /* Header.DataOffset            Offset from beginning of file to the beginning of the bitmap data */
+  40, 0, 0, 0,   /* InfoHeader.Size              Size of InfoHeader =40                                            */
   0, 0, 0, 0,    /* InfoHeader.Width             Horizontal width of bitmap in pixels                              */
   0, 0, 0, 0,    /* InfoHeader.Height            Horizontal height of bitmap in pixels                             */
-  0, 1,          /* InfoHeader.Planes            Number of Planes (=1)                                             */ 
-  0, 24,         /* InfoHeader.BitsPerPixel      Bits per Pixel used to store palette entry information            */ 
+  1, 0,          /* InfoHeader.Planes            Number of Planes (=1)                                             */ 
+  24, 0,         /* InfoHeader.BitsPerPixel      Bits per Pixel used to store palette entry information            */ 
   0, 0, 0, 0,    /* InfoHeader.Compression       Type of Compression (0 = BI_RGB   no compression )                */ 
   0, 0, 0, 0,    /* InfoHeader.ImageSize         It is valid to set this =0 if Compression = 0                     */ 
-  0, 0, 14, 196, /* InfoHeader.XpixelsPerM       horizontal resolution: Pixels/meter (96 DPI)                      */
-  0, 0, 14, 196, /* InfoHeader.YpixelsPerM       vertical resolution: Pixels/meter (96 DPI)                        */ 
+  196, 14, 0, 0, /* InfoHeader.XpixelsPerM       horizontal resolution: Pixels/meter (96 DPI)                      */
+  196, 14, 0, 0, /* InfoHeader.YpixelsPerM       vertical resolution: Pixels/meter (96 DPI)                        */ 
   0, 0, 0, 0,    /* InfoHeader.ColorsUsed        number of colors in the color palette (0 to default to 2^n)       */ 
   0, 0, 0, 0     /* InfoHeader.ImportantColors   generally ignored                                                 */ 
 };
@@ -183,12 +183,57 @@ void img_set_pixel(int x, int y, int color) {
 }
 
 /*
-img_to_bpm returns the image encoded as a BMP file.
+img_to_bmp returns the image encoded as a BMP file.
   - result[0] is the number of bytes in the file
   - result[i + 1] is the value of the i-th byte of the file (0 <= value < 255)
 */
-int[] img_to_bpm() {
-  return new int[0];
+int[] img_to_bmp() {
+  var width = image[0][0];
+  var height = image[0][1];
+  var pixel_count = width * height;
+  var pixel_byte_count = pixel_count * 3;
+  var file_size = bpm_template_size + pixel_byte_count;
+
+  var output = new int[file_size + 1];
+  output[0] = file_size;
+  for (var i = 0; i < bpm_template_size; i = i + 1;) {
+    output[i + 1] = bmp_template[i];
+  }
+
+  /* Header.FileSize */
+  output[1 + 0x02 + 0] = int_get_byte(file_size, 0);
+  output[1 + 0x02 + 1] = int_get_byte(file_size, 1);
+  output[1 + 0x02 + 2] = int_get_byte(file_size, 2);
+  output[1 + 0x02 + 3] = int_get_byte(file_size, 3);
+
+  /* Header.DataOffset */
+  output[1 + 0x0A] = bpm_template_size;
+
+  /* Header.Width */
+  output[1 + 0x12 + 0] = int_get_byte(width, 0);
+  output[1 + 0x12 + 1] = int_get_byte(width, 1);
+  output[1 + 0x12 + 2] = int_get_byte(width, 2);
+  output[1 + 0x12 + 3] = int_get_byte(width, 3);
+
+  /* Header.Height */
+  output[1 + 0x16 + 0] = int_get_byte(height, 0);
+  output[1 + 0x16 + 1] = int_get_byte(height, 1);
+  output[1 + 0x16 + 2] = int_get_byte(height, 2);
+  output[1 + 0x16 + 3] = int_get_byte(height, 3);
+
+  var j = bpm_template_size + 1;
+  for (var i = 0; i < pixel_count; i = i + 1;) {
+    var color = image[0][2 + i];
+    for (var k = 3; k > 0; k = k - 1;) {
+      output[j] = int_get_byte(color, k);
+      j = j + 1;
+    }
+  }
+
+  for (var i = 0; i < file_size; i = i + 1;) {
+    assert((output[i + 1] >= 0) & (output[i + 1] < 256));
+  }
+  return output;
 }
 
 bool take_whitespace() {
@@ -553,6 +598,16 @@ void test_parse_various_tags() {
   return;
 }
 
+void test_bmp() {
+  make_blank_image(13, 7);
+  var bmp = img_to_bmp();
+  assert(bmp[0] == 327);
+  assert(bmp[1] == 66);
+  assert(bmp[2] == 77);
+  /* everything else should be checked by viewing the file */
+  return;
+}
+
 void run_tests() {
   test_str_eq();
   test_divide();
@@ -564,6 +619,7 @@ void run_tests() {
   test_parse_nested();
   test_parse_circle();
   test_parse_various_tags();
+  test_bmp();
   return;
 }
 
@@ -588,7 +644,13 @@ int program (int argc, string[] argv) {
   var tag = parse_tag();
   take_whitespace();
 
-  print_string(node_get_name(tag));
+  make_blank_image(100, 30);
+  var img = img_to_bmp();
+  for (var i = 0; i < img[0]; i = i + 1;) {
+    print_int(img[i + 1]);
+    print_string(" ");
+  }
+  print_string("\n");
 
   return 0;
 }
