@@ -1,3 +1,8 @@
+/*
+17-913-534, Florian Bütler
+16-926-560, Philippe Voinov
+*/
+
 global parse_input = int[][]{int[] null};
 global parse_input_length = 0;
 global parse_pos = 0;
