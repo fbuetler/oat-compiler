@@ -205,6 +205,23 @@ void img_set_pixel(int x, int y, int color) {
   return;
 }
 
+void img_overlay_pixel(int x, int y, int color) {
+  var i = img_get_pixel_index(x, y);
+  if (i == -1) {
+    return;
+  }
+  var old_color = image[0][i];
+  assert(color_get_a(old_color) == 255);
+  var sa = color_get_a(color);
+  image[0][i] = color_from_components(
+    divide_floor((color_get_r(old_color) * (255 - sa)), 255) + divide_floor((color_get_r(color) * sa), 255),
+    divide_floor((color_get_g(old_color) * (255 - sa)), 255) + divide_floor((color_get_g(color) * sa), 255),
+    divide_floor((color_get_b(old_color) * (255 - sa)), 255) + divide_floor((color_get_b(color) * sa), 255),
+    255
+  );
+  return;
+}
+
 /*
 img_to_bmp returns the image encoded as a BMP file.
   - result[0] is the number of bytes in the file
@@ -558,7 +575,7 @@ void load_input(string s) {
 void draw_rect_fill(int start_x, int start_y, int width, int height, int color) {
   for (var x = start_x; x < start_x + width; x = x + 1;) {
     for (var y = start_y; y < start_y + height; y = y + 1;) {
-      img_set_pixel(x, y, color);
+      img_overlay_pixel(x, y, color);
     }
   }
   return;
