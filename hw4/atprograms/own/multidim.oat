@@ -1,0 +1,9 @@
+global ast_nodes = int[][][]{int[][]{int[] null}};
+
+int program(int argc, string[] argv) {
+  ast_nodes[0][0] = new int[]{1, 2, 3};
+  var new_arr = new int[][5];
+  new_arr[0] = ast_nodes[0][0];
+  ast_nodes[0] = new_arr;
+  return ast_nodes[0][0][1];
+}
