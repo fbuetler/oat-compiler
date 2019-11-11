@@ -155,13 +155,14 @@ let oat_alloc_array (t:Ast.ty) (size:Ll.operand) : Ll.ty * operand * stream =
     [ arr_id, Call(arr_ty, Gid "oat_alloc_array", [I64, size])
     ; ans_id, Bitcast(arr_ty, Id arr_id, ans_ty) ]
 
-(* zero_arr_ty returns a type where all arrays are made zero-length.
-   This is useful so that they match types of arrays whose size is not known at compile time. *)
-let rec zero_arr_ty (ty:Ll.ty) : Ll.ty = begin match ty with
-  | Ptr x -> Ptr (zero_arr_ty x)
-  | Struct x -> Struct (List.map zero_arr_ty x)
-  | Array (_, x) -> Array (0, zero_arr_ty x)
-  | Fun (args, r) -> Fun (List.map zero_arr_ty args, zero_arr_ty r)
+(* garr_ty_to_local converts the types of global to their local equivalents.
+   It makes all arrays are zero-length and converts strings from arrays to pointers. *)
+let rec garr_ty_to_local (ty:Ll.ty) : Ll.ty = begin match ty with
+  | Ptr (Array (_, I8)) -> Ptr I8
+  | Ptr x -> Ptr (garr_ty_to_local x)
+  | Struct x -> Struct (List.map garr_ty_to_local x)
+  | Array (_, x) -> Array (0, garr_ty_to_local x)
+  | Fun (args, r) -> Fun (List.map garr_ty_to_local args, garr_ty_to_local r)
   | _ -> ty
 end
 
@@ -198,12 +199,21 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
       | Ptr inner_ty -> (inner_ty, Id value, [I (value, Load (ty, op))])
       | Array (_, I8) -> (Ptr I8, Id value, [I (value, Bitcast (Ptr ty, op, Ptr I8))])
       | Struct _ -> 
-        let z_ty = zero_arr_ty ty in
+        let z_ty = garr_ty_to_local ty in
         (Ptr z_ty, Id value, [I (value, Bitcast (Ptr ty, op, Ptr z_ty))])
       | _ -> failwith "expected pointer or array (global string)"
     end in
   begin match exp.elt with
-    | CNull ty -> (cmp_ty ty, Const 0L, [])
+    | CNull ty ->
+      let value = gensym "value" in
+      let ptr = gensym "ptr" in
+      let ptr_ptr = gensym "ptr_ptr" in
+      (cmp_ty ty, Id ptr, [
+          I (ptr, Load (Ptr (cmp_ty ty), Id ptr_ptr));
+          I (ptr_ptr, Bitcast (Ptr I64, Id value, Ptr (cmp_ty ty)));
+          I ("", Store (I64, Const 0L, Id value));
+          E (value, Alloca I64);
+        ])
     | CBool b -> (I1, Const (if b then 1L else 0L), [])
     | CInt i -> (I64, Const i, [])
     | CStr s -> 
@@ -509,18 +519,26 @@ and cmp_garr c (e: Ast.exp node) : Ll.ty * Ll.gdecl * (Ll.gid * Ll.gdecl) list =
   begin match e.elt with
     | CArr (_, elem_exprs) -> 
       let elem_ty, elem_decls_rev, extra = List.fold_left (fun (cur_tys, cur_elem_decls, cur_extra) expr ->
-          let ty, decl, new_extra = cmp_garr c expr in
-          (ty, decl :: cur_elem_decls, new_extra @ cur_extra)
+          let name = gensym "elem" in
+          let ty, (inner_ty, inner_init), new_extra = cmp_garr c expr in
+          begin match expr.elt with
+            | CArr _ -> (ty, (ty, GGid name) :: cur_elem_decls, (name, (inner_ty, inner_init)) :: new_extra @ cur_extra)
+            | CStr _ -> (ty, (ty, GGid name) :: cur_elem_decls, (name, (inner_ty, inner_init)) :: new_extra @ cur_extra)
+            | _ -> (ty, (inner_ty, inner_init) :: cur_elem_decls, new_extra @ cur_extra)
+          end
         ) (I64, [], []) elem_exprs in (* HACK assume empty global arrays contain I64s *)
       let l = List.length elem_exprs in
       let inner_arr_ty = Array (l, elem_ty) in
       let struct_arr_ty = Struct([I64; inner_arr_ty]) in
-      (struct_arr_ty,
+      (Ptr struct_arr_ty,
        (struct_arr_ty, GStruct ([
             (I64, GInt (Int64.of_int l));
             (inner_arr_ty, GArray (List.rev elem_decls_rev))
           ])),
        extra)
+    | CStr s ->
+      let decl, extra = cmp_gexp c e in
+      (Ptr (Array (String.length s + 1, I8)), decl, extra)
     | _ ->
       let ty, _, _ = cmp_exp c e in
       let decl, extra = cmp_gexp c e in
@@ -540,7 +558,11 @@ let cmp_global_ctxt (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
       Ctxt.add curc name (Array (String.length s + 1, I8), Gid name)
     | Gvdecl { elt = { name; init = { elt = (CArr (l, elems)) } } } -> 
       let ty, _, _ = cmp_garr c @@ no_loc (CArr (l, elems)) in
-      Ctxt.add curc name (ty, Gid name)
+      let inner_ty = begin match ty with
+        | Ptr x -> x
+        | _ -> failwith "expected pointer"
+      end in
+      Ctxt.add curc name (inner_ty, Gid name)
     | Gvdecl { elt = { name; init } } -> 
       let ty, _, _ = cmp_exp c init in
       Ctxt.add curc name (Ptr ty, Gid name)

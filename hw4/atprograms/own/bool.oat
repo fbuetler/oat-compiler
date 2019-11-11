@@ -1,6 +1,9 @@
-int f ( bool thing ) {
+int f(bool thing) {
   var other = false;
   var more = other & true;
-  return 0 ;
+  return 0;
 }
 
+int program(int argc, string[] argv) {
+  return f(true);
+}

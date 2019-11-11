@@ -95,5 +95,5 @@ void stmt() {
 }
 
 int program (int argc, string[] argv) {
-  return f(1, 2);
+  return 0;
 }

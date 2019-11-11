@@ -1,0 +1,27 @@
+/* 16-949-877, Jonathan Lehner */
+/* 16-942-989, Xingong Xu */
+
+void selection_sort(int[] a, int len) {
+    for (var i = 0; i < len; i = i + 1;) {
+        var min_idx = i;
+        for (var j = i + 1; j < len; j = 1 + j;) {
+            if (a[min_idx] > a[j]) {
+                min_idx = j;
+            }
+        }
+        var tmp = a[i];
+        a[i] = a[min_idx];
+        a[min_idx] = tmp;
+    }
+    return;
+}
+
+int program(int argc, string[] argv) {
+  var a = new int[]{107, 112, 121, 102, 123, 115, 104, 111, 109};
+
+  print_string(string_of_array(a));
+  selection_sort(a, 9);
+  print_string(string_of_array(a));
+
+  return 42;
+}
