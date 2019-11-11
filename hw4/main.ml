@@ -5,7 +5,7 @@ open Driver
 
 (* testing harness ---------------------------------------------------------- *)
 exception Ran_tests
-let suite = ref (Studenttests.provided_tests @ Gradedtests.graded_tests @ Studenttests_others.provided_tests)
+let suite = ref (Studenttests.provided_tests @ Gradedtests.graded_tests @ Studenttests_others.provided_tests @ Studenttests_submit.provided_tests)
 
 let execute_tests () =
   let outcome = run_suite !suite in
