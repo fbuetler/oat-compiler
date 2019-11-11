@@ -300,8 +300,24 @@ int[][] parse_tag() {
     var first_close_pos = parse_pos;
     assert(take_this(">"));
 
-    take_whitespace();
-    parse_tag();
+    var inner_parse_done = false;
+    while (!inner_parse_done) {
+      take_whitespace();
+
+      var before_check_closing = parse_pos;
+      var is_closing = true;
+      is_closing = is_closing & take_this("<");
+      take_whitespace();
+      is_closing = is_closing & take_this("/");
+      parse_pos = before_check_closing;
+
+      if (is_closing) {
+        inner_parse_done = true;
+      } else {
+        parse_tag();
+      }
+    }
+
     take_whitespace();
 
     var second_open_pos = parse_pos;
@@ -485,15 +501,16 @@ void test_parse_circle() {
 void test_parse_various_tags() {
   var inputs = new string[]{
     "<rect />",
-    /* "<rect></rect>", */ /* TODO fix this */
+    "<rect></rect>",
     "<  rect   /   >",
     "<parent><child/></parent>",
     "<  parent > <   child /   > < /  parent >",
     "<parent><child><another/></child></parent>",
+    "<parent><child></child><another/></parent>",
     "<rect stroke  =   'blue'  stroke-width  = '3' / >",
     "<parent><child><another with='attr' /></child></parent>"
   };
-  var count = 7;
+  var count = 8;
 
   for (var i = 0; i < count; i = i + 1;) {
     load_input(convert_quotes(inputs[i]));
