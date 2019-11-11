@@ -17,8 +17,6 @@ global char_lower_a = 97;
 
 global char_quote_arr = int[]{34};
 
-global b64chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
 global bpm_template_size = 54;
 /* http://www.ece.ualberta.ca/~elliott/ee552/studentAppNotes/2003_w/misc/bmp_file_format/bmp_file_format.htm */
 global bmp_template = int[]{
@@ -583,66 +581,6 @@ void draw_rect_fill(int start_x, int start_y, int width, int height, int color) 
   return;
 }
 
-int modulo(int n, int d){
-  return (n - (divide_floor(n,d) * d));
-}
-
-int size_encoded(int size) {
-  var ret_size = size;
-  /* printint(size); */
-  var mod = modulo(size, 3);
-  /* printint(mod); */
-  if (mod != 0) {
-    ret_size = ret_size + (3 - mod);
-  }
-  /* printint(ret_size); */
-  ret_size = divide_floor(ret_size, 3);
-  ret_size = ret_size * 4;
-  /* printint(ret_size); */
-  return ret_size;
-}
-
-int[] encode(int[] in, int len){
-  if (len == 0) {
-    return int[] null;
-  }
-  var b64 = array_of_string(b64chars);
-  var e_len = size_encoded(len);
-  var out = new int[e_len];
-  var v = 0;
-  var i = 0;
-  var j = 0;
-  while (i < len){
-    v = in[i];
-      
-    if (i+1 < len) {
-      v = (v << 8) [|] in[i+1];
-    } else {
-      v = v << 8;
-    }
-    if (i+2 < len) {
-      v = (v << 8) [|] in[i+2];
-    } else {
-      v = v << 8;
-    }
-    out[j] = b64[(v >> 18) [&] 63];
-    out[j+1]= b64[(v >> 12) [&] 63];
-    if (i+1 < len) {
-      out[j+2] = b64[(v >> 6) [&] 63];
-    } else {
-      out[j+2] = 61; 
-    }
-    if (i+2 < len) {
-      out[j+3] = b64[v [&] 63];
-    } else {
-      out[j+3] = 61;
-    } 
-    i = i + 3;
-    j = j + 4;
-  }
-  return out; 
-}
-
 void test_str_eq() {
   assert(str_eq("abc", "abc"));
   assert(str_eq("", ""));
@@ -894,12 +832,11 @@ void parse_and_draw_svg() {
 
 void output_bmp() {
   var img = img_to_bmp();
-  var l = img[0];
-  var raw_img = new int[l - 1];
-  for (var i = 0; i < l; i = i + 1;) {
-    raw_img[i] = img[i + 1];
+  for (var i = 0; i < img[0]; i = i + 1;) {
+    print_int(img[i + 1]);
+    print_string(" ");
   }
-  print_string(string_of_array(encode(raw_img, l)));
+  print_string("\n");
   return;
 }
 
