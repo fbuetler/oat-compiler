@@ -113,7 +113,26 @@ let primesieve_tests =
 
 let bf_sum_program = "'>>>>>>+>,><<[<<]<<<<>[-]>>>>>[>>]<[-><<[<<]<<<<>+>>>>>[>>]<]<-+>+><[[-]<[-]+[<<]<<<<>[->>>>>[>>]>+<<+<[<<]<<<<>]>>>>>[>>]>[-<<<[<<]<<<<>+>>>>>[>>]>]<+[<<]<<>[->>>[>>]>+<<+<[<<]<<>]>>>[>>]>[-<<<[<<]<<>+>>>[>>]>]<<[-<<+>>]<-<<[<<]<<>[-]>>>[>>]<[-><<[<<]<<>+>>>[>>]<]<-+[<<]<<<<>[->>>>>[>>]>+<<+<[<<]<<<<>]>>>>>[>>]>[-<<<[<<]<<<<>+>>>>>[>>]>]<+>+><[-<<->>]<-<<[<<]<<<<>[-]>>>>>[>>]<[-><<[<<]<<<<>+>>>>>[>>]<]<-+[<<]<<<<>[->>>>>[>>]>+<<+<[<<]<<<<>]>>>>>[>>]>[-<<<[<<]<<<<>+>>>>>[>>]>]<<][-]<[-]+[<<]<<>[->>>[>>]>+<<+<[<<]<<>]>>>[>>]>[-<<<[<<]<<>+>>>[>>]>]<<'"
 
+let subset_sum_test = [
+    ("atprograms/others/subset_sum.oat", "123456789", "1");
+    ("atprograms/others/subset_sum.oat", "12345678", "1");
+    ("atprograms/others/subset_sum.oat", "1234", "0");
+    ("atprograms/others/subset_sum.oat", "12", "1");
+    ("atprograms/others/subset_sum.oat", "123456", "0");
+    ("atprograms/others/subset_sum.oat", "12345678901234567890123456", "1");
+    ("atprograms/others/subset_sum.oat", "1", "0");
+    ("atprograms/others/subset_sum.oat", "123456789012", "1"); 
+  ]
 
+let hex2rgb_test = [
+  ("atprograms/others/hex2rgb.oat", "FF FF FF", "rgb(255, 255, 255)_0");
+  ("atprograms/others/hex2rgb.oat", "00 00 00", "rgb(0, 0, 0)_0");
+  ("atprograms/others/hex2rgb.oat", "44 81 eb", "rgb(68, 129, 235)_0");
+  ("atprograms/others/hex2rgb.oat", "44 81 EB", "rgb(68, 129, 235)_0");
+  ("atprograms/others/hex2rgb.oat", "12 34 56", "rgb(18, 52, 86)_0");
+  ("atprograms/others/hex2rgb.oat", "78 90 aB", "rgb(120, 144, 171)_0");
+  ("atprograms/others/hex2rgb.oat", "c6 f2 e8", "rgb(198, 242, 232)_0");
+]
 
 let provided_tests : suite = [
   Test ("manual 1", executed_oat_file [("atprograms/others/bubble_sort.oat", "", "kpyf{shomfhkmopsy{255")]);
@@ -129,7 +148,14 @@ let provided_tests : suite = [
   Test ("manual 11", executed_oat_file primesieve_tests);
   Test ("manual 12", executed_oat_file [("atprograms/others/regex.oat", "", "fffffttttt0")]);
   Test ("manual 13", executed_oat_file [("atprograms/others/prim.oat", "", "0-1 - 1-2 - 2-3 - 3-40")]);
-  (* Test ("manual 14", executed_oat_file [("atprograms/others/quicksort.oat", "", "0, 1, 2, 12, 23, 53, 90, 197, 342")]); TODO Uncomment this once Jonathan and Roman fix the expected output *)
+  Test ("manual 14", executed_oat_file [("atprograms/others/quicksort.oat", "", "BCPXZaceo0")]); 
   Test ("manual 15", executed_oat_file [("atprograms/others/selection_sort.oat", "", "kpyf{shomfhkmopsy{42")]);
+  Test ("manual 16", executed_oat_file [("atprograms/others/diffie-hellman.oat", "", "0")]);
+  Test ("manual 17", executed_oat_file [("atprograms/others/palindrome.oat", "", "42")]);
+  Test ("manual 18", executed_oat_file [("atprograms/others/s_dist_pair.oat", "", "26")]);
+  Test ("manual 19", executed_oat_file [("atprograms/others/string_rotation.oat", "", "truefalsefalse0")]);
+  Test ("manual 20", executed_oat_file [("atprograms/others/lcm.oat", "", "99")]);
+  Test ("manual 21", executed_oat_file subset_sum_test);
+  Test ("manual 22", executed_oat_file hex2rgb_test);
 
 ] 

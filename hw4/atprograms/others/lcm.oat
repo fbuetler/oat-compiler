@@ -1,0 +1,67 @@
+/* 16-918-724,Diluxion Marku */
+/* 16-914-954,Predrag Krnetic */
+
+int lcm(int a, int b) {
+
+	if (a == 0 | b == 0) {
+	  return 0;
+	}
+
+	var absa = getabs(a);
+	var absb = getabs(b);
+	var higher = getmax(absa, absb);
+
+	var lower = getmin(absa, absb);
+	var res = higher;
+
+	while (getmod(res, lower) != 0) {
+	  res = res + higher;
+	}
+
+  	return res;
+}
+
+int getabs (int a) {
+
+	if (a < 0) {
+	  var t = a * (-1);
+	  return t;
+	}
+	
+	return a;
+}
+
+int getmax (int a, int b) {
+
+	if (a >= b) {
+	  return a;
+	}
+
+	return b;
+}
+
+int getmin (int a, int b) {
+
+	if (a <= b) {
+	  return a;
+	}
+
+	return b;
+}
+
+int getmod (int a, int b) {
+  
+	var t = a;
+	while (t - b >= 0) {
+          t = t - b;
+  	}
+
+  	return t;
+}
+
+int program (int argc, string[] argv) {
+	var a = 9;
+	var b = 11;
+
+	return lcm(a, b);
+}

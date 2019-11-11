@@ -1,0 +1,50 @@
+/* 15-920-712, Lukas Reichart */
+/* 16-944-589, Luis Jira */
+
+int div(int a, int b){
+    if(b <= 0) {
+	return 0;
+    }
+    var val=0;
+    while(b*(val+1) < a){
+	val = val+1;
+    }
+
+    return val;
+}
+
+int pow(int b, int n){
+    if(n < 0){
+	return 0;
+    }
+    var val = 1;
+    var i=0;
+    for(; i < n; i=i+1;){
+	val = val * b;
+	    }
+    
+    return val;
+}
+
+int mod(int a, int n){
+    return a - div(a, n) * n;
+}
+    
+int program(int argc, string[] argv){
+    var g = 9;
+    var p = 23;
+    var pa = 4;
+    var pb = 3;
+
+    var a = mod(pow(g, pa), p);
+    var b = mod(pow(g, pb), p); 
+
+    var sa = mod(pow(b, pa), p);
+    var sb = mod(pow(a, pb), p);
+    
+    if(sa == sb){
+	return 0;
+    } else {
+	return 1;
+    }
+}
