@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -o pipefail
 cd "${0%/*}"
 
 # Usage: ./render_svg.sh <input_svg_file_path> <output_bmp_file_path>
