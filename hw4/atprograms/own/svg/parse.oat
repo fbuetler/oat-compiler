@@ -236,6 +236,18 @@ int[] img_to_bmp() {
   return output;
 }
 
+string node_get_name(int[][] node) {
+  var len = node[0][0];
+  assert(len >= 2);
+  return string_of_array(node[1]);
+}
+
+int node_get_attr_count(int[][] node) {
+  var len = node[0][0];
+  assert(len >= 2);
+  return divide((len - 2), 2);
+}
+
 bool take_whitespace() {
   var did_take = false;
   while (parse_pos < parse_input_length) {
@@ -411,18 +423,6 @@ int[][] parse_tag() {
     output[0][2] = second_open_pos;
     return output;
   }
-}
-
-string node_get_name(int[][] node) {
-  var len = node[0][0];
-  assert(len >= 2);
-  return string_of_array(node[1]);
-}
-
-int node_get_attr_count(int[][] node) {
-  var len = node[0][0];
-  assert(len >= 2);
-  return divide((len - 2), 2);
 }
 
 void load_input(string s) {
