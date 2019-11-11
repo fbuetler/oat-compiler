@@ -27,6 +27,8 @@ let own_tests = [
   ("atprograms/own/null.oat", "", "0");
   ("atprograms/own/string.oat", "", "walrus0");
   ("atprograms/own/whilefalse.oat", "", "27");
+  ("atprograms/own/global_string_array.oat", "", "String20");
+  ("atprograms/own/multidim.oat", "", "2");
 ]
 
 let provided_tests : suite = [

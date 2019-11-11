@@ -1,0 +1,6 @@
+global arr3 = string[]{"String1", "String2", "String3"};
+
+int program(int argc, string[] argv) {
+  print_string(arr3[1]);
+  return 0;
+}
