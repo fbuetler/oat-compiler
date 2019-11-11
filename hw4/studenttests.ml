@@ -7,7 +7,7 @@ open Gradedtests
 (* debug your program.                                          *)
 
 let own_tests = [
-  ("atprograms/own/argc.oat", "test walrus", "2");
+  ("atprograms/own/argc.oat", "test walrus", "3");
   ("atprograms/own/array_exp_order.oat", "", "3");
   ("atprograms/own/array.oat", "", "0");
   ("atprograms/own/bitnot.oat", "", "2");
@@ -24,7 +24,7 @@ let own_tests = [
   (* ("atprograms/own/not_call.oat", "", "0"); TODO enable when question answered *)
   ("atprograms/own/null_array.oat", "", "0");
   ("atprograms/own/null.oat", "", "0");
-  ("atprograms/own/string.oat", "", "0");
+  ("atprograms/own/string.oat", "", "walrus0");
   ("atprograms/own/whilefalse.oat", "", "27");
 ]
 
