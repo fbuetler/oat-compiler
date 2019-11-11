@@ -836,7 +836,6 @@ void output_bmp() {
     print_int(img[i + 1]);
     print_string(" ");
   }
-  print_string("\n");
   return;
 }
 
@@ -872,6 +871,7 @@ int program(int argc, string[] argv) {
   load_input(argv[1]);
   parse_and_draw_svg();
   output_bmp();
+  print_string("\n");
 
   return 0;
 }
