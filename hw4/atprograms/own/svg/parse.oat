@@ -10,6 +10,7 @@ global char_cr = 13;
 global char_space = 32;
 global char_double_quote = 34;
 global char_single_quote = 39;
+global char_zero = 48;
 
 global char_quote_arr = int[]{34};
 
@@ -257,6 +258,16 @@ int node_get_attr_count(int[][] node) {
   return divide((len - 2), 2);
 }
 
+string node_get_attr_value(int[][] node, string name, string default) {
+  var count = node_get_attr_count(node);
+  for (var i = 0; i < count; i = i + 1;) {
+    if (str_eq(string_of_array(node[2 + 2 * i]), name)) {
+      return string_of_array(node[2 + 2 * i + 1]);
+    }
+  }
+  return default;
+}
+
 bool take_whitespace() {
   var did_take = false;
   while (parse_pos < parse_input_length) {
@@ -320,6 +331,18 @@ int[] take_from_ranges(string ranges) {
   var out = new int[count];
   for (var i = 0; i < count; i = i + 1;) {
     out[i] = parse_input[0][start_pos + i];
+  }
+  return out;
+}
+
+int string_to_int(string s) {
+  var l = length_of_string(s);
+  var chars = array_of_string(s);
+  var out = 0;
+  for (var i = 0; i < l; i = i + 1;) {
+    var c = chars[i] - char_zero;
+    assert((c >= 0) & (c <= 9));
+    out = (out * 10) + c;
   }
   return out;
 }
@@ -466,6 +489,12 @@ void test_divide() {
   assert(divide(2, 1) == 2);
   assert(divide(6, 3) == 2);
   assert(divide(100, 20) == 5);
+  return;
+}
+
+void test_string_to_int() {
+  assert(string_to_int("123") == 123);
+  assert(string_to_int("00011") == 11);
   return;
 }
 
@@ -629,6 +658,7 @@ void test_bmp() {
 void run_tests() {
   test_str_eq();
   test_divide();
+  test_string_to_int();
   test_take_from_ranges();
   test_color_components();
   test_image_manipulation();
@@ -641,7 +671,31 @@ void run_tests() {
   return;
 }
 
-int program (int argc, string[] argv) {
+void parse_and_draw_svg() {
+  take_whitespace();
+  var outer_tag = parse_tag();
+  take_whitespace();
+
+  assert(str_eq(node_get_name(outer_tag), "svg"));
+  var width = string_to_int(node_get_attr_value(outer_tag, "width", "400"));
+  var height = string_to_int(node_get_attr_value(outer_tag, "height", "400"));
+
+  make_blank_image(width, height);
+  draw_rect_fill(60, 10, 30, 15, 0xA611EEFF);
+  return;
+}
+
+void output_bmp() {
+  var img = img_to_bmp();
+  for (var i = 0; i < img[0]; i = i + 1;) {
+    print_int(img[i + 1]);
+    print_string(" ");
+  }
+  print_string("\n");
+  return;
+}
+
+int program(int argc, string[] argv) {
   var usage = "Usage: command [<svg_as_string>]\n";
 
   if (argc != 2) {
@@ -657,19 +711,8 @@ int program (int argc, string[] argv) {
   } 
 
   load_input(argv[1]);
-
-  take_whitespace();
-  var tag = parse_tag();
-  take_whitespace();
-
-  make_blank_image(100, 30);
-  draw_rect_fill(60, 10, 30, 15, 0xA611EEFF);
-  var img = img_to_bmp();
-  for (var i = 0; i < img[0]; i = i + 1;) {
-    print_int(img[i + 1]);
-    print_string(" ");
-  }
-  print_string("\n");
+  parse_and_draw_svg();
+  output_bmp();
 
   return 0;
 }
