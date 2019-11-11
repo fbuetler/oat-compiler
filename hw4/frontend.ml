@@ -521,8 +521,8 @@ and cmp_garr c (e: Ast.exp node) : Ll.ty * Ll.gdecl * (Ll.gid * Ll.gdecl) list =
           let name = gensym "elem" in
           let ty, (inner_ty, inner_init), new_extra = cmp_garr c expr in
           begin match inner_init with
-            | GNull -> (ty, (inner_ty, inner_init) :: cur_elem_decls, new_extra @ cur_extra)
-            | _ -> (ty, (ty, GGid name) :: cur_elem_decls, (name, (inner_ty, inner_init)) :: new_extra @ cur_extra)
+            | GArray _ -> (ty, (ty, GGid name) :: cur_elem_decls, (name, (inner_ty, inner_init)) :: new_extra @ cur_extra)
+            | _ -> (ty, (inner_ty, inner_init) :: cur_elem_decls, new_extra @ cur_extra)
           end
         ) (I64, [], []) elem_exprs in (* HACK assume empty global arrays contain I64s *)
       let l = List.length elem_exprs in
