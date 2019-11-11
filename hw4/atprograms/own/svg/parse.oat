@@ -105,11 +105,11 @@ int char_arr_len(int[] chars) {
 }
 
 /*
-didive calculates (n / d).
+didive_exact calculates (n / d).
 If the resulting value is not an integer, divide fails.
 Not all values of n and d are supported.
 */
-int divide(int n, int d) {
+int divide_exact(int n, int d) {
   assert((n >= 0) & (d > 0));
   var x = 0;
   while (x * d < n) {
@@ -118,6 +118,16 @@ int divide(int n, int d) {
   assert(x * d == n);
   return x;
 }
+
+int divide_floor(int n, int d){
+  var x = 0;
+  while (d <= n) {
+    n = n - d;
+    x = x + 1;
+  }
+  return x;
+}
+
 
 string convert_quotes(string s) {
   var len = length_of_string(s);
@@ -258,7 +268,7 @@ string node_get_name(int[][] node) {
 int node_get_attr_count(int[][] node) {
   var len = node[0][0];
   assert(len >= 2);
-  return divide((len - 2), 2);
+  return divide_exact((len - 2), 2);
 }
 
 string node_get_attr_value(int[][] node, string name, string default) {
@@ -307,7 +317,7 @@ bool take_quote() {
 
 int[] take_from_ranges(string ranges) {
   var range_chars = array_of_string(ranges);
-  var range_count = divide(length_of_string(ranges), 2);
+  var range_count = divide_exact(length_of_string(ranges), 2);
 
   var start_pos = parse_pos;
   var count = 0;
@@ -564,12 +574,15 @@ void test_str_eq() {
 }
 
 void test_divide() {
-  assert(divide(0, 1) == 0);
-  assert(divide(0, 5) == 0);
-  assert(divide(1, 1) == 1);
-  assert(divide(2, 1) == 2);
-  assert(divide(6, 3) == 2);
-  assert(divide(100, 20) == 5);
+  assert(divide_exact(0, 1) == 0);
+  assert(divide_exact(0, 5) == 0);
+  assert(divide_exact(1, 1) == 1);
+  assert(divide_exact(2, 1) == 2);
+  assert(divide_exact(6, 3) == 2);
+  assert(divide_exact(100, 20) == 5);
+  assert(divide_floor(100, 20) == 5);
+  assert(divide_floor(101, 20) == 5);
+  assert(divide_floor(99, 20) == 4);
   return;
 }
 
