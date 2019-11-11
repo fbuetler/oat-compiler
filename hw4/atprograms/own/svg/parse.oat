@@ -1,0 +1,877 @@
+global parse_input = int[][]{int[] null};
+global parse_input_length = 0;
+global parse_pos = 0;
+
+global image = int[][]{int[] null};
+
+global char_tab = 9;
+global char_lf = 10;
+global char_cr = 13;
+global char_space = 32;
+global char_double_quote = 34;
+global char_hash = 35;
+global char_single_quote = 39;
+global char_zero = 48;
+global char_upper_a = 65;
+global char_lower_a = 97;
+
+global char_quote_arr = int[]{34};
+
+global bpm_template_size = 54;
+/* http://www.ece.ualberta.ca/~elliott/ee552/studentAppNotes/2003_w/misc/bmp_file_format/bmp_file_format.htm */
+global bmp_template = int[]{
+  66, 77,        /* Header.Signature             "BM"                                                              */
+  0, 0, 0, 0,    /* Header.FileSize              File size in bytes                                                */
+  0, 0, 0, 0,    /* Header.reserved              unused (=0)                                                       */
+  0, 0, 0, 0,    /* Header.DataOffset            Offset from beginning of file to the beginning of the bitmap data */
+  40, 0, 0, 0,   /* InfoHeader.Size              Size of InfoHeader =40                                            */
+  0, 0, 0, 0,    /* InfoHeader.Width             Horizontal width of bitmap in pixels                              */
+  0, 0, 0, 0,    /* InfoHeader.Height            Horizontal height of bitmap in pixels                             */
+  1, 0,          /* InfoHeader.Planes            Number of Planes (=1)                                             */ 
+  24, 0,         /* InfoHeader.BitsPerPixel      Bits per Pixel used to store palette entry information            */ 
+  0, 0, 0, 0,    /* InfoHeader.Compression       Type of Compression (0 = BI_RGB   no compression )                */ 
+  0, 0, 0, 0,    /* InfoHeader.ImageSize         It is valid to set this =0 if Compression = 0                     */ 
+  196, 14, 0, 0, /* InfoHeader.XpixelsPerM       horizontal resolution: Pixels/meter (96 DPI)                      */
+  196, 14, 0, 0, /* InfoHeader.YpixelsPerM       vertical resolution: Pixels/meter (96 DPI)                        */ 
+  0, 0, 0, 0,    /* InfoHeader.ColorsUsed        number of colors in the color palette (0 to default to 2^n)       */ 
+  0, 0, 0, 0     /* InfoHeader.ImportantColors   generally ignored                                                 */ 
+};
+
+/*
+Strings are stored as int[] for easy manipulation.
+
+AST nodes (XML tags) are stored as int[][], where node[0][0]
+is the length of outermost array. This is effectively
+a string[], but those are hard to get the length of.
+
+To allow parsing nested tags, the position of the ">" of
+the opening tag is stored in node[0][1], and the position
+of the "<" of the closing tag is stored in node[0][2]. For
+self closing tags node[0][1] and node[0][2] both contain
+the position of the only ">".
+
+node[1] contains the name of the tag.
+node[1 + 2 * i] contains the name of the i-th attribue (starting at 0).
+node[2 + 2 * i] contains the value of the i-th attribute.
+
+Images are stored as int[], where img[0] is the width of the image and
+img[1] is the height of the image. The pixel at x 12, y 53 (y down) is
+stored in img[width * y + x].
+
+Pixels are stored as rgba values, where each component is
+in the range 0-255. The following bits of an int are used
+to store each component (0 is LSB):
+
+  63-32 unused
+  31-24 red
+  23-16 green
+  15-8 blue
+  7-0 alpha
+
+This allows hex literals to be used like rgba hex colors (eg. 0xA611EEFF
+is an opaque light purple).
+*/
+
+/* assert will segfault if the passed condition is false */
+void assert(bool condition) {
+  if (condition) {
+    return;
+  }
+  var a = new int[0];
+  a[123456789] = 1;
+  return;
+}
+
+bool str_eq(string a, string b) {
+  var a_len = length_of_string(a);
+  var b_len = length_of_string(b);
+  if (a_len != b_len) {
+    return false;
+  }
+
+  var a_chars = array_of_string(a);
+  var b_chars = array_of_string(b);
+
+  for (var i = 0; i < a_len; i = i + 1;) {
+    if (a_chars[i] != b_chars[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+int char_arr_len(int[] chars) {
+  return length_of_string(string_of_array(chars));
+}
+
+/*
+didive_exact calculates (n / d).
+If the resulting value is not an integer, divide fails.
+Not all values of n and d are supported.
+*/
+int divide_exact(int n, int d) {
+  assert((n >= 0) & (d > 0));
+  var x = 0;
+  while (x * d < n) {
+    x = x + 1;
+  }
+  assert(x * d == n);
+  return x;
+}
+
+int divide_floor(int n, int d){
+  var x = 0;
+  while (d <= n) {
+    n = n - d;
+    x = x + 1;
+  }
+  return x;
+}
+
+
+string convert_quotes(string s) {
+  var len = length_of_string(s);
+  var chars = array_of_string(s);
+  for (var i = 0; i < len; i = i + 1;) {
+    if (chars[i] == char_single_quote) {
+      chars[i] = char_double_quote;
+    }
+  }
+  return string_of_array(chars);
+}
+
+int int_get_byte(int value, int index) {
+  return (value >> (index * 8)) [&] 0xFF;
+}
+
+int color_from_components(int r, int g, int b, int a) {
+  assert((r >= 0) & (r < 256));
+  assert((g >= 0) & (g < 256));
+  assert((b >= 0) & (b < 256));
+  assert((a >= 0) & (a < 256));
+  return (r << 24) [|] (g << 16) [|] (b << 8) [|] a;
+}
+
+int color_get_r(int color) {
+  return int_get_byte(color, 3);
+}
+
+int color_get_g(int color) {
+  return int_get_byte(color, 2);
+}
+
+int color_get_b(int color) {
+  return int_get_byte(color, 1);
+}
+
+int color_get_a(int color) {
+  return int_get_byte(color, 0);
+}
+
+void make_blank_image(int width, int height) {
+  var len = 2 + width * height;
+  image[0] = new int[len];
+  for (var i = 0; i < len; i = i + 1;) {
+    image[0][i] = 0xFFFFFFFF;
+  }
+  image[0][0] = width;
+  image[0][1] = height;
+  return;
+}
+
+int img_get_pixel_index(int x, int y) {
+  var width = image[0][0];
+  var height = image[0][1];
+  if ((x < 0) | (x >= width) | (y < 0) | (y >= height)) {
+    return -1;
+  }
+  return 2 + width * (height - y - 1) + x;
+}
+
+int img_get_pixel(int x, int y) {
+  var i = img_get_pixel_index(x, y);
+  if (i == -1) {
+    return 0;
+  }
+  return image[0][i];
+}
+
+void img_set_pixel(int x, int y, int color) {
+  var i = img_get_pixel_index(x, y);
+  if (i == -1) {
+    return;
+  }
+  image[0][i] = color;
+  return;
+}
+
+void img_overlay_pixel(int x, int y, int color) {
+  var i = img_get_pixel_index(x, y);
+  if (i == -1) {
+    return;
+  }
+  var old_color = image[0][i];
+  assert(color_get_a(old_color) == 255);
+  var sa = color_get_a(color);
+  image[0][i] = color_from_components(
+    divide_floor((color_get_r(old_color) * (255 - sa)), 255) + divide_floor((color_get_r(color) * sa), 255),
+    divide_floor((color_get_g(old_color) * (255 - sa)), 255) + divide_floor((color_get_g(color) * sa), 255),
+    divide_floor((color_get_b(old_color) * (255 - sa)), 255) + divide_floor((color_get_b(color) * sa), 255),
+    255
+  );
+  return;
+}
+
+/*
+img_to_bmp returns the image encoded as a BMP file.
+  - result[0] is the number of bytes in the file
+  - result[i + 1] is the value of the i-th byte of the file (0 <= value < 255)
+*/
+int[] img_to_bmp() {
+  var width = image[0][0];
+  var height = image[0][1];
+  var pixel_count = width * height;
+  var pixel_byte_count = pixel_count * 3;
+  var file_size = bpm_template_size + pixel_byte_count;
+
+  var output = new int[file_size + 1];
+  output[0] = file_size;
+  for (var i = 0; i < bpm_template_size; i = i + 1;) {
+    output[i + 1] = bmp_template[i];
+  }
+
+  /* Header.FileSize */
+  output[1 + 0x02 + 0] = int_get_byte(file_size, 0);
+  output[1 + 0x02 + 1] = int_get_byte(file_size, 1);
+  output[1 + 0x02 + 2] = int_get_byte(file_size, 2);
+  output[1 + 0x02 + 3] = int_get_byte(file_size, 3);
+
+  /* Header.DataOffset */
+  output[1 + 0x0A] = bpm_template_size;
+
+  /* Header.Width */
+  output[1 + 0x12 + 0] = int_get_byte(width, 0);
+  output[1 + 0x12 + 1] = int_get_byte(width, 1);
+  output[1 + 0x12 + 2] = int_get_byte(width, 2);
+  output[1 + 0x12 + 3] = int_get_byte(width, 3);
+
+  /* Header.Height */
+  output[1 + 0x16 + 0] = int_get_byte(height, 0);
+  output[1 + 0x16 + 1] = int_get_byte(height, 1);
+  output[1 + 0x16 + 2] = int_get_byte(height, 2);
+  output[1 + 0x16 + 3] = int_get_byte(height, 3);
+
+  var j = bpm_template_size + 1;
+  for (var i = 0; i < pixel_count; i = i + 1;) {
+    var color = image[0][2 + i];
+    for (var k = 3; k > 0; k = k - 1;) {
+      output[j] = int_get_byte(color, k);
+      j = j + 1;
+    }
+  }
+
+  for (var i = 0; i < file_size; i = i + 1;) {
+    assert((output[i + 1] >= 0) & (output[i + 1] < 256));
+  }
+  return output;
+}
+
+string node_get_name(int[][] node) {
+  var len = node[0][0];
+  assert(len >= 2);
+  return string_of_array(node[1]);
+}
+
+int node_get_attr_count(int[][] node) {
+  var len = node[0][0];
+  assert(len >= 2);
+  return divide_exact((len - 2), 2);
+}
+
+string node_get_attr_value(int[][] node, string name, string default) {
+  var count = node_get_attr_count(node);
+  for (var i = 0; i < count; i = i + 1;) {
+    if (str_eq(string_of_array(node[2 + 2 * i]), name)) {
+      return string_of_array(node[2 + 2 * i + 1]);
+    }
+  }
+  return default;
+}
+
+bool take_whitespace() {
+  var did_take = false;
+  while (parse_pos < parse_input_length) {
+    var c = parse_input[0][parse_pos];
+    if (c != char_tab & c != char_lf & c != char_cr & c != char_space) {
+      return did_take;
+    }
+    did_take = true;
+    parse_pos = parse_pos + 1;
+  }
+  return did_take;
+}
+
+bool take_this(string s) {
+  var len = length_of_string(s);
+  var chars = array_of_string(s);
+  var i = 0;
+  while (parse_pos < parse_input_length) {
+    if (parse_input[0][parse_pos] != chars[i]) {
+      return false;
+    }
+    i = i + 1;
+    parse_pos = parse_pos + 1;
+    if (i == len) {
+      return true;
+    }
+  }
+  return i == len;
+}
+
+bool take_quote() {
+  return take_this(string_of_array(char_quote_arr));
+}
+
+int[] take_from_ranges(string ranges) {
+  var range_chars = array_of_string(ranges);
+  var range_count = divide_exact(length_of_string(ranges), 2);
+
+  var start_pos = parse_pos;
+  var count = 0;
+  var unmatched = false;
+  while (!unmatched & parse_pos < parse_input_length) {
+    var c = parse_input[0][parse_pos];
+    var matched_now = false;
+
+    for (var i = 0; !matched_now & i < range_count; i = i + 1;) {
+      if (c >= range_chars[2 * i] & c <= range_chars[2 * i + 1]) {
+        matched_now = true;
+      }
+    }
+
+    if (matched_now) {
+      count = count + 1;
+    } else {
+      unmatched = true;
+    }
+    parse_pos = parse_pos + 1;
+  }
+
+  parse_pos = start_pos + count;
+  var out = new int[count];
+  for (var i = 0; i < count; i = i + 1;) {
+    out[i] = parse_input[0][start_pos + i];
+  }
+  return out;
+}
+
+int string_to_int(string s) {
+  var l = length_of_string(s);
+  var chars = array_of_string(s);
+  var out = 0;
+  for (var i = 0; i < l; i = i + 1;) {
+    var c = chars[i] - char_zero;
+    assert((c >= 0) & (c <= 9));
+    out = (out * 10) + c;
+  }
+  return out;
+}
+
+int hex_to_color(string s) {
+  var l = length_of_string(s);
+  var chars = array_of_string(s);
+  assert(chars[0] == char_hash);
+
+
+  if (l == 4) {
+    var new_chars = new int[9];
+    new_chars[0] = char_hash;
+    new_chars[1] = chars[1];
+    new_chars[2] = chars[1];
+    new_chars[3] = chars[2];
+    new_chars[4] = chars[2];
+    new_chars[5] = chars[3];
+    new_chars[6] = chars[3];
+    new_chars[7] = 70;
+    new_chars[8] = 70;
+    return hex_to_color(string_of_array(new_chars));
+  }
+  if (l == 7) {
+    var new_chars = new int[9];
+    new_chars[0] = char_hash;
+    new_chars[1] = chars[1];
+    new_chars[2] = chars[2];
+    new_chars[3] = chars[3];
+    new_chars[4] = chars[4];
+    new_chars[5] = chars[5];
+    new_chars[6] = chars[6];
+    new_chars[7] = 70;
+    new_chars[8] = 70;
+    return hex_to_color(string_of_array(new_chars));
+  }
+  assert(l == 9);
+
+  var out = 0;
+  for (var i = 1; i < l; i = i + 1;) {
+    var c = chars[i];
+
+    var base = char_zero;
+    var letter = false;
+    if (c >= char_upper_a) {
+      letter = true;
+      base = char_upper_a;
+      if (c >= char_lower_a) {
+        base = char_lower_a;
+      }
+    }
+
+    c = c - base;
+    if (letter) {
+      assert(c <= 5);
+      c = 10 + c;
+    } else {
+      assert(c <= 9);
+    }
+
+
+    assert((c >= 0) & (c <= 15));
+    out = (out * 16) + c;
+  }
+
+  return out;
+}
+
+int string_to_color(string s) {
+  var l = length_of_string(s);
+  assert(l > 0);
+  var chars = array_of_string(s);
+  var c = chars[0];
+
+  if (c == char_hash) {
+    return hex_to_color(s);
+  } else {
+    assert(false);
+    return 0;
+  }
+} 
+
+int[][] parse_attribute() {
+  var old_pos = parse_pos;
+  var failed = false;
+
+  var name = take_from_ranges("azAZ--");
+  failed = failed | char_arr_len(name) == 0;
+  take_whitespace();
+  failed = failed | !(take_this("=")); /* TODO remove useless brackets once compiler supports it */
+  take_whitespace();
+  failed = failed | !(take_quote());
+  var value = take_from_ranges(" !#~");
+  failed = failed | !(take_quote());
+
+
+  if (failed) {
+    parse_pos = old_pos;
+    return new int[][]{new int[]{2}, new int[0]};
+  }
+
+  return new int[][]{new int[]{4}, new int[0], name, value};
+}
+
+int[][] parse_tag() {
+  assert(take_this("<"));
+  take_whitespace();
+  var tag_name = take_from_ranges("az");
+  take_whitespace();
+
+  var before_attrs = parse_pos;
+  var attr_count = 0;
+  var maybe_more_attrs = true;
+  while (maybe_more_attrs) {
+    take_whitespace();
+    var attr = parse_attribute();
+    take_whitespace();
+
+    if (node_get_attr_count(attr) == 0) {
+      maybe_more_attrs = false;
+    } else {
+      attr_count = attr_count + 1;
+    }
+  }
+  parse_pos = before_attrs;
+
+  var node_len = 2 + 2 * attr_count;
+  var output = new int[][node_len];
+  output[0] = new int[]{node_len, 0, 0};
+  output[1] = tag_name;
+
+  for (var i = 0; i < attr_count; i = i + 1;) {
+    take_whitespace();
+    var attr = parse_attribute();
+    take_whitespace();
+
+    output[2 + 2 * i] = attr[2];
+    output[2 + 2 * i + 1] = attr[3];
+  }
+
+  var before_first_close = parse_pos;
+  var is_self_closing = take_this("/");
+  parse_pos = before_first_close;
+
+  if (is_self_closing) {
+    assert(take_this("/"));
+    take_whitespace();
+    var close_pos = parse_pos;
+    assert(take_this(">"));
+
+    output[0][1] = close_pos;
+    output[0][2] = close_pos;
+    return output;
+  } else {
+    var first_close_pos = parse_pos;
+    assert(take_this(">"));
+
+    var inner_parse_done = false;
+    while (!inner_parse_done) {
+      take_whitespace();
+
+      var before_check_closing = parse_pos;
+      var is_closing = true;
+      is_closing = is_closing & take_this("<");
+      take_whitespace();
+      is_closing = is_closing & take_this("/");
+      parse_pos = before_check_closing;
+
+      if (is_closing) {
+        inner_parse_done = true;
+      } else {
+        parse_tag();
+      }
+    }
+
+    take_whitespace();
+
+    var second_open_pos = parse_pos;
+    assert(take_this("<"));
+    take_whitespace();
+    assert(take_this("/"));
+    take_whitespace();
+    assert(take_this(string_of_array(tag_name)));
+    take_whitespace();
+    assert(take_this(">"));
+
+    output[0][1] = first_close_pos;
+    output[0][2] = second_open_pos;
+    return output;
+  }
+}
+
+void load_input(string s) {
+  parse_input[0] = array_of_string(s);
+  parse_input_length = length_of_string(s);
+  parse_pos = 0;
+  return;
+}
+
+void draw_rect_fill(int start_x, int start_y, int width, int height, int color) {
+  for (var x = start_x; x < start_x + width; x = x + 1;) {
+    for (var y = start_y; y < start_y + height; y = y + 1;) {
+      img_overlay_pixel(x, y, color);
+    }
+  }
+  return;
+}
+
+void test_str_eq() {
+  assert(str_eq("abc", "abc"));
+  assert(str_eq("", ""));
+  assert(!(str_eq("abc", "ab"))); /* TODO remove useless brackets once compiler supports it */
+  assert(!(str_eq("ab", "abc"))); /* TODO remove useless brackets once compiler supports it */
+  assert(!(str_eq("seal", "walrus"))); /* TODO remove useless brackets once compiler supports it */
+  return;
+}
+
+void test_divide() {
+  assert(divide_exact(0, 1) == 0);
+  assert(divide_exact(0, 5) == 0);
+  assert(divide_exact(1, 1) == 1);
+  assert(divide_exact(2, 1) == 2);
+  assert(divide_exact(6, 3) == 2);
+  assert(divide_exact(100, 20) == 5);
+  assert(divide_floor(100, 20) == 5);
+  assert(divide_floor(101, 20) == 5);
+  assert(divide_floor(99, 20) == 4);
+  return;
+}
+
+void test_string_to_int() {
+  assert(string_to_int("123") == 123);
+  assert(string_to_int("00011") == 11);
+  return;
+}
+
+void test_hex_to_color() {
+  assert(hex_to_color("#123456") == 0x123456FF);
+  assert(hex_to_color("#ABC") == 0xAABBCCFF);
+  assert(hex_to_color("#000000") == 0x000000FF);
+  assert(hex_to_color("#3EC837") == 0x3EC837FF);
+  assert(hex_to_color("#3EC83712") == 0x3EC83712);
+  return;
+}
+
+void test_color_components() {
+  assert(color_from_components(0, 0, 0, 255) == 0x000000FF);
+  assert(color_from_components(0, 0, 255, 0) == 0x0000FF00);
+  assert(color_from_components(0, 255, 0, 0) == 0x00FF0000);
+  assert(color_from_components(255, 0, 0, 0) == 0xFF000000);
+  assert(color_from_components(1, 2, 3, 4) == 0x01020304);
+  assert(color_from_components(128, 0, 13, 255) == 0x80000DFF);
+
+  var c = color_from_components(128, 123, 48, 77);
+  assert(color_get_r(c) == 128);
+  assert(color_get_g(c) == 123);
+  assert(color_get_b(c) == 48);
+  assert(color_get_a(c) == 77);
+  assert(c == color_from_components(color_get_r(c), color_get_g(c), color_get_b(c), color_get_a(c)));
+
+  return;
+}
+
+void test_image_manipulation() {
+  make_blank_image(10, 7);
+  assert(image[0][0] == 10);
+  assert(image[0][1] == 7);
+
+  var purple = 0xA611EEFF;
+  var orange = 0xC86E3780;
+  var white = 0xFFFFFFFF;
+  img_set_pixel(0, 0, purple);
+  img_set_pixel(0, 1, orange);
+  img_set_pixel(9, 6, orange);
+  img_set_pixel(8, 6, purple);
+  assert(img_get_pixel(0, 0) == purple);
+  assert(img_get_pixel(0, 1) == orange);
+  assert(img_get_pixel(1, 0) == white);
+  assert(img_get_pixel(9, 6) == orange);
+  assert(img_get_pixel(8, 6) == purple);
+  assert(img_get_pixel(9, 5) == white);
+
+  return;
+}
+
+void test_take_from_ranges_single(string input, string ranges, int taken) {
+  load_input(input);
+  take_from_ranges(ranges);
+  assert(parse_pos == taken);
+  return;
+}
+
+void test_take_from_ranges() {
+  test_take_from_ranges_single("walrus", "az", 6);
+  test_take_from_ranges_single("Walrus", "az", 0);
+  test_take_from_ranges_single("Walrus", "azAZ", 6);
+  test_take_from_ranges_single("Walrus!", "azAZ", 6);
+  test_take_from_ranges_single("1==1", "<>09", 4);
+  test_take_from_ranges_single("1==1", "<>19", 4);
+  test_take_from_ranges_single("1==1", "<>29", 0);
+  test_take_from_ranges_single("1==1", "<>01", 4);
+  test_take_from_ranges_single("1==1", "<>00", 0);
+  return;
+}
+
+void test_parse_attribute_single(string input, int taken, string name, string value) {
+  load_input(convert_quotes(input));
+  var attr = parse_attribute();
+  assert(parse_pos == taken);
+  if (taken == 0) {
+    assert(node_get_attr_count(attr) == 0);
+  } else {
+    assert(node_get_attr_count(attr) == 1);
+    assert(str_eq(string_of_array(attr[2]), name));
+    assert(str_eq(string_of_array(attr[3]), value));
+  }
+  return;
+}
+
+void test_parse_attribute() {
+  test_parse_attribute_single("color='blue'", 12, "color", "blue");
+  test_parse_attribute_single("'color'='blue'", 0, "", "");
+  test_parse_attribute_single("viewBox='0 10 50 20'", 20, "viewBox", "0 10 50 20");
+  test_parse_attribute_single("iAmIn=' space   '", 17, "iAmIn", " space   ");
+  test_parse_attribute_single("stroke-width='3'", 16, "stroke-width", "3");
+  test_parse_attribute_single("stroke-width   =   '3'", 22, "stroke-width", "3");
+  return;
+}
+
+void test_parse_rect() {
+  load_input("<rect />");
+  var tag = parse_tag();
+  assert(parse_pos == parse_input_length);
+  assert(node_get_attr_count(tag) == 0);
+  assert(str_eq(node_get_name(tag), "rect"));
+  return;
+}
+
+void test_parse_nested() {
+  load_input("<parent><child /></parent>");
+  var tag = parse_tag();
+  assert(parse_pos == parse_input_length);
+  assert(node_get_attr_count(tag) == 0);
+  assert(tag[0][1] == 7);
+  assert(tag[0][2] == 17);
+  assert(str_eq(node_get_name(tag), "parent"));
+  return;
+}
+
+void test_parse_circle() {
+  var input = "<circle cx='15' cy='5' r='3' stroke='green'
+    stroke-width='3' />";
+  load_input(convert_quotes(input));
+  var tag = parse_tag();
+  assert(parse_pos == parse_input_length);
+  assert(str_eq(node_get_name(tag), "circle"));
+  assert(node_get_attr_count(tag) == 5);
+  assert(str_eq(string_of_array(tag[2]), "cx"));
+  assert(str_eq(string_of_array(tag[3]), "15"));
+  assert(str_eq(string_of_array(tag[4]), "cy"));
+  assert(str_eq(string_of_array(tag[5]), "5"));
+  assert(str_eq(string_of_array(tag[6]), "r"));
+  assert(str_eq(string_of_array(tag[7]), "3"));
+  assert(str_eq(string_of_array(tag[8]), "stroke"));
+  assert(str_eq(string_of_array(tag[9]), "green"));
+  assert(str_eq(string_of_array(tag[10]), "stroke-width"));
+  assert(str_eq(string_of_array(tag[11]), "3"));
+  return;
+}
+
+void test_parse_various_tags() {
+  var inputs = new string[]{
+    "<rect />",
+    "<rect></rect>",
+    "<  rect   /   >",
+    "<parent><child/></parent>",
+    "<  parent > <   child /   > < /  parent >",
+    "<parent><child><another/></child></parent>",
+    "<parent><child></child><another/></parent>",
+    "<rect stroke  =   'blue'  stroke-width  = '3' / >",
+    "<parent><child><another with='attr' /></child></parent>"
+  };
+  var count = 9;
+
+  for (var i = 0; i < count; i = i + 1;) {
+    load_input(convert_quotes(inputs[i]));
+    parse_tag();
+    assert(parse_pos == parse_input_length);
+  }
+  return;
+}
+
+void test_bmp() {
+  make_blank_image(13, 7);
+  var bmp = img_to_bmp();
+  assert(bmp[0] == 327);
+  assert(bmp[1] == 66);
+  assert(bmp[2] == 77);
+  /* everything else should be checked by viewing the file */
+  return;
+}
+
+void run_tests() {
+  test_str_eq();
+  test_divide();
+  test_string_to_int();
+  test_hex_to_color();
+  test_take_from_ranges();
+  test_color_components();
+  test_image_manipulation();
+  test_parse_attribute();
+  test_parse_rect();
+  test_parse_nested();
+  test_parse_circle();
+  test_parse_various_tags();
+  test_bmp();
+  return;
+}
+
+void draw_shape(int[][] tag) {
+  var name = node_get_name(tag);
+  if (str_eq(name, "rect")) {
+    /* TODO check if fill is set and use that color */
+    draw_rect_fill(
+      string_to_int(node_get_attr_value(tag, "x", "0")),
+      string_to_int(node_get_attr_value(tag, "y", "0")),
+      string_to_int(node_get_attr_value(tag, "width", "50")),
+      string_to_int(node_get_attr_value(tag, "height", "50")),
+      hex_to_color(node_get_attr_value(tag, "fill", "#00000000"))
+    );
+  } else {
+    print_string(string_cat("unknown tag ", name));
+    assert(false);
+  }
+  return;
+}
+
+void parse_and_draw_svg() {
+  take_whitespace();
+  var outer_tag = parse_tag();
+  take_whitespace();
+
+  assert(str_eq(node_get_name(outer_tag), "svg"));
+  var width = string_to_int(node_get_attr_value(outer_tag, "width", "400"));
+  var height = string_to_int(node_get_attr_value(outer_tag, "height", "400"));
+  make_blank_image(width, height);
+
+  parse_pos = outer_tag[0][1] + 1;
+  while (parse_pos < outer_tag[0][2]) {
+    take_whitespace();
+    draw_shape(parse_tag());
+    take_whitespace();
+  }
+
+  return;
+}
+
+void output_bmp() {
+  var img = img_to_bmp();
+  for (var i = 0; i < img[0]; i = i + 1;) {
+    print_int(img[i + 1]);
+    print_string(" ");
+  }
+  print_string("\n");
+  return;
+}
+
+int program(int argc, string[] argv) {
+  var usage = "Usage: command [<svg_as_string>]\n";
+
+  if (argc != 2) {
+    print_string("wrong number of arguments");
+    print_string(usage);
+    return 1;
+  }
+
+  if (argc == 2 & str_eq(argv[1], "test")) {
+    run_tests();
+    print_string("passed");
+    return 0;
+  } 
+
+  if (argc == 2 & str_eq(argv[1], "demo")) {
+    load_input(convert_quotes("
+      <svg width='100' height='200'>
+        <rect x='1' y='60' height='100' width='50' fill='#3EC837' />
+        <rect x='10' y='30' height='80' width='280' fill='#7B6798' />
+        <rect x='50' y='100' height='20' width='30' />
+        <rect x='30' y='120' height='50' width='400' fill='#12345680' />
+      </svg>
+    "));
+    parse_and_draw_svg();
+    output_bmp();
+    return 0;
+  } 
+
+  load_input(argv[1]);
+  parse_and_draw_svg();
+  output_bmp();
+
+  return 0;
+}
