@@ -357,7 +357,7 @@ int hex_to_color(string s) {
 
 
   if (l == 4) {
-    var new_chars = new int[7];
+    var new_chars = new int[9];
     new_chars[0] = char_hash;
     new_chars[1] = chars[1];
     new_chars[2] = chars[1];
@@ -365,9 +365,24 @@ int hex_to_color(string s) {
     new_chars[4] = chars[2];
     new_chars[5] = chars[3];
     new_chars[6] = chars[3];
+    new_chars[7] = 70;
+    new_chars[8] = 70;
     return hex_to_color(string_of_array(new_chars));
   }
-  assert(l == 7);
+  if (l == 7) {
+    var new_chars = new int[9];
+    new_chars[0] = char_hash;
+    new_chars[1] = chars[1];
+    new_chars[2] = chars[2];
+    new_chars[3] = chars[3];
+    new_chars[4] = chars[4];
+    new_chars[5] = chars[5];
+    new_chars[6] = chars[6];
+    new_chars[7] = 70;
+    new_chars[8] = 70;
+    return hex_to_color(string_of_array(new_chars));
+  }
+  assert(l == 9);
 
   var out = 0;
   for (var i = 1; i < l; i = i + 1;) {
@@ -395,8 +410,6 @@ int hex_to_color(string s) {
     assert((c >= 0) & (c <= 15));
     out = (out * 16) + c;
   }
-
-  out = (out * 16 * 16) + 255; /* set alpha */
 
   return out;
 }
@@ -566,12 +579,12 @@ void test_string_to_int() {
   return;
 }
 
-
 void test_hex_to_color() {
   assert(hex_to_color("#123456") == 0x123456FF);
   assert(hex_to_color("#ABC") == 0xAABBCCFF);
   assert(hex_to_color("#000000") == 0x000000FF);
   assert(hex_to_color("#3EC837") == 0x3EC837FF);
+  assert(hex_to_color("#3EC83712") == 0x3EC83712);
   return;
 }
 
@@ -758,7 +771,7 @@ void draw_shape(int[][] tag) {
       string_to_int(node_get_attr_value(tag, "y", "0")),
       string_to_int(node_get_attr_value(tag, "width", "50")),
       string_to_int(node_get_attr_value(tag, "height", "50")),
-      hex_to_color(node_get_attr_value(tag, "fill", "#000"))
+      hex_to_color(node_get_attr_value(tag, "fill", "#00000000"))
     );
   } else {
     print_string(string_cat("unknown tag ", name));
