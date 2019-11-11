@@ -27,6 +27,23 @@ the position of the only ">".
 node[1] contains the name of the tag.
 node[1 + 2 * i] contains the name of the i-th attribue (starting at 0).
 node[2 + 2 * i] contains the value of the i-th attribute.
+
+Images are stored as int[], where img[0] is the width of the image and
+img[1] is the height of the image. The pixel at x 12, y 53 (y down) is
+stored in img[width * y + x].
+
+Pixels are stored as rgba values, where each component is
+in the range 0-255. The following bits of an int are used
+to store each component (0 is LSB):
+
+  63-32 unused
+  31-24 red
+  23-16 green
+  15-8 blue
+  7-0 alpha
+
+This allows hex literals to be used like rgba hex colors (eg. 0xA611EEFF
+is an opaque light purple).
 */
 
 /* assert will segfault if the passed condition is false */
@@ -85,6 +102,30 @@ string convert_quotes(string s) {
     }
   }
   return string_of_array(chars);
+}
+
+int color_from_components(int r, int g, int b, int a) {
+  assert((r >= 0) & (r < 256));
+  assert((g >= 0) & (g < 256));
+  assert((b >= 0) & (b < 256));
+  assert((a >= 0) & (a < 256));
+  return (r << 24) [|] (g << 16) [|] (b << 8) [|] a;
+}
+
+int color_get_r(int color) {
+  return (color [&] 0xFF000000) >> 24;
+}
+
+int color_get_g(int color) {
+  return (color [&] 0x00FF0000) >> 16;
+}
+
+int color_get_b(int color) {
+  return (color [&] 0x0000FF00) >> 8;
+}
+
+int color_get_a(int color) {
+  return color [&] 0x000000FF;
 }
 
 bool take_whitespace() {
@@ -286,6 +327,24 @@ void test_divide() {
   return;
 }
 
+void test_color() {
+  assert(color_from_components(0, 0, 0, 255) == 0x000000FF);
+  assert(color_from_components(0, 0, 255, 0) == 0x0000FF00);
+  assert(color_from_components(0, 255, 0, 0) == 0x00FF0000);
+  assert(color_from_components(255, 0, 0, 0) == 0xFF000000);
+  assert(color_from_components(1, 2, 3, 4) == 0x01020304);
+  assert(color_from_components(128, 0, 13, 255) == 0x80000DFF);
+
+  var c = color_from_components(128, 123, 48, 77);
+  assert(color_get_r(c) == 128);
+  assert(color_get_g(c) == 123);
+  assert(color_get_b(c) == 48);
+  assert(color_get_a(c) == 77);
+  assert(c == color_from_components(color_get_r(c), color_get_g(c), color_get_b(c), color_get_a(c)));
+
+  return;
+}
+
 void test_take_from_ranges_single(string input, string ranges, int taken) {
   load_input(input);
   take_from_ranges(ranges);
@@ -374,6 +433,7 @@ void test_parse_circle() {
 void test_parse_various_tags() {
   var inputs = new string[]{
     "<rect />",
+    /* "<rect></rect>", */ /* TODO fix this */
     "<  rect   /   >",
     "<parent><child/></parent>",
     "<  parent > <   child /   > < /  parent >",
@@ -395,6 +455,7 @@ void run_tests() {
   test_str_eq();
   test_divide();
   test_take_from_ranges();
+  test_color();
   test_parse_attribute();
   test_parse_rect();
   test_parse_nested();
