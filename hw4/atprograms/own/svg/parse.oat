@@ -13,12 +13,13 @@ global char_single_quote = 39;
 
 global char_quote_arr = int[]{34};
 
+global bpm_template_size = 54;
 /* http://www.ece.ualberta.ca/~elliott/ee552/studentAppNotes/2003_w/misc/bmp_file_format/bmp_file_format.htm */
 global bmp_template = int[]{
   66, 77,        /* Header.Signature             "BM"                                                              */
   0, 0, 0, 0,    /* Header.FileSize              File size in bytes                                                */
   0, 0, 0, 0,    /* Header.reserved              unused (=0)                                                       */
-  0, 0, 0, 54,   /* Header.DataOffset            Offset from beginning of file to the beginning of the bitmap data */
+  0, 0, 0, 0,   /* Header.DataOffset            Offset from beginning of file to the beginning of the bitmap data */
   0, 0, 0, 40,   /* InfoHeader.Size              Size of InfoHeader =40                                            */
   0, 0, 0, 0,    /* InfoHeader.Width             Horizontal width of bitmap in pixels                              */
   0, 0, 0, 0,    /* InfoHeader.Height            Horizontal height of bitmap in pixels                             */
@@ -125,6 +126,10 @@ string convert_quotes(string s) {
   return string_of_array(chars);
 }
 
+int int_get_byte(int value, int index) {
+  return (value >> (index * 8)) [&] 0xFF;
+}
+
 int color_from_components(int r, int g, int b, int a) {
   assert((r >= 0) & (r < 256));
   assert((g >= 0) & (g < 256));
@@ -134,19 +139,19 @@ int color_from_components(int r, int g, int b, int a) {
 }
 
 int color_get_r(int color) {
-  return (color [&] 0xFF000000) >> 24;
+  return int_get_byte(color, 3);
 }
 
 int color_get_g(int color) {
-  return (color [&] 0x00FF0000) >> 16;
+  return int_get_byte(color, 2);
 }
 
 int color_get_b(int color) {
-  return (color [&] 0x0000FF00) >> 8;
+  return int_get_byte(color, 1);
 }
 
 int color_get_a(int color) {
-  return color [&] 0x000000FF;
+  return int_get_byte(color, 0);
 }
 
 void make_blank_image(int width, int height) {
@@ -175,6 +180,15 @@ int img_get_pixel(int x, int y) {
 void img_set_pixel(int x, int y, int color) {
   image[0][img_get_pixel_index(x, y)] = color;
   return;
+}
+
+/*
+img_to_bpm returns the image encoded as a BMP file.
+  - result[0] is the number of bytes in the file
+  - result[i + 1] is the value of the i-th byte of the file (0 <= value < 255)
+*/
+int[] img_to_bpm() {
+  return new int[0];
 }
 
 bool take_whitespace() {
@@ -556,24 +570,25 @@ void run_tests() {
 int program (int argc, string[] argv) {
   var usage = "Usage: command [<svg_as_string>]\n";
 
-  if (argc == 1) {
-    run_tests();
-    print_string("self_test passed\n");
-    print_string(usage);
-    return 0;
-  } else if (argc == 2) {
-    load_input(argv[1]);
-
-    take_whitespace();
-    var tag = parse_tag();
-    take_whitespace();
-
-    print_string(node_get_name(tag));
-
-    return 0;
-  } else {
+  if (argc != 2) {
     print_string("wrong number of arguments");
     print_string(usage);
     return 1;
   }
+
+  if (argc == 2 & str_eq(argv[1], "test")) {
+    run_tests();
+    print_string("passed");
+    return 0;
+  } 
+
+  load_input(argv[1]);
+
+  take_whitespace();
+  var tag = parse_tag();
+  take_whitespace();
+
+  print_string(node_get_name(tag));
+
+  return 0;
 }
