@@ -1,4 +1,4 @@
-global parse_input = int[] null;
+global parse_input = int[][]{int[] null};
 global parse_input_length = 0;
 global parse_pos = 0;
 
@@ -131,7 +131,7 @@ int color_get_a(int color) {
 bool take_whitespace() {
   var did_take = false;
   while (parse_pos < parse_input_length) {
-    var c = parse_input[parse_pos];
+    var c = parse_input[0][parse_pos];
     if (c != char_tab & c != char_lf & c != char_cr & c != char_space) {
       return did_take;
     }
@@ -146,7 +146,7 @@ bool take_this(string s) {
   var chars = array_of_string(s);
   var i = 0;
   while (parse_pos < parse_input_length) {
-    if (parse_input[parse_pos] != chars[i]) {
+    if (parse_input[0][parse_pos] != chars[i]) {
       return false;
     }
     i = i + 1;
@@ -170,7 +170,7 @@ int[] take_from_ranges(string ranges) {
   var count = 0;
   var unmatched = false;
   while (!unmatched & parse_pos < parse_input_length) {
-    var c = parse_input[parse_pos];
+    var c = parse_input[0][parse_pos];
     var matched_now = false;
 
     for (var i = 0; !matched_now & i < range_count; i = i + 1;) {
@@ -190,7 +190,7 @@ int[] take_from_ranges(string ranges) {
   parse_pos = start_pos + count;
   var out = new int[count];
   for (var i = 0; i < count; i = i + 1;) {
-    out[i] = parse_input[start_pos + i];
+    out[i] = parse_input[0][start_pos + i];
   }
   return out;
 }
@@ -302,7 +302,7 @@ int node_get_attr_count(int[][] node) {
 }
 
 void load_input(string s) {
-  parse_input = array_of_string(s);
+  parse_input[0] = array_of_string(s);
   parse_input_length = length_of_string(s);
   parse_pos = 0;
   return;
@@ -468,10 +468,7 @@ int program (int argc, string[] argv) {
   run_tests(); /* TODO remove in final submission */
   return 0;
 
-  var input_string = "<rect />";
-
-  parse_input = array_of_string(input_string);
-  parse_input_length = length_of_string(input_string);
+  load_input("<rect />");
 
   take_whitespace();
   var tag = parse_tag();
