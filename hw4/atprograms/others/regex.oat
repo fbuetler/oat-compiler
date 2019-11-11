@@ -8,7 +8,8 @@ global t_empty = 4;
 global t_char = 5;
 global t_dot = 6;
 
-global ast_nodes = int[][]{int[] null};
+/* TODO This was manually edited to add an extra array layer (see moodle question) */
+global ast_nodes = int[][][]{int[][]{int[] null}};
 
 global next_id = 0;
 global allocated_ast = 1;
@@ -18,14 +19,14 @@ int alloc_ast_node (int[] ast_node) {
     var new_alloc = allocated_ast * 2;
     var new_arr = new int[][new_alloc];
     for (var i = 0; i < allocated_ast; i = i + 1;) {
-      new_arr[i] = ast_nodes[i];
+      new_arr[i] = ast_nodes[0][i];
     }
-    ast_nodes = new_arr;
+    ast_nodes[0] = new_arr;
     allocated_ast = new_alloc;
   }
   var ret = next_id;
   next_id = next_id + 1;
-  ast_nodes[ret] = ast_node;
+  ast_nodes[0][ret] = ast_node;
   return ret;
 }
 
@@ -134,7 +135,7 @@ int parse_regex (string regex) {
 }
 
 bool run_regex_arr (int id, int[] arr, int start, int end) {
-  var node = ast_nodes[id];
+  var node = ast_nodes[0][id];
   var t = node[0];
   var len = end - start;
   if (t == t_or) {
