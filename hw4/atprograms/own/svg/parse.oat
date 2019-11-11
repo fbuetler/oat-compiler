@@ -535,14 +535,26 @@ void run_tests() {
 }
 
 int program (int argc, string[] argv) {
-  run_tests(); /* TODO remove in final submission */
-  return 0;
+  var usage = "Usage: command [<svg_as_string>]\n";
 
-  load_input("<rect />");
+  if (argc == 1) {
+    run_tests();
+    print_string("self_test passed\n");
+    print_string(usage);
+    return 0;
+  } else if (argc == 2) {
+    load_input(argv[1]);
 
-  take_whitespace();
-  var tag = parse_tag();
-  take_whitespace();
+    take_whitespace();
+    var tag = parse_tag();
+    take_whitespace();
 
-  return 0;
+    print_string(node_get_name(tag));
+
+    return 0;
+  } else {
+    print_string("wrong number of arguments");
+    print_string(usage);
+    return 1;
+  }
 }
