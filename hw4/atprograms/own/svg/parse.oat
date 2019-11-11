@@ -13,6 +13,25 @@ global char_single_quote = 39;
 
 global char_quote_arr = int[]{34};
 
+/* http://www.ece.ualberta.ca/~elliott/ee552/studentAppNotes/2003_w/misc/bmp_file_format/bmp_file_format.htm */
+global bmp_template = int[]{
+  66, 77,        /* Header.Signature             "BM"                                                              */
+  0, 0, 0, 0,    /* Header.FileSize              File size in bytes                                                */
+  0, 0, 0, 0,    /* Header.reserved              unused (=0)                                                       */
+  0, 0, 0, 54,   /* Header.DataOffset            Offset from beginning of file to the beginning of the bitmap data */
+  0, 0, 0, 40,   /* InfoHeader.Size              Size of InfoHeader =40                                            */
+  0, 0, 0, 0,    /* InfoHeader.Width             Horizontal width of bitmap in pixels                              */
+  0, 0, 0, 0,    /* InfoHeader.Height            Horizontal height of bitmap in pixels                             */
+  0, 1,          /* InfoHeader.Planes            Number of Planes (=1)                                             */ 
+  0, 24,         /* InfoHeader.BitsPerPixel      Bits per Pixel used to store palette entry information            */ 
+  0, 0, 0, 0,    /* InfoHeader.Compression       Type of Compression (0 = BI_RGB   no compression )                */ 
+  0, 0, 0, 0,    /* InfoHeader.ImageSize         It is valid to set this =0 if Compression = 0                     */ 
+  0, 0, 14, 196, /* InfoHeader.XpixelsPerM       horizontal resolution: Pixels/meter (96 DPI)                      */
+  0, 0, 14, 196, /* InfoHeader.YpixelsPerM       vertical resolution: Pixels/meter (96 DPI)                        */ 
+  0, 0, 0, 0,    /* InfoHeader.ColorsUsed        number of colors in the color palette (0 to default to 2^n)       */ 
+  0, 0, 0, 0     /* InfoHeader.ImportantColors   generally ignored                                                 */ 
+};
+
 /*
 Strings are stored as int[] for easy manipulation.
 
