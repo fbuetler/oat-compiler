@@ -4,3 +4,7 @@ void f () {
     var arr = new int[5];
     var other = new int[]{1, 2, 3};
 }
+
+int program(int argc, string[] argv) {
+    return 0;
+}

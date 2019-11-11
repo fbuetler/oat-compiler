@@ -203,7 +203,16 @@ let rec cmp_exp (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.operand * stream =
       | _ -> failwith "expected pointer or array (global string)"
     end in
   begin match exp.elt with
-    | CNull ty -> (cmp_ty ty, Const 0L, [])
+    | CNull ty ->
+      let value = gensym "value" in
+      let ptr = gensym "ptr" in
+      let ptr_ptr = gensym "ptr_ptr" in
+      (cmp_ty ty, Id ptr, [
+          I (ptr, Load (Ptr (cmp_ty ty), Id ptr_ptr));
+          I (ptr_ptr, Bitcast (Ptr I64, Id value, Ptr (cmp_ty ty)));
+          I ("", Store (I64, Const 0L, Id value));
+          E (value, Alloca I64);
+        ])
     | CBool b -> (I1, Const (if b then 1L else 0L), [])
     | CInt i -> (I64, Const i, [])
     | CStr s -> 
