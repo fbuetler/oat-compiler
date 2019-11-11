@@ -518,13 +518,17 @@ and cmp_garr c (e: Ast.exp node) : Ll.ty * Ll.gdecl * (Ll.gid * Ll.gdecl) list =
   begin match e.elt with
     | CArr (_, elem_exprs) -> 
       let elem_ty, elem_decls_rev, extra = List.fold_left (fun (cur_tys, cur_elem_decls, cur_extra) expr ->
-          let ty, decl, new_extra = cmp_garr c expr in
-          (ty, decl :: cur_elem_decls, new_extra @ cur_extra)
+          let name = gensym "elem" in
+          let ty, (inner_ty, inner_init), new_extra = cmp_garr c expr in
+          begin match inner_init with
+            | GNull -> (ty, (inner_ty, inner_init) :: cur_elem_decls, new_extra @ cur_extra)
+            | _ -> (ty, (ty, GGid name) :: cur_elem_decls, (name, (inner_ty, inner_init)) :: new_extra @ cur_extra)
+          end
         ) (I64, [], []) elem_exprs in (* HACK assume empty global arrays contain I64s *)
       let l = List.length elem_exprs in
       let inner_arr_ty = Array (l, elem_ty) in
       let struct_arr_ty = Struct([I64; inner_arr_ty]) in
-      (struct_arr_ty,
+      (Ptr struct_arr_ty,
        (struct_arr_ty, GStruct ([
             (I64, GInt (Int64.of_int l));
             (inner_arr_ty, GArray (List.rev elem_decls_rev))
