@@ -40,7 +40,7 @@ int run_bf(string s_code, string s_input, int data_size) {
 			data_pointer = data_pointer- 1;
 		}
 		else if (ins == dOT) {
-			var bb = new int[]{0}; /* TODO this line was manually edited, see moodle question */
+			var bb = new int[]{0}; 
 			if(data[data_pointer] == 0) {
 				print_string("ERROR: Tried to print a 0 bit\n");
 				return 1;
