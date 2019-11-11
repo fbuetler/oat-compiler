@@ -280,7 +280,7 @@ and bin_op (c:Ctxt.t) (op: Ast.binop) (left: Ast.exp node) (right: Ast.exp node)
     | And -> l And
     | Or -> l Or
     | IAnd -> b And
-    | IOr -> b And
+    | IOr -> b Or
     | Shl -> b Shl
     | Shr -> b Lshr
     | Sar -> b Ashr
