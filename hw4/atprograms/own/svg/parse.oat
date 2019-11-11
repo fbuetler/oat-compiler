@@ -9,8 +9,11 @@ global char_lf = 10;
 global char_cr = 13;
 global char_space = 32;
 global char_double_quote = 34;
+global char_hash = 35;
 global char_single_quote = 39;
 global char_zero = 48;
+global char_upper_a = 65;
+global char_lower_a = 97;
 
 global char_quote_arr = int[]{34};
 
@@ -347,6 +350,57 @@ int string_to_int(string s) {
   return out;
 }
 
+int hex_to_color(string s) {
+  var l = length_of_string(s);
+  var chars = array_of_string(s);
+  assert(chars[0] == char_hash);
+
+
+  if (l == 4) {
+    var new_chars = new int[7];
+    new_chars[0] = char_hash;
+    new_chars[1] = chars[1];
+    new_chars[2] = chars[1];
+    new_chars[3] = chars[2];
+    new_chars[4] = chars[2];
+    new_chars[5] = chars[3];
+    new_chars[6] = chars[3];
+    return hex_to_color(string_of_array(new_chars));
+  }
+  assert(l == 7);
+
+  var out = 0;
+  for (var i = 1; i < l; i = i + 1;) {
+    var c = chars[i];
+
+    var base = char_zero;
+    var letter = false;
+    if (c >= char_upper_a) {
+      letter = true;
+      base = char_upper_a;
+      if (c >= char_lower_a) {
+        base = char_lower_a;
+      }
+    }
+
+    c = c - base;
+    if (letter) {
+      assert(c <= 5);
+      c = 10 + c;
+    } else {
+      assert(c <= 9);
+    }
+
+
+    assert((c >= 0) & (c <= 15));
+    out = (out * 16) + c;
+  }
+
+  out = (out * 16 * 16) + 255; /* set alpha */
+
+  return out;
+}
+
 int[][] parse_attribute() {
   var old_pos = parse_pos;
   var failed = false;
@@ -495,6 +549,15 @@ void test_divide() {
 void test_string_to_int() {
   assert(string_to_int("123") == 123);
   assert(string_to_int("00011") == 11);
+  return;
+}
+
+
+void test_hex_to_color() {
+  assert(hex_to_color("#123456") == 0x123456FF);
+  assert(hex_to_color("#ABC") == 0xAABBCCFF);
+  assert(hex_to_color("#000000") == 0x000000FF);
+  assert(hex_to_color("#3EC837") == 0x3EC837FF);
   return;
 }
 
@@ -659,6 +722,7 @@ void run_tests() {
   test_str_eq();
   test_divide();
   test_string_to_int();
+  test_hex_to_color();
   test_take_from_ranges();
   test_color_components();
   test_image_manipulation();
