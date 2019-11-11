@@ -1,5 +1,4 @@
 int program(int argc, string[] argv) {
-  var animal = "walrus";
-  print_string(animal);
+  var new_arr = new int[][]{int[] null};
   return 0;
 }
