@@ -1,0 +1,9 @@
+int[] f(int[] a) {
+  return a;
+}
+
+int program(int argc, string[] argv) {
+  var a = new int[]{1, 2, 3};
+  f(a)[1] = 5;
+  return a[1];
+}

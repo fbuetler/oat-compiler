@@ -10,6 +10,7 @@ let own_tests = [
   ("atprograms/own/argc.oat", "test walrus", "3");
   ("atprograms/own/array_exp_order.oat", "", "3");
   ("atprograms/own/array.oat", "", "0");
+  ("atprograms/own/assign_index_return.oat", "", "5");
   ("atprograms/own/bitnot.oat", "", "2");
   ("atprograms/own/bitwise.oat", "", "6");
   ("atprograms/own/bool.oat", "", "0");
