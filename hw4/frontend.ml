@@ -553,7 +553,11 @@ let cmp_global_ctxt (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
       Ctxt.add curc name (Array (String.length s + 1, I8), Gid name)
     | Gvdecl { elt = { name; init = { elt = (CArr (l, elems)) } } } -> 
       let ty, _, _ = cmp_garr c @@ no_loc (CArr (l, elems)) in
-      Ctxt.add curc name (ty, Gid name)
+      let inner_ty = begin match ty with
+        | Ptr x -> x
+        | _ -> failwith "expected pointer"
+      end in
+      Ctxt.add curc name (inner_ty, Gid name)
     | Gvdecl { elt = { name; init } } -> 
       let ty, _, _ = cmp_exp c init in
       Ctxt.add curc name (Ptr ty, Gid name)
