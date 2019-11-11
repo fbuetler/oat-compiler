@@ -2,6 +2,8 @@ global parse_input = int[][]{int[] null};
 global parse_input_length = 0;
 global parse_pos = 0;
 
+global image = int[][]{int[] null};
+
 global char_tab = 9;
 global char_lf = 10;
 global char_cr = 13;
@@ -126,6 +128,34 @@ int color_get_b(int color) {
 
 int color_get_a(int color) {
   return color [&] 0x000000FF;
+}
+
+void make_blank_image(int width, int height) {
+  var len = 2 + width * height;
+  image[0] = new int[len];
+  for (var i = 0; i < len; i = i + 1;) {
+    image[0][i] = 0xFFFFFFFF;
+  }
+  image[0][0] = width;
+  image[0][1] = height;
+  return;
+}
+
+int img_get_pixel_index(int x, int y) {
+  var width = image[0][0];
+  var height = image[0][1];
+  assert((x >= 0) & (x < width));
+  assert((y >= 0) & (y < height));
+  return 2 + width * y + x;
+}
+
+int img_get_pixel(int x, int y) {
+  return image[0][img_get_pixel_index(x, y)];
+}
+
+void img_set_pixel(int x, int y, int color) {
+  image[0][img_get_pixel_index(x, y)] = color;
+  return;
 }
 
 bool take_whitespace() {
@@ -327,7 +357,7 @@ void test_divide() {
   return;
 }
 
-void test_color() {
+void test_color_components() {
   assert(color_from_components(0, 0, 0, 255) == 0x000000FF);
   assert(color_from_components(0, 0, 255, 0) == 0x0000FF00);
   assert(color_from_components(0, 255, 0, 0) == 0x00FF0000);
@@ -341,6 +371,28 @@ void test_color() {
   assert(color_get_b(c) == 48);
   assert(color_get_a(c) == 77);
   assert(c == color_from_components(color_get_r(c), color_get_g(c), color_get_b(c), color_get_a(c)));
+
+  return;
+}
+
+void test_image_manipulation() {
+  make_blank_image(10, 7);
+  assert(image[0][0] == 10);
+  assert(image[0][1] == 7);
+
+  var purple = 0xA611EEFF;
+  var orange = 0xC86E3780;
+  var white = 0xFFFFFFFF;
+  img_set_pixel(0, 0, purple);
+  img_set_pixel(0, 1, orange);
+  img_set_pixel(9, 6, orange);
+  img_set_pixel(8, 6, purple);
+  assert(img_get_pixel(0, 0) == purple);
+  assert(img_get_pixel(0, 1) == orange);
+  assert(img_get_pixel(1, 0) == white);
+  assert(img_get_pixel(9, 6) == orange);
+  assert(img_get_pixel(8, 6) == purple);
+  assert(img_get_pixel(9, 5) == white);
 
   return;
 }
@@ -455,7 +507,8 @@ void run_tests() {
   test_str_eq();
   test_divide();
   test_take_from_ranges();
-  test_color();
+  test_color_components();
+  test_image_manipulation();
   test_parse_attribute();
   test_parse_rect();
   test_parse_nested();
