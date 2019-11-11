@@ -157,5 +157,6 @@ let provided_tests : suite = [
   Test ("manual 20", executed_oat_file [("atprograms/others/lcm.oat", "", "99")]);
   Test ("manual 21", executed_oat_file subset_sum_test);
   Test ("manual 22", executed_oat_file hex2rgb_test);
+  Test ("manual 23", executed_oat_file [("atprograms/others/cycles.oat", "", "1")]);
 
 ] 

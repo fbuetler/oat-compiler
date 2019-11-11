@@ -1,0 +1,49 @@
+/*17919267,Bogdan Gadzhylov*/
+/*17943044,Christopher Reinwardt*/
+
+global g = bool[][]{ bool[]{false, true, true, false}, 
+					 bool[]{false, false, true, false}, 
+					 bool[]{true, false, false, true}, 
+					 bool[]{false, false, false, true}
+				   };
+global v = 4;
+
+bool helper (int i, bool[] visited, bool[] stack){
+	if (stack[i]){
+		return true;
+	}
+	if (visited[i]) {
+		return false;
+	}
+	visited[i] = true;
+	stack[i] = true;
+	for(var j = 0; j < v; j = j+1;){
+		if(g[i][j]){
+			if(helper(j, visited, stack)){
+				return true;
+			}
+		}
+	}
+	stack[i] = false;
+
+	return false;
+}
+
+bool is_cyclic (){
+	var visited = new bool[v];
+	var stack = new bool[v];
+	for(var i = 0; i < v; i = i+1;){
+		if (helper(i, visited, stack)){
+			return true;
+		}
+	}
+	return false;
+}
+
+int program (int argc, string[] argv) {
+    if(is_cyclic()) {
+		return 1;
+	} else{
+		return 0;
+	}
+}
