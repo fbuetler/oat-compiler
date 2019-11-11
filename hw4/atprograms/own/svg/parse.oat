@@ -671,6 +671,24 @@ void run_tests() {
   return;
 }
 
+void draw_shape(int[][] tag) {
+  var name = node_get_name(tag);
+  if (str_eq(name, "rect")) {
+    /* TODO check if fill is set and use that color */
+    draw_rect_fill(
+      string_to_int(node_get_attr_value(tag, "x", "0")),
+      string_to_int(node_get_attr_value(tag, "y", "0")),
+      string_to_int(node_get_attr_value(tag, "width", "50")),
+      string_to_int(node_get_attr_value(tag, "height", "50")),
+      0x3EC837FF
+    );
+  } else {
+    print_string(string_cat("unknown tag ", name));
+    assert(false);
+  }
+  return;
+}
+
 void parse_and_draw_svg() {
   take_whitespace();
   var outer_tag = parse_tag();
@@ -679,9 +697,15 @@ void parse_and_draw_svg() {
   assert(str_eq(node_get_name(outer_tag), "svg"));
   var width = string_to_int(node_get_attr_value(outer_tag, "width", "400"));
   var height = string_to_int(node_get_attr_value(outer_tag, "height", "400"));
-
   make_blank_image(width, height);
-  draw_rect_fill(60, 10, 30, 15, 0xA611EEFF);
+
+  parse_pos = outer_tag[0][1] + 1;
+  while (parse_pos < outer_tag[0][2]) {
+    take_whitespace();
+    draw_shape(parse_tag());
+    take_whitespace();
+  }
+
   return;
 }
 

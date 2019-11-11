@@ -1,3 +1,4 @@
 <svg width="400" height="200">
-  <rect x="0" y="60" height="100" width="50" fill="blue" />
+  <rect x="1" y="60" height="100" width="50" fill="blue" />
+  <rect x="10" y="30" height="80" width="280" fill="blue" />
 </svg>
