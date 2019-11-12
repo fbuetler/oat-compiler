@@ -5,7 +5,13 @@ open Driver
 
 (* testing harness ---------------------------------------------------------- *)
 exception Ran_tests
-let suite = ref (Studenttests.provided_tests @ Gradedtests.graded_tests @ Studenttests_others.provided_tests @ Studenttests_submit.provided_tests)
+let suite = ref (List.flatten [
+    Studenttests.provided_tests;
+    Studenttests_svg.provided_tests;
+    Gradedtests.graded_tests;
+    Studenttests_others.provided_tests;
+    Studenttests_submit.provided_tests;
+  ] )
 
 let execute_tests () =
   let outcome = run_suite !suite in
@@ -42,7 +48,7 @@ let main () =
       "main test harness\n\
        USAGE: ./main.native [options] <files>\n\
        see README for details about using the compiler";
-    
+
     process_files !files
 
   with Ran_tests -> 
