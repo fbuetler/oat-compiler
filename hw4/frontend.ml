@@ -500,7 +500,7 @@ let rec cmp_gexp c (e:Ast.exp node) : Ll.gdecl * (Ll.gid * Ll.gdecl) list =
     See hw3/llprograms/global1.ll for an example
   *)
   begin match e.elt with
-    | CNull ty -> (((cmp_ty ty), GNull) , []) (* TODO May need to be Ptr *)
+    | CNull ty -> (((cmp_ty ty), GNull) , [])
     | CBool v -> ((I1, GInt (if v then 1L else 0L)) , [])
     | CInt v -> ((I64, GInt v) , [])
     | CStr s -> ((Array (String.length s + 1, I8), GString s), [])
