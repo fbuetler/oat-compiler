@@ -12,7 +12,9 @@ int change(int index, int amount) {
   return change(index - 1, amount) + change(index, amount - coins[index]);
 }
 
+/* TODO This function was modified, see moodle question */
 int program(int argc, string[] argv) {
   var r = change(7, 200);
-  return r;
+  print_int(r);
+  return 0;
 }

@@ -1,0 +1,37 @@
+
+bool is_palindrome(int[] list, int length){
+	for(var i = 0; i < length; i = i + 1;){
+		if(list[i] != list[length - i - 1]) {
+			return false;
+		}
+	}
+	return true;
+}
+
+int palindrome_sum() {
+	var sum = 0;
+	var list = new int[3];
+	list[0] = 0; /* *1 */
+	list[1] = 9; /* *10 */
+	list[2] = 9; /* *100 */
+	for(var i = 0; i < 900; i = i + 1;){
+		list[2] = list[2] + 1;
+		if(list[2] == 10){
+			list[2] = 0;
+			list[1] = list[1] + 1;
+		}
+		if(list[1] == 10){
+			list[1] = 0;
+			list[0] = list[0] + 1;
+		}
+		if(is_palindrome(list, 3)){
+			sum = sum + 100 * list[2] + 10 * list[1] + list[0];
+		}
+	}
+	return sum;
+}
+
+int program (int argc, string[] argv) {
+	return palindrome_sum() - 49458; /*bias such that the correct result is in [0, 255]*/
+}	
+

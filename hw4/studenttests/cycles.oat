@@ -1,0 +1,49 @@
+global g = bool[][] null; 
+
+global v = 4;
+
+bool helper (int i, bool[] visited, bool[] stack){
+	if (stack[i]){
+		return true;
+	}
+	if (visited[i]) {
+		return false;
+	}
+	visited[i] = true;
+	stack[i] = true;
+	for(var j = 0; j < v; j = j+1;){
+		if(g[i][j]){
+			if(helper(j, visited, stack)){
+				return true;
+			}
+		}
+	}
+	stack[i] = false;
+
+	return false;
+}
+
+bool is_cyclic (){
+	var visited = new bool[v];
+	var stack = new bool[v];
+	for(var i = 0; i < v; i = i+1;){
+		if (helper(i, visited, stack)){
+			return true;
+		}
+	}
+	return false;
+}
+
+int program (int argc, string[] argv) {
+   g = new bool[][] { new bool[]{false, true, true, false}, 
+	   				  new bool[]{false, false, true, false}, 
+					  new bool[]{true, false, false, true}, 
+					  new bool[]{false, false, false, true}
+				    };
+
+    if(is_cyclic()) {
+		return 1;
+	} else{
+		return 0;
+	}
+}

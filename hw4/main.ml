@@ -9,7 +9,7 @@ let suite = ref (List.flatten [
     Studenttests.provided_tests;
     Studenttests_svg.provided_tests;
     Gradedtests.graded_tests;
-    Studenttests_others.provided_tests;
+    Studenttests_others_official.provided_tests;
     Studenttests_submit.provided_tests;
   ] )
 

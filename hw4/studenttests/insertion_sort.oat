@@ -1,0 +1,26 @@
+
+void sort(int[] a, int n)
+{
+    var j = 0;
+    var k = 0;
+    for (var i = 1; i < n; i = i + 1;) {
+        k = a[i];
+        j = i - 1;
+        while (j >= 0 & a[j] > k) {
+            a[j + 1] = a[j];
+            j = j - 1;
+        }
+        a[j + 1] = k;
+    }
+    return;
+}
+
+int program(int argc, string[] argv) {
+  var a = new int[]{121, 125, 120, 111, 116, 110, 117, 119};
+
+  print_string(string_of_array(a));
+  sort(a, 8);
+  print_string(string_of_array(a));
+
+  return 255;
+}

@@ -1,0 +1,59 @@
+
+int gcd(int a, int b) { /* computes the gcd by euclid*/
+  if (a==b){
+    return a;
+  }
+  if (a>b){
+    return gcd(a-b,b);
+  }
+  return gcd(b-a,a);
+}
+int divbydivisor(int a, int b) { /* c=a/b where b divides a*/
+  if (b==1) { /* make it a bit faster */
+    return a;
+  }
+  for (var i = 1; i<a; i=i+1;) {
+    if ((i*b)==a) {
+      return i;
+    }
+  }
+  return 0; /* this should not happen */
+}
+void fracshort(int[] a) { /* shortens a fraction */
+  var g = gcd(a[0],a[1]);
+  a[0] = divbydivisor(a[0],g);
+  a[1] = divbydivisor(a[1],g);
+  return;
+}
+
+void fracadd(int[] a, int[] b) { /* a=a+b */
+    a[0]=a[0]*b[1]+b[0]*a[1];
+    a[1]=a[1]*b[1];
+    fracshort(a);
+    return;
+}
+
+void fracmul(int[] a, int[] b) { /* a=a*b */
+    a[0]=a[0]*b[0];
+    a[1]=a[1]*b[1];
+    fracshort(a);
+    return;
+}
+void fracdiv(int[] a, int[] b) { /* a=a/b */
+    a[0]=a[0]*b[1];
+    a[1]=a[1]*b[0];
+    fracshort(a);
+    return;
+}
+
+int program (int argc, string[] argv) {
+  var a = new int[]{100, 2};
+  var b = new int[]{1, 3};
+  var c = new int[]{5, 2};
+  var d = new int[]{1, 10};
+  fracmul(a,b);
+  fracdiv(a,d);
+  fracadd(a,c);
+  print_int(a[0]);
+  return a[1];
+}

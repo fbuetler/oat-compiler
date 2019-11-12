@@ -1,0 +1,31 @@
+
+int mod10 (int n) {
+	if (n > 10) {
+		return mod10 (n - 10);
+	}
+
+	return n;
+}
+
+
+int reverseNum (int n) {
+	var res = 0;
+	while (n != 0) {
+		var c = mod10(n);
+		res = (res * 10) + c;
+		
+		var quotient = 0;
+		while (n >= 10) {
+			n = n - 10;
+			quotient = quotient + 1;
+		}
+		n = quotient;
+	}
+	return res;
+}
+
+int program (int argc, string[] argv) {
+	var n = 321;
+	return reverseNum(n);
+}
+
