@@ -1,0 +1,45 @@
+/* 16940181, Roberto Starc */
+/* 16914871, Matthias Brun */
+/* Count the number of steps the hailstone sequence takes for the given input to reach 1 */
+/* also called the "total stopping time" of the input */
+
+global gl_bool = true;
+global g_x = 27;
+
+int hailstone(int m) {
+
+  if (mod2(m) == 0) {
+    m = m >> 1;
+  } else {
+    m = 3 * m + 1;
+  }
+  
+  return m;
+}
+
+int mod2(int a){
+  return a [&] 1;
+}
+
+int steps(int a) {
+  
+  var count = 0;
+
+  while (a != 1) {
+    a = hailstone(a);
+    count = count + 1;
+  }
+
+  return count;
+}
+
+int program(int argc, string[] argv) {
+  
+  var x = -1;
+
+  if (gl_bool) {
+    x = steps(g_x);
+  }
+
+  return x;
+}

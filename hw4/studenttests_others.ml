@@ -158,5 +158,9 @@ let provided_tests : suite = [
   Test ("manual 21", executed_oat_file subset_sum_test);
   Test ("manual 22", executed_oat_file hex2rgb_test);
   Test ("manual 23", executed_oat_file [("atprograms/others/cycles.oat", "", "1")]);
+  Test ("manual 24", executed_oat_file [("atprograms/others/coinsum.oat", "", "73682")]);
+  Test ("manual 25", executed_oat_file [("atprograms/others/hailstone.oat", "", "111")]);
+  Test ("manual 26", executed_oat_file [("atprograms/others/kadane.oat", "", "13")]);
+  Test ("manual 27", executed_oat_file [("atprograms/others/reverse_numb.oat", "", "123")]);
 
 ] 
