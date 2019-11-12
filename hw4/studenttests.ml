@@ -17,18 +17,21 @@ let own_tests = [
   ("atprograms/own/bop.oat", "test abc", "9");
   ("atprograms/own/call_arg_order.oat", "", "3");
   ("atprograms/own/exp27.oat", "", "0");
-  (* ("atprograms/own/grammar.oat", "", "0"); *)
   ("atprograms/own/if_exp_once.oat", "", "2");
   ("atprograms/own/lognot.oat", "", "1");
   ("atprograms/own/neg.oat", "", "3");
-  (* ("atprograms/own/nested_global_arr.oat", "", "0"); TODO enable when question answered *)
-  (* ("atprograms/own/not_call.oat", "", "0"); TODO enable when question answered *)
   ("atprograms/own/null_array.oat", "", "0");
   ("atprograms/own/null.oat", "", "0");
   ("atprograms/own/string.oat", "", "walrus0");
   ("atprograms/own/whilefalse.oat", "", "27");
   ("atprograms/own/global_string_array.oat", "", "String20");
   ("atprograms/own/multidim.oat", "", "2");
+  ("studenttests/base64.oat", "walrus", "d2FscnVz0");
+  ("studenttests/base64.oat", "florian", "Zmxvcmlhbg==0");
+  ("studenttests/base64.oat", "philippe", "cGhpbGlwcGU=0");
+  ("studenttests/base64.oat", "CompilerDesign", "Q29tcGlsZXJEZXNpZ24=0");
+  ("studenttests/base64.oat", "VIS", "VklT0");
+  ("studenttests/base64.oat", "VereinDerInformatikStudierenden", "VmVyZWluRGVySW5mb3JtYXRpa1N0dWRpZXJlbmRlbg==0");
 ]
 
 let provided_tests : suite = [
