@@ -1,0 +1,48 @@
+/* 16-934-531,Fariborz Golshani */
+
+/* Kadane's maximum subarray algorithm. */
+
+global garr = int[]{3, 2, 1};
+global m = 5;
+
+int mystery (int n) {
+  garr[1] = n;
+  return m;
+}
+
+int mystery2 (){
+  m = -8;
+  return -6;
+}
+
+int sum (int[] a, int l) {
+  var acc = 0;
+  for (var i = 0; i < l; i = i + 1;) {
+    acc = acc + garr[i];
+  }
+  return acc;
+}
+
+int max (int x, int y) {
+  if (x < y) {
+    return y;
+  } else {
+    return x;
+  }
+}
+
+int max_subarray (int[] a, int l) {
+  var cand = 0;
+  var curr = 0;
+  for (var i = 0; i < l; i = i + 1;) {
+    curr = max(0, (curr + a[i]));
+    cand = max(cand, curr);
+  }
+  return cand;
+}
+
+int program (int argc, string[] argv) {
+  return max_subarray(new int[]{-3, 2-1, sum(garr, 3), -5*garr[2], ~-9, -garr[0], 3[&]2, -mystery(6), garr[1], 2[|]1, mystery2(), mystery(-3), sum(garr,3)*2, -6, 12}, 15);
+}
+
+/* The given array corresponds to {-3, 1, 6, -5, 8, -3, 2, -5, 6, 3, -6, -8, 2, -6, 12} */
