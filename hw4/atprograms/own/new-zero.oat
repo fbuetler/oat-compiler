@@ -1,0 +1,4 @@
+int program(int argc, string[] argv) {
+  var bla = new int[3];
+  return bla[2];
+}
