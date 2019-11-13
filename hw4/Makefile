@@ -1,6 +1,6 @@
 INCLUDES= util,x86,grading,ll
 LIBS = unix,str
-SUBMIT := lexer.mll parser.mly frontend.ml studenttests.ml
+SUBMIT := lexer.mll parser.mly frontend.ml studenttests.ml team.txt
 
 HWNAME := hw04
 TIMESTAMP := $(shell /bin/date "+%Y-%m-%d-%H:%M:%S")
