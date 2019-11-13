@@ -144,17 +144,6 @@ let gensym : string -> string =
 *)
 let size_oat_ty (t : Ast.ty) = 8L
 
-(* Generate code to allocate an array of source type TRef (RArray t) of the
-   given size. Note "size" is an operand whose value can be computed at
-   runtime *)
-let oat_alloc_array (t:Ast.ty) (size:Ll.operand) : Ll.ty * operand * stream =
-  let ans_id, arr_id = gensym "array", gensym "raw_array" in
-  let ans_ty = cmp_ty @@ TRef (RArray t) in
-  let arr_ty = Ptr I64 in
-  ans_ty, Id ans_id, lift
-    [ arr_id, Call(arr_ty, Gid "oat_alloc_array", [I64, size])
-    ; ans_id, Bitcast(arr_ty, Id arr_id, ans_ty) ]
-
 (* garr_ty_to_local converts the types of global to their local equivalents.
    It makes all arrays are zero-length and converts strings from arrays to pointers. *)
 let rec garr_ty_to_local (ty:Ll.ty) : Ll.ty = begin match ty with
@@ -415,6 +404,9 @@ and cmp_lhs c lhs : (Ll.ty * Ll.operand * stream) =
       let _, idx_op, idx_stream = cmp_exp c idx_exp in
       let el_ty = begin match recv_ty with
         | Ptr (Struct [I64; Array (_, x)]) -> x
+        | Struct _ -> failwith "unsupported receiver type in index expression - Struct"
+        | Array _ -> failwith "unsupported receiver type in index expression - Array"
+        | Ptr _ -> failwith "unsupported receiver type in index expression - Ptr"
         | _ -> failwith "unsupported receiver type in index expression"
       end in
       let el = gensym "el" in
@@ -423,6 +415,40 @@ and cmp_lhs c lhs : (Ll.ty * Ll.operand * stream) =
         ] @ idx_stream @ recv_stream)
     | _ -> failwith "unsupported lhs"
   end
+
+(* Generate code to allocate an array of source type TRef (RArray t) of the
+   given size. Note "size" is an operand whose value can be computed at
+   runtime *)
+and oat_alloc_array (t:Ast.ty) (size:Ll.operand) : Ll.ty * operand * stream =
+  let ans_id, arr_id = gensym "array", gensym "raw_array" in
+  let temp_id = gensym "temp_array" in
+  let temp_v_id = gensym "temp_array_non_ptr" in
+  let i = gensym "i" in
+  let n = gensym "n" in
+  let ans_ty = cmp_ty @@ TRef (RArray t) in
+  let temp_ty = cmp_ty @@ TRef (RArray TInt) in
+  let arr_ty = Ptr I64 in
+  let c_pre = Ctxt.add Ctxt.empty temp_id (Ptr temp_ty, Id temp_id) in
+  let c = Ctxt.add c_pre n (Ptr I64, Id n) in
+  let zero_stream = cmp_block c Void [
+      no_loc @@ For (
+        [(i, no_loc @@ CInt 0L)],
+        Some (no_loc @@ Bop (Lt, no_loc @@ Id i, no_loc @@ Id n)),
+        Some (no_loc @@ Assn (no_loc @@ Id i, no_loc @@ Bop (Add, no_loc @@ Id i, no_loc @@ CInt 1L))),
+        [no_loc @@ Assn (
+            no_loc @@ Index(no_loc @@ Id temp_id, no_loc @@ Id i),
+            no_loc @@ CInt 0L)]
+      );
+    ] in
+  ans_ty, Id ans_id, zero_stream @ (
+      lift
+        [ arr_id, Call(arr_ty, Gid "oat_alloc_array", [I64, size])
+        ; ans_id, Bitcast(arr_ty, Id arr_id, ans_ty) 
+        ; temp_v_id, Bitcast(arr_ty, Id arr_id, temp_ty)
+        ; temp_id, Alloca temp_ty
+        ; "", Store (temp_ty, Id temp_v_id, Id temp_id)
+        ; n, Alloca I64
+        ; "", Store (I64, Const 0L, Id n) ])
 
 
 (* Adds each function identifer to the context at an
