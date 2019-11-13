@@ -448,7 +448,7 @@ and oat_alloc_array (t:Ast.ty) (size:Ll.operand) : Ll.ty * operand * stream =
         ; temp_id, Alloca temp_ty
         ; "", Store (temp_ty, Id temp_v_id, Id temp_id)
         ; n, Alloca I64
-        ; "", Store (I64, Const 0L, Id n) ])
+        ; "", Store (I64, size, Id n) ])
 
 
 (* Adds each function identifer to the context at an
