@@ -296,7 +296,11 @@ let rec cmp_exp (tc : TypeCtxt.t) (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.ope
   | Ast.Index (e, i) ->
     let ans_ty, ptr_op, code = cmp_exp_lhs tc c exp in
     let ans_id = gensym "index" in
-    ans_ty, Id ans_id, code >:: I(ans_id, Load(Ptr ans_ty, ptr_op))
+    let inner_ty = begin match ans_ty with
+      | Ptr x -> x
+      | _ -> failwith "expected pointer"
+    end in
+    inner_ty, Id ans_id, code >:: I(ans_id, Load(ans_ty, ptr_op))
 
   | Ast.Call (f, es) ->
     cmp_call tc c f es 
@@ -348,19 +352,23 @@ let rec cmp_exp (tc : TypeCtxt.t) (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.ope
     let tmp, ptr = gensym "tmp", gensym "ptr" in
     let tmp_c = Ctxt.add c tmp (Ptr rec_ty, Id ptr) in
     let tmp_stream = lift [
-      (ptr, Alloca (rec_ty));
-      ("", Store(rec_ty, rec_op, Id ptr))
-    ] in
-    let init_steam = cmp_block tc tmp_c Void @@ 
+        (ptr, Alloca (rec_ty));
+        ("", Store(rec_ty, rec_op, Id ptr))
+      ] in
+    let init_stream = cmp_block tc tmp_c Void @@ 
       List.map (fun (id, exp) ->
           no_loc @@ Assn (no_loc @@ Proj (no_loc @@ Id tmp, id), exp)
         ) l in
-    rec_ty, rec_op, rec_stream >@ tmp_stream >@ init_steam
+    rec_ty, rec_op, rec_stream >@ tmp_stream >@ init_stream
 
   | Ast.Proj (e, id) ->
     let ans_ty, ptr_op, code = cmp_exp_lhs tc c exp in
+    let inner_ty = begin match ans_ty with
+      | Ptr x -> x
+      | _ -> failwith "expected pointer"
+    end in
     let ans_id = gensym "proj" in
-    ans_ty, Id ans_id, code >:: I(ans_id, Load(Ptr ans_ty, ptr_op))
+    inner_ty, Id ans_id, code >:: I(ans_id, Load(ans_ty, ptr_op))
 
 
 and cmp_exp_lhs (tc : TypeCtxt.t) (c:Ctxt.t) (e:exp node) : Ll.ty * Ll.operand * stream =
@@ -385,7 +393,7 @@ and cmp_exp_lhs (tc : TypeCtxt.t) (c:Ctxt.t) (e:exp node) : Ll.ty * Ll.operand *
     let index = TypeCtxt.index_of_field struct_id i tc in
     let ptr_id, tmp1, tmp2 = gensym "index_ptr", gensym "tmp1", gensym "tmp2" in
     let ret_ty = cmp_ty tc @@ TypeCtxt.lookup_field struct_id i tc in
-    ret_ty, Id ptr_id,
+    Ptr ret_ty, Id ptr_id,
     rec_stream >@ lift
       [
         tmp1, Bitcast (rec_ty, rec_op, Ptr I64);
@@ -400,7 +408,7 @@ and cmp_exp_lhs (tc : TypeCtxt.t) (c:Ctxt.t) (e:exp node) : Ll.ty * Ll.operand *
       | Ptr (Struct [_; Array (_,t)]) -> t 
       | _ -> failwith "Index: indexed into non pointer" in
     let ptr_id, tmp_id = gensym "index_ptr", gensym "tmp" in
-    ans_ty, (Id ptr_id),
+    Ptr ans_ty, (Id ptr_id),
     arr_code >@ ind_code >@ lift
       [ tmp_id, Bitcast (arr_ty, arr_op, Ptr I64)
       ; "", Call (Void, Gid "oat_assert_array_length", [(Ptr I64, Id tmp_id); (I64, ind_op)])
@@ -448,9 +456,13 @@ and cmp_stmt (tc : TypeCtxt.t) (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt
         >:: I("",     Store (ll_ty, init_op, Id res_id))
 
   | Ast.Assn (path ,e) ->
-    let _, pop, path_code = cmp_exp_lhs tc c path in
+    let lhs_ty, pop, path_code = cmp_exp_lhs tc c path in
     let ll_ty, eop, exp_code = cmp_exp tc c e in
-    c, path_code >@ exp_code >:: I("", (Store (ll_ty, eop, pop)))
+    let tmp_id = gensym "tmp_id" in
+    c, path_code >@ exp_code >@ lift [
+        tmp_id, (Bitcast (lhs_ty, pop, Ptr ll_ty));
+        "", (Store (ll_ty, eop, Id tmp_id));
+      ]
 
   | Ast.If (guard, st1, st2) -> 
     let guard_ty, guard_op, guard_code = cmp_exp tc c guard in

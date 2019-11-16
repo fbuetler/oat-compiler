@@ -29,7 +29,7 @@ let exec_e2e_ast ll_ast args extra_files =
   let _ = Platform.sh (Printf.sprintf "rm -f %s %s" dot_s_file exec_file) Platform.ignore_error in
   let _ = Platform.verb @@ Printf.sprintf "** Executable exited with: %d\n" result in
   Int64.of_int result
-  
+
 
 let exec_e2e_file path args =
   let ast = Driver.parse_ll_file path in
@@ -63,11 +63,11 @@ let c_link_test c_files path args =
   let args = String.concat " " args in
   let result = Driver.run_executable args exec_file in
   let _ = Platform.sh (Printf.sprintf "rm -f %s %s" dot_s_file exec_file) Platform.ignore_error in
-    Int64.of_int result
+  Int64.of_int result
 
 let oat_file_test path args =
   let () = Platform.verb @@ Printf.sprintf "** Processing: %s\n" path in
-  
+
   let output_path = !Platform.output_path in
   let dot_ll_file = Platform.gen_name output_path "test" ".ll" in
   let exec_file = Platform.gen_name output_path "exec" "" in
@@ -120,7 +120,7 @@ let executed_tc_err_file tests =
   List.map (fun (path, err) ->
       ("typechecking: " ^ path, fun () -> oat_tc_err_file_test path err)) tests
 
-  
+
 
 let executed_io tests =
   List.map (fun (fn, args, ans) ->
@@ -152,13 +152,13 @@ let typecheck_file_correct tests =
 
 let unit_tests = [
   "subtype_stringQ_stringQ",
-   (fun () ->
-       if Typechecker.subtype Tctxt.empty (TNullRef RString) (TNullRef RString) then ()
-       else failwith "should not fail")                                                                                     
+  (fun () ->
+     if Typechecker.subtype Tctxt.empty (TNullRef RString) (TNullRef RString) then ()
+     else failwith "should not fail")                                                                                     
 ; ("no_subtype_stringQ_stringQ",
    (fun () ->
-       if Typechecker.subtype Tctxt.empty (TNullRef RString) (TRef RString) then
-         failwith "should not succeed" else ())
+      if Typechecker.subtype Tctxt.empty (TNullRef RString) (TRef RString) then
+        failwith "should not succeed" else ())
   )
 ]
 
@@ -185,35 +185,35 @@ let hw4_globals_tests = [
 ]
 
 let hw4_path_tests = [
- ("atprograms/path1.oat", "", "17");
- ("atprograms/path2.oat", "", "35");
- ("atprograms/path3.oat", "", "3");
- ("atprograms/arrayargs1.oat", "", "17");
- ("atprograms/arrayargs2.oat", "", "17");
- ("atprograms/arrayargs3.oat", "", "34");
+  ("atprograms/path1.oat", "", "17");
+  ("atprograms/path2.oat", "", "35");
+  ("atprograms/path3.oat", "", "3");
+  ("atprograms/arrayargs1.oat", "", "17");
+  ("atprograms/arrayargs2.oat", "", "17");
+  ("atprograms/arrayargs3.oat", "", "34");
 ]
 
 let hw4_easy_tests = [
-    ("atprograms/run26.oat", "", "0");
-    ("atprograms/run27.oat", "", "99");
-    ("atprograms/run28.oat", "", "18");
-    ("atprograms/run29.oat", "", "1");
-    ("atprograms/run30.oat", "", "9");
-    ("atprograms/run31.oat", "", "9");
-    ("atprograms/run13.oat", "", "1");
-    ("atprograms/run32.oat", "", "33");
-    ("atprograms/run21.oat", "", "99");
-    ("atprograms/run33.oat", "", "1");
-    ("atprograms/run34.oat", "", "66");
-    ("atprograms/run38.oat", "", "31");
-    ("atprograms/run39.oat", "a", "2");
-    ("atprograms/run40.oat", "", "8");
-    ("atprograms/run41.oat", "", "3");
-    ("atprograms/run42.oat", "", "2");
-    ("atprograms/run49.oat", "", "abc0");
-    ("atprograms/run50.oat", "", "abcde0");
-    ("atprograms/run60.oat", "", "85");
-    ("atprograms/run61.oat", "", "3410");
+  ("atprograms/run26.oat", "", "0");
+  ("atprograms/run27.oat", "", "99");
+  ("atprograms/run28.oat", "", "18");
+  ("atprograms/run29.oat", "", "1");
+  ("atprograms/run30.oat", "", "9");
+  ("atprograms/run31.oat", "", "9");
+  ("atprograms/run13.oat", "", "1");
+  ("atprograms/run32.oat", "", "33");
+  ("atprograms/run21.oat", "", "99");
+  ("atprograms/run33.oat", "", "1");
+  ("atprograms/run34.oat", "", "66");
+  ("atprograms/run38.oat", "", "31");
+  ("atprograms/run39.oat", "a", "2");
+  ("atprograms/run40.oat", "", "8");
+  ("atprograms/run41.oat", "", "3");
+  ("atprograms/run42.oat", "", "2");
+  ("atprograms/run49.oat", "", "abc0");
+  ("atprograms/run50.oat", "", "abcde0");
+  ("atprograms/run60.oat", "", "85");
+  ("atprograms/run61.oat", "", "3410");
 ]
 
 let hw4_medium_tests = [
@@ -245,33 +245,33 @@ let hw4_medium_tests = [
 ]
 
 let hw4_hard_tests = [
-("atprograms/fac.oat", "", "120");
-("atprograms/qsort.oat", "", "kpyf{shomfhkmopsy{255");
-("atprograms/bsort.oat", "", "y}xotnuw notuwxy}255");
-("atprograms/msort.oat", "", "~}|{zyxwvu uvwxyz{|}~ 0");
-("atprograms/msort2.oat", "", "~}|{zyxwvu uvwxyz{|}~ 0");
-("atprograms/selectionsort.oat", "", "01253065992000");
-("atprograms/matrixmult.oat", "", "19 16 13 23 \t5 6 7 6 \t19 16 13 23 \t5 6 7 6 \t0");
+  ("atprograms/fac.oat", "", "120");
+  ("atprograms/qsort.oat", "", "kpyf{shomfhkmopsy{255");
+  ("atprograms/bsort.oat", "", "y}xotnuw notuwxy}255");
+  ("atprograms/msort.oat", "", "~}|{zyxwvu uvwxyz{|}~ 0");
+  ("atprograms/msort2.oat", "", "~}|{zyxwvu uvwxyz{|}~ 0");
+  ("atprograms/selectionsort.oat", "", "01253065992000");
+  ("atprograms/matrixmult.oat", "", "19 16 13 23 \t5 6 7 6 \t19 16 13 23 \t5 6 7 6 \t0");
 ]
 
 let hw4_old_student_tests = [
-    ("atprograms/binary_search.oat", "", "Correct!0")
-  ; ("atprograms/xor_shift.oat", "", "838867572\n22817190600")
-  ; ("atprograms/sieve.oat", "", "25")
-  ; ("atprograms/count_sort.oat", "", "AFHZAAEYC\nAAACEFHYZ0")
-  ; ("atprograms/determinant_size2.oat", "", "94")
-  ; ("atprograms/fibo.oat", "", "0")
-  ; ("atprograms/bubble_sort.oat", "", "1")
-  ; ("atprograms/heap.oat", "", "1")
-  ; ("atprograms/binary_gcd.oat", "", "3")
-  ; ("atprograms/lfsr.oat", "", "TFTF FFTT0")
-  ; ("atprograms/gnomesort.oat", "", "01253065992000")
-  ; ("atprograms/josh_joyce_test.oat", "", "0")
-  ; ("atprograms/conquest.oat", "", "My name is Jeff...\nCharizard is the BEST Pokemon ever!!!11")
-  ; ("atprograms/gcd.oat", "", "16")
-  ; ("atprograms/lcs.oat", "", "OAT0")
-  ; ("atprograms/insertion_sort.oat", "", "42")
-  ; ("atprograms/maxsubsequence.oat", "", "107")
+  ("atprograms/binary_search.oat", "", "Correct!0")
+; ("atprograms/xor_shift.oat", "", "838867572\n22817190600")
+; ("atprograms/sieve.oat", "", "25")
+; ("atprograms/count_sort.oat", "", "AFHZAAEYC\nAAACEFHYZ0")
+; ("atprograms/determinant_size2.oat", "", "94")
+; ("atprograms/fibo.oat", "", "0")
+; ("atprograms/bubble_sort.oat", "", "1")
+; ("atprograms/heap.oat", "", "1")
+; ("atprograms/binary_gcd.oat", "", "3")
+; ("atprograms/lfsr.oat", "", "TFTF FFTT0")
+; ("atprograms/gnomesort.oat", "", "01253065992000")
+; ("atprograms/josh_joyce_test.oat", "", "0")
+; ("atprograms/conquest.oat", "", "My name is Jeff...\nCharizard is the BEST Pokemon ever!!!11")
+; ("atprograms/gcd.oat", "", "16")
+; ("atprograms/lcs.oat", "", "OAT0")
+; ("atprograms/insertion_sort.oat", "", "42")
+; ("atprograms/maxsubsequence.oat", "", "107")
 ]
 
 let hw4_type_error_tests = [
@@ -285,19 +285,19 @@ let hw4_type_error_tests = [
 
 
 let typecheck_equality_tests = [
-    "hw5programs/tc_eq1.oat"
-  ; "hw5programs/tc_eq2.oat"
-  ]
+  "hw5programs/tc_eq1.oat"
+; "hw5programs/tc_eq2.oat"
+]
 
 let struct_tests = [
-("hw5programs/compile_assign_struct.oat", "", "16");
-("hw5programs/compile_basic_struct.oat", "", "7");
-("hw5programs/compile_global_struct.oat", "", "254");
-("hw5programs/compile_nested_struct.oat", "", "10");
-("hw5programs/compile_return_struct.oat", "", "0");
-("hw5programs/compile_struct_array.oat", "", "15");
-("hw5programs/compile_struct_fptr.oat", "", "7");
-("hw5programs/compile_various_fields.oat", "", "hello253"); 
+  ("hw5programs/compile_assign_struct.oat", "", "16");
+  ("hw5programs/compile_basic_struct.oat", "", "7");
+  ("hw5programs/compile_global_struct.oat", "", "254");
+  ("hw5programs/compile_nested_struct.oat", "", "10");
+  ("hw5programs/compile_return_struct.oat", "", "0");
+  ("hw5programs/compile_struct_array.oat", "", "15");
+  ("hw5programs/compile_struct_fptr.oat", "", "7");
+  ("hw5programs/compile_various_fields.oat", "", "hello253"); 
 ]
 
 let fptr_tests = [
@@ -335,7 +335,7 @@ let typecheck_subtyping_error_tests =
   ; "hw5programs/tc_subtyping_err7.oat"
   ; "hw5programs/tc_subtyping_err8.oat"            
   ]
-  
+
 
 let typecheck_statement_error_tests =
   [ "hw5programs/tc_error_early_return.oat";
@@ -408,7 +408,7 @@ let typecheck_correct_other_tests =
 let typecheck_error_null_not_null_tests =
   hw4_type_error_tests
 
-  
+
 let fptr_tests = [
   ("hw5programs/compile_array_fptr.oat", "", "2");
   ("hw5programs/compile_func_argument.oat", "", "4");
@@ -485,22 +485,22 @@ let hw5_tests : suite = [
 
 
 let manual_tests : suite = [
-    GradedTest ("Posted Moodle Test Case", 5,
-              [("manually", assert_eq true false)]
-    )
-  ; GradedTest ("Performance Comparison", 5,
-              [("manually", assert_eq true false)]
-    )
-  ]
+  GradedTest ("Posted Moodle Test Case", 5,
+              []
+             )
+; GradedTest ("Performance Comparison", 5,
+              []
+             )
+]
 
 let hw4_tests =
-      hw4_easiest_tests
-    @ hw4_globals_tests
-    @ hw4_path_tests
-    @ hw4_easy_tests
-    @ hw4_medium_tests
-    @ hw4_hard_tests
-    @ hw4_old_student_tests
+  hw4_easiest_tests
+  @ hw4_globals_tests
+  @ hw4_path_tests
+  @ hw4_easy_tests
+  @ hw4_medium_tests
+  @ hw4_hard_tests
+  @ hw4_old_student_tests
 
 let functionality_tests : suite = [GradedTest("functionality tests from HW04", 10, executed_oat_file hw4_tests)]
 
