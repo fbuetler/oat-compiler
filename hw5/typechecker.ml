@@ -199,7 +199,8 @@ let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
       end; 
       let field_defs = get_struct struct_name in 
       if List.length field_defs <> List.length field_vals
-      then type_error e @@ Printf.sprintf "struct %s: expected %d fields, but got %d" struct_name (List.length field_defs) (List.length field_vals);
+      then type_error e @@
+        Printf.sprintf "struct %s: expected %d fields, but got %d" struct_name (List.length field_defs) (List.length field_vals);
       let groups = List.map2
           (fun { ftyp } (n, v) -> (n, ftyp, v))
           (sort_by_str (fun e -> e.fieldName) field_defs)
@@ -207,18 +208,21 @@ let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
       List.iter (fun (n, ftyp, v) -> 
           let actual_ty = typecheck_exp c v in
           if not @@ subtype c actual_ty ftyp
-          then type_error e @@ Printf.sprintf "field %s of %s: expected %s, but got %s" n struct_name (string_of_ty ftyp) (string_of_ty actual_ty)
+          then type_error e @@
+            Printf.sprintf "field %s of %s: expected %s, but got %s" n struct_name (string_of_ty ftyp) (string_of_ty actual_ty)
         ) groups;
       TRef (RStruct struct_name)
     | Proj (exp, field_name) -> 
       let struct_name = begin match typecheck_exp c exp with
         | TRef (RStruct x) -> x
-        | ty -> type_error exp @@ Printf.sprintf "expected struct, but got %s" @@ string_of_ty ty
+        | ty -> type_error exp @@
+          Printf.sprintf "expected struct, but got %s" @@ string_of_ty ty
       end in 
       let fields = get_struct struct_name in 
       begin match List.find_opt (fun el -> el.fieldName == field_name) fields with
         | Some { ftyp } -> ftyp
-        | None -> type_error e @@ Printf.sprintf "struct %s does not have field %s" struct_name field_name 
+        | None -> type_error e @@
+          Printf.sprintf "struct %s does not have field %s" struct_name field_name 
       end
     | Call (f_exp, args) -> 
       let arg_tys, r_ty = begin match typecheck_exp c f_exp with 
@@ -226,12 +230,14 @@ let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
         | _ -> type_error e "expression is not a function"
       end in
       if List.length arg_tys <> List.length args
-      then type_error e @@ Printf.sprintf "expected %d arguments, but got %d" (List.length arg_tys) (List.length args);
+      then type_error e @@
+        Printf.sprintf "expected %d arguments, but got %d" (List.length arg_tys) (List.length args);
       let groups = List.map2 (fun ty v -> (ty, v)) arg_tys args in
       List.iteri (fun i (ty, v) -> 
           let actual_ty = typecheck_exp c v in
           if not @@ subtype c actual_ty ty
-          then type_error e @@ Printf.sprintf "argument %d: expected %s, but got %s" (i + 1) (string_of_ty ty) (string_of_ty actual_ty)
+          then type_error e @@
+            Printf.sprintf "argument %d: expected %s, but got %s" (i + 1) (string_of_ty ty) (string_of_ty actual_ty)
         ) groups;
       begin match r_ty with
         | RetVoid -> type_error e "call of void function is not an expression"
