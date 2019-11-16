@@ -196,7 +196,11 @@ let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
     | CBool b -> TBool
     | CInt i -> TInt
     | CStr s -> TRef RString
-    | Id id -> lookup id c 
+    | Id id -> 
+      begin match lookup_option id c with
+        | Some x -> x
+        | None -> type_error e @@ Printf.sprintf "identifier %s not found" id
+      end
     | CArr (ty, l) -> List.iter (assert_exp_type c ty) l; TRef (RArray ty)
     | NewArr (ty, len_exp, index, init_exp) ->
       assert_exp_type c TInt len_exp;
@@ -361,19 +365,19 @@ let rec typecheck_stmt (tc : Tctxt.t) (s:Ast.stmt node) (to_ret:ret_ty) : Tctxt.
       let else_returns = typecheck_block tc else_block to_ret in
       (tc, if_returns && else_returns)
     | For (init, cond, update, block) ->
-      begin match cond with
-        | Some cond -> assert_exp_type tc TBool cond
-        | None -> ()
-      end;
       let for_c = List.fold_left (fun c (id, exp) ->
           add_new_local c exp id @@ typecheck_exp c exp
         ) tc init in 
+      begin match cond with
+        | Some cond -> assert_exp_type for_c TBool cond
+        | None -> ()
+      end;
       begin match update with
         | Some update -> ignore @@ typecheck_stmt for_c update to_ret
         | None -> ()
       end; 
       let block_returns = typecheck_block for_c block to_ret in
-      (for_c, block_returns)
+      (tc, block_returns)
     | _ -> failwith "stmt not implemented yet"
   end
 
