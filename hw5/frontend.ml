@@ -344,7 +344,18 @@ let rec cmp_exp (tc : TypeCtxt.t) (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.ope
      - store the resulting value into the structure
   *)
   | Ast.CStruct (id, l) ->
-    oat_alloc_struct tc id      
+    let rec_ty, rec_op, rec_stream = oat_alloc_struct tc id in
+    let tmp, ptr = gensym "tmp", gensym "ptr" in
+    let tmp_c = Ctxt.add c tmp (Ptr rec_ty, Id ptr) in
+    let tmp_stream = lift [
+      (ptr, Alloca (rec_ty));
+      ("", Store(rec_ty, rec_op, Id ptr))
+    ] in
+    let init_steam = cmp_block tc tmp_c Void @@ 
+      List.map (fun (id, exp) ->
+          no_loc @@ Assn (no_loc @@ Proj (no_loc @@ Id tmp, id), exp)
+        ) l in
+    rec_ty, rec_op, rec_stream >@ tmp_stream >@ init_steam
 
   | Ast.Proj (e, id) ->
     let ans_ty, ptr_op, code = cmp_exp_lhs tc c exp in
