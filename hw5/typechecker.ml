@@ -342,6 +342,13 @@ and typecheck_call (c : Tctxt.t) (f_exp : exp node) (args : exp node list) : Ast
 let rec typecheck_stmt (tc : Tctxt.t) (s:Ast.stmt node) (to_ret:ret_ty) : Tctxt.t * bool =
   begin match s.elt with 
     | Assn (lhs, rhs) -> 
+      begin match lhs.elt with
+        | Id name -> begin match (lookup_global_option name tc, lookup_local_option name tc) with
+            | Some (TRef (RFun _)), None -> type_error lhs @@ Printf.sprintf "cannot reassign over global function %s" name
+            | _ -> ()
+          end
+        | _ -> ()
+      end;
       let rhs_ty = typecheck_exp tc rhs in
       let lhs_ty = typecheck_exp tc lhs in
       if not @@ subtype tc rhs_ty lhs_ty
