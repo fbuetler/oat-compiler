@@ -364,6 +364,16 @@ let rec typecheck_stmt (tc : Tctxt.t) (s:Ast.stmt node) (to_ret:ret_ty) : Tctxt.
       let if_returns = typecheck_block tc if_block to_ret in
       let else_returns = typecheck_block tc else_block to_ret in
       (tc, if_returns && else_returns)
+    | Cast (rty, id, exp, if_block, else_block) -> 
+      let exp_ty = typecheck_exp tc exp in
+      let checked_ty = begin match exp_ty with
+        | TNullRef ty -> TRef ty
+        | _ -> type_error exp @@ Printf.sprintf "expected nullable ref rhs, but got %s" (string_of_ty exp_ty);
+      end in
+      let if_c = add_new_local tc s id checked_ty in
+      let if_returns = typecheck_block if_c if_block to_ret in
+      let else_returns = typecheck_block tc else_block to_ret in
+      (tc, if_returns && else_returns)
     | For (init, cond, update, block) ->
       let for_c = List.fold_left (fun c (id, exp) ->
           add_new_local c exp id @@ typecheck_exp c exp
@@ -382,7 +392,6 @@ let rec typecheck_stmt (tc : Tctxt.t) (s:Ast.stmt node) (to_ret:ret_ty) : Tctxt.
       assert_exp_type tc TBool cond;
       ignore @@ typecheck_block tc block to_ret;
       (tc, false)
-    | _ -> failwith "stmt not implemented"
   end
 
 (* TODO check the return type *)
