@@ -317,10 +317,27 @@ let rec cmp_exp (tc : TypeCtxt.t) (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.ope
      you could write the loop using abstract syntax and then call cmp_stmt to
      compile that into LL code...
   *)
-  | Ast.NewArr (elt_ty, e1, id, e2) ->    
-    let _, size_op, size_code = cmp_exp tc c e1 in
+  | Ast.NewArr (elt_ty, e1, i_id, e2) ->    
+    let n_id, temp_id = gensym "n", gensym "temp" in
+    let save_n_c, save_n_stream = cmp_stmt tc c Void @@ no_loc @@ Decl (n_id, e1) in
+    let _, size_op, size_code = cmp_exp tc save_n_c (no_loc @@ Id n_id) in
     let arr_ty, arr_op, alloc_code = oat_alloc_array tc elt_ty size_op in
-    arr_ty, arr_op, size_code >@ alloc_code
+    let save_temp_stream = [
+      I("", Store(arr_ty, arr_op, Id temp_id));
+      I(temp_id, Alloca (arr_ty));
+    ] in
+    let fill_c = Ctxt.add save_n_c temp_id (Ptr arr_ty, Id temp_id) in
+    let fill_code = cmp_block tc fill_c Void [
+        no_loc @@ For (
+          [(i_id, no_loc @@ CInt 0L)],
+          Some (no_loc @@ Bop (Lt, no_loc @@ Id i_id, no_loc @@ Id n_id)),
+          Some (no_loc @@ Assn (no_loc @@ Id i_id, no_loc @@ Bop (Add, no_loc @@ Id i_id, no_loc @@ CInt 1L))),
+          [no_loc @@ Assn (
+              no_loc @@ Index(no_loc @@ Id temp_id, no_loc @@ Id i_id),
+              e2)]
+        );
+      ] in
+    arr_ty, arr_op, save_n_stream >@ size_code >@ alloc_code >@ save_temp_stream >@ fill_code
 
   (* STRUCT TASK: complete this code that compiles struct expressions.
      For each field component of the struct
