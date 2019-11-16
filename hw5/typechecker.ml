@@ -315,8 +315,23 @@ and assert_exp_type_any_array (tc: Tctxt.t) (exp: Ast.exp node) : ty =
      block typecheck rules.
 *)
 let rec typecheck_stmt (tc : Tctxt.t) (s:Ast.stmt node) (to_ret:ret_ty) : Tctxt.t * bool =
-  failwith "todo: implement typecheck_stmt"
-
+  begin match s.elt with 
+    | Assn (lhs, rhs) -> 
+      let rhs_ty = typecheck_exp tc rhs in
+      let lhs_ty = typecheck_exp tc lhs in
+      if not @@ subtype tc rhs_ty lhs_ty
+      then type_error s @@ Printf.sprintf "expected rhs of type %s, but got %s" (string_of_ty lhs_ty) (string_of_ty rhs_ty);
+      (tc, false)
+    | Ret exp ->
+      let actual_ty = begin match exp with
+        | Some exp -> RetVal (typecheck_exp tc exp)
+        | None -> RetVoid
+      end in
+      if not @@ subtype_return tc actual_ty to_ret
+      then type_error s @@ Printf.sprintf "expected %s return, but got %s" (ml_string_of_ret_ty to_ret) (ml_string_of_ret_ty actual_ty);
+      (tc, true)
+    | _ -> failwith "stmt not implemented yet"
+  end
 
 (* struct type declarations ------------------------------------------------- *)
 (* Here is an example of how to implement the TYP_TDECLOK rule, which is 
@@ -334,6 +349,13 @@ let typecheck_tdecl (tc : Tctxt.t) id fs  (l : 'a Ast.node) : unit =
   then type_error l ("Repeated fields in " ^ id) 
   else List.iter (fun f -> typecheck_ty l tc f.ftyp) fs
 
+(* TODO check the return type *)
+let typecheck_block (tc : Tctxt.t) (b : Ast.block) (ret_ty : Ast.ret_ty) : bool = 
+  snd @@ List.fold_left 
+    (fun (old_c, old_b) s -> let c, b = typecheck_stmt old_c s ret_ty in (c, old_b || b)) 
+    (tc, false) 
+    b
+
 (* function declarations ---------------------------------------------------- *)
 (* typecheck a function declaration 
    - extends the local context with the types of the formal parameters to the 
@@ -342,7 +364,14 @@ let typecheck_tdecl (tc : Tctxt.t) id fs  (l : 'a Ast.node) : unit =
    - checks that the function actually returns
 *)
 let typecheck_fdecl (tc : Tctxt.t) (f : Ast.fdecl) (l : 'a Ast.node) : unit =
-  failwith "todo: typecheck_fdecl"
+  (* TODO check that the function returns *)
+  let fc = List.fold_left (fun cur_c (a_ty, a_name) -> 
+      add_new_local cur_c l a_name a_ty
+    ) Tctxt.empty f.args in
+  begin match typecheck_block fc f.body f.frtyp with
+    | true -> ()
+    | false -> type_error l "function may not return"
+  end
 
 (* creating the typchecking context ----------------------------------------- *)
 
