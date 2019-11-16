@@ -189,14 +189,6 @@ let oat_alloc_array ct (t:Ast.ty) (size:Ll.operand) : Ll.ty * operand * stream =
     ; ans_id, Bitcast(arr_ty, Id arr_id, ans_ty) ]
 
 
-(* STRUCT TASK: Complete this helper function that allocates an oat structure on the 
-   heap and returns a target operand with the appropriate reference.  
-
-   - generate a call to 'oat_malloc' and use bitcast to conver the
-     resulting pointer to the right type
-
-   - make sure to calculate the correct amount of space to allocate!
-*)
 let oat_alloc_struct (ct: TypeCtxt.t) (id:Ast.id) : Ll.ty * operand * stream =
   let ans_id, raw_id = gensym "ans", gensym "raw" in
   let fields = TypeCtxt.lookup id ct in
@@ -341,12 +333,6 @@ let rec cmp_exp (tc : TypeCtxt.t) (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.ope
       ] in
     arr_ty, arr_op, save_n_stream >@ size_code >@ alloc_code >@ save_temp_stream >@ fill_code
 
-  (* STRUCT TASK: complete this code that compiles struct expressions.
-     For each field component of the struct
-     - use the TypeCtxt operations to compute getelementptr indices
-     - compile the initializer expression
-     - store the resulting value into the structure
-  *)
   | Ast.CStruct (id, l) ->
     let rec_ty, rec_op, rec_stream = oat_alloc_struct tc id in
     let tmp, ptr = gensym "tmp", gensym "ptr" in
@@ -377,13 +363,6 @@ and cmp_exp_lhs (tc : TypeCtxt.t) (c:Ctxt.t) (e:exp node) : Ll.ty * Ll.operand *
     let t, op = Ctxt.lookup x c in
     t, op, []
 
-  (* STRUCT TASK: Complete this code that emits LL code to compute the
-     address of the i'th field from a value of struct type.  Note that
-     the actual load from the address to project the value is handled by the
-     Ast.proj case of the cmp_exp function (above).
-
-     You will find the TypeCtxt.lookup_field_name function helpfule.
-  *)
   | Ast.Proj (e, i) ->
     let rec_ty, rec_op, rec_stream = cmp_exp tc c e in
     let struct_id = begin match rec_ty with 
@@ -630,7 +609,6 @@ let rec cmp_gexp c (tc : TypeCtxt.t) (e:Ast.exp node) : Ll.gdecl * (Ll.gid * Ll.
     let arr_i = GStruct [ I64, GInt (Int64.of_int len); Array(len, ll_u), GArray elts ] in
     (Ptr arr_t, GGid gid), (gid, (arr_t, arr_i))::gs
 
-  (* STRUCT TASK: Complete this code that generates the global initializers for a struct value. *)  
   | CStruct (id, cs) ->
     let elts, gs = List.fold_right
         (fun (id, cst) (elts, gs) ->
