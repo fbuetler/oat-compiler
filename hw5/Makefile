@@ -1,5 +1,5 @@
 INCLUDES= util,x86,grading,ll
-LIBS = unix,str,nums
+LIBS = unix,str
 SUBMIT := frontend.ml typechecker.ml team.txt
 
 HWNAME := hw05
@@ -15,7 +15,7 @@ test: main.native
 
 .PHONY: main.native
 main.native: 
-	ocamlbuild -Is $(INCLUDES) -libs $(LIBS) main.native -use-menhir -yaccflag --explain
+	ocamlbuild -use-ocamlfind -Is $(INCLUDES) -libs $(LIBS) main.native -use-menhir -yaccflag --explain
 
 zip: $(SUBMIT)
 	zip '$(ZIPNAME)' $(SUBMIT)
