@@ -158,6 +158,8 @@ let add_new_struct (c : Tctxt.t) (node: 'a node) (id : id) (fields : Ast.field l
     | None -> add_struct c id fields
   end
 
+
+
 (* typechecking expressions ------------------------------------------------- *)
 (* Typechecks an expression in the typing context c, returns the type of the
    expression.  This function should implement the inference rules given in the
@@ -237,21 +239,7 @@ let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
           Printf.sprintf "struct %s does not have field %s" struct_name field_name 
       end
     | Call (f_exp, args) -> 
-      let arg_tys, r_ty = begin match typecheck_exp c f_exp with 
-        | TRef (RFun (arg_tys, r_ty)) -> (arg_tys, r_ty)
-        | _ -> type_error e "expression is not a function"
-      end in
-      if List.length arg_tys <> List.length args
-      then type_error e @@
-        Printf.sprintf "expected %d arguments, but got %d" (List.length arg_tys) (List.length args);
-      let groups = List.map2 (fun ty v -> (ty, v)) arg_tys args in
-      List.iteri (fun i (ty, v) -> 
-          let actual_ty = typecheck_exp c v in
-          if not @@ subtype c actual_ty ty
-          then type_error e @@
-            Printf.sprintf "argument %d: expected %s, but got %s" (i + 1) (string_of_ty ty) (string_of_ty actual_ty)
-        ) groups;
-      begin match r_ty with
+      begin match typecheck_call c f_exp args with
         | RetVoid -> type_error e "call of void function is not an expression"
         | RetVal ty -> ty
       end
@@ -280,6 +268,23 @@ and assert_exp_type_any_array (tc: Tctxt.t) (exp: Ast.exp node) : ty =
     | TRef (RArray ty) -> ty
     | ty -> type_error exp @@ Printf.sprintf "expected array, but got %s" @@ string_of_ty ty
   end
+
+and typecheck_call (c : Tctxt.t) (f_exp : exp node) (args : exp node list) : Ast.ret_ty =  
+  let arg_tys, r_ty = begin match typecheck_exp c f_exp with 
+    | TRef (RFun (arg_tys, r_ty)) -> (arg_tys, r_ty)
+    | _ -> type_error f_exp "expression is not a function"
+  end in
+  if List.length arg_tys <> List.length args
+  then type_error f_exp @@
+    Printf.sprintf "expected %d arguments, but got %d" (List.length arg_tys) (List.length args);
+  let groups = List.map2 (fun ty v -> (ty, v)) arg_tys args in
+  List.iteri (fun i (ty, v) -> 
+      let actual_ty = typecheck_exp c v in
+      if not @@ subtype c actual_ty ty
+      then type_error (List.nth args i) @@
+        Printf.sprintf "argument %d: expected %s, but got %s" (i + 1) (string_of_ty ty) (string_of_ty actual_ty)
+    ) groups;
+  r_ty
 
 (* statements --------------------------------------------------------------- *)
 
@@ -331,6 +336,9 @@ let rec typecheck_stmt (tc : Tctxt.t) (s:Ast.stmt node) (to_ret:ret_ty) : Tctxt.
       if not @@ subtype_return tc actual_ty to_ret
       then type_error s @@ Printf.sprintf "expected %s return, but got %s" (ml_string_of_ret_ty to_ret) (ml_string_of_ret_ty actual_ty);
       (tc, true)
+    | SCall (f_exp, args) ->
+      ignore @@ typecheck_call tc f_exp args;
+      (tc, false)
     | _ -> failwith "stmt not implemented yet"
   end
 
