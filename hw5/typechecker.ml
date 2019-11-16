@@ -141,9 +141,21 @@ and typecheck_ret_ty  (l : 'a Ast.node) (tc : Tctxt.t) (t : Ast.ret_ty) : unit =
   end
 
 let add_new_local (c : Tctxt.t) (node: 'a node) (id : id) (bnd : Ast.ty) : Tctxt.t =
-  begin match lookup_option id c with
-    | Some _ -> type_error node @@ Printf.sprintf "can not redeclare variable %s" id
+  begin match lookup_local_option id c with
+    | Some _ -> type_error node @@ Printf.sprintf "can not redeclare local variable %s" id
     | None -> add_local c id bnd
+  end
+
+let add_new_global (c : Tctxt.t) (node: 'a node) (id : id) (bnd : Ast.ty) : Tctxt.t =
+  begin match lookup_global_option id c with
+    | Some _ -> type_error node @@ Printf.sprintf "can not redeclare global %s" id
+    | None -> add_global c id bnd
+  end
+
+let add_new_struct (c : Tctxt.t) (node: 'a node) (id : id) (fields : Ast.field list) : Tctxt.t =
+  begin match lookup_struct_option id c with
+    | Some _ -> type_error node @@ Printf.sprintf "can not redeclare struct type %s" id
+    | None -> add_struct c id fields
   end
 
 (* typechecking expressions ------------------------------------------------- *)
@@ -360,13 +372,38 @@ let typecheck_fdecl (tc : Tctxt.t) (f : Ast.fdecl) (l : 'a Ast.node) : unit =
    constants, but can't mention other global values *)
 
 let create_struct_ctxt (p:Ast.prog) : Tctxt.t =
-  failwith "todo: create_struct_ctxt"
+  List.fold_left (fun c decl ->
+      begin match decl with
+        | Gtdecl node ->
+          let { elt = (name, fields) } = node in
+          begin match find_duplicate_string @@ List.map (fun e -> e.fieldName) fields with
+            | Some f -> type_error node @@ Printf.sprintf "duplicate field %s in struct definition" f
+            | None -> ()
+          end;
+          add_new_struct c node name fields
+        | _ -> c
+      end
+    ) Tctxt.empty p
 
 let create_function_ctxt (tc:Tctxt.t) (p:Ast.prog) : Tctxt.t =
-  failwith "todo: create_function_ctxt"
+  List.fold_left (fun c decl ->
+      begin match decl with
+        | Gfdecl node ->
+          let { elt = { frtyp; fname; args; body } } = node in
+          add_new_global c node fname @@ TRef (RFun (List.map fst args, frtyp))
+        | _ -> c
+      end
+    ) Tctxt.empty p
 
 let create_global_ctxt (tc:Tctxt.t) (p:Ast.prog) : Tctxt.t =
-  failwith "todo: create_function_ctxt"
+  List.fold_left (fun c decl ->
+      begin match decl with
+        | Gvdecl node ->
+          let { elt = { name; init } } = node in
+          add_new_global c node name @@ typecheck_exp tc init
+        | _ -> c
+      end
+    ) Tctxt.empty p
 
 
 (* This function implements the |- prog and the H ; G |- prog 
