@@ -100,7 +100,32 @@ and subtype_return (c : Tctxt.t) (t1 : Ast.ret_ty) (t2 : Ast.ret_ty) : bool =
    - tc contains the structure definition context
 *)
 let rec typecheck_ty (l : 'a Ast.node) (tc : Tctxt.t) (t : Ast.ty) : unit =
-  failwith "todo: implement typecheck_ty"
+  begin match t with
+    | TBool -> ()
+    | TInt -> ()
+    | TRef x -> typecheck_rty l tc x
+    | TNullRef x -> typecheck_rty l tc x
+  end
+
+and typecheck_rty (l : 'a Ast.node) (tc : Tctxt.t) (t : Ast.rty) : unit =
+  begin match t with
+    | RString -> ()
+    | RStruct name -> begin match lookup_struct_option name tc with
+        | Some _ -> ()
+        | None -> type_error l @@ Printf.sprintf "Struct id %s not found in ctxt" name
+      end
+    | RArray el -> typecheck_ty l tc el
+    | RFun (args, r) ->
+      typecheck_ret_ty l tc r;
+      List.iter (typecheck_ty l tc) args;
+  end
+
+and typecheck_ret_ty  (l : 'a Ast.node) (tc : Tctxt.t) (t : Ast.ret_ty) : unit =
+  begin match t with
+    | RetVoid -> ()
+    | RetVal x -> typecheck_ty l tc x
+  end
+
 
 (* typechecking expressions ------------------------------------------------- *)
 (* Typechecks an expression in the typing context c, returns the type of the
