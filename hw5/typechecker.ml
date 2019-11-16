@@ -11,6 +11,12 @@ let type_error (l : 'a node) err =
   let (_, (s, e), _) = l.loc in
   raise (TypeError (Printf.sprintf "[%d, %d] %s" s e err))
 
+module SAstField = Set.Make(
+  struct 
+    let compare = Pervasives.compare
+    type t = Ast.field
+  end
+  );;
 
 (* initial context: G0 ------------------------------------------------------ *)
 (* The Oat types of the Oat built-in functions *)
@@ -39,36 +45,60 @@ let typ_of_unop : Ast.unop -> Ast.ty * Ast.ty = function
 
 (* subtyping ---------------------------------------------------------------- *)
 (* Decides whether H |- t1 <: t2 
-    - assumes that H contains the declarations of all the possible struct types
+   - assumes that H contains the declarations of all the possible struct types
 
-    - you will want to introduce addition (possibly mutually recursive) 
+   - you will want to introduce addition (possibly mutually recursive) 
       helper functions to implement the different judgments of the subtyping
       relation. We have included a template for subtype_ref to get you started.
       (Don't forget about OCaml's 'and' keyword.)
 *)
 let rec subtype (c : Tctxt.t) (t1 : Ast.ty) (t2 : Ast.ty) : bool =
-  failwith "todo: subtype"
+  begin match (t1, t2, t1 == t2) with
+    | (_, _, true) -> true
+    | (TNullRef r1, TNullRef r2, _) -> subtype_ref c r1 r2
+    | (TRef r1, TRef r2, _) -> subtype_ref c r1 r2
+    | (TRef r1, TNullRef r2, _) -> subtype_ref c r1 r2
+    | _ -> false
+  end 
 
 (* Decides whether H |-r ref1 <: ref2 *)
 and subtype_ref (c : Tctxt.t) (t1 : Ast.rty) (t2 : Ast.rty) : bool =
-  failwith "todo: subtype_ref"
+  begin match (t1, t2, t1 == t2) with
+    | (_, _, true) -> true
+    | (RStruct s1, RStruct s2, _) -> subtype_struct (lookup_struct s1 c) (lookup_struct s2 c)
+    | (RFun (t1, rt1), RFun (t2, rt2), _) ->
+      (subtype_return c rt1 rt2) &&
+      (List.length t1 == List.length t2) &&
+      (List.fold_left (&&) true @@ List.map2 (subtype c) t2 t1)
+    | _ -> false
+  end
+
+and subtype_struct (s1: Ast.field list) (s2: Ast.field list) : bool =
+  SAstField.subset (SAstField.of_list s2) (SAstField.of_list s1)
+
+and subtype_return (c : Tctxt.t) (t1 : Ast.ret_ty) (t2 : Ast.ret_ty) : bool =
+  begin match (t1, t2, t1 == t2) with
+    | (_, _, true) -> true
+    | (RetVal v1, RetVal v2, _) -> subtype c v1 v2
+    | _ -> false
+  end
 
 
 (* well-formed types -------------------------------------------------------- *)
 (* Implement a (set of) functions that check that types are well formed according
    to the H |- t and related inference rules
 
-    - the function should succeed by returning () if the type is well-formed
+   - the function should succeed by returning () if the type is well-formed
       according to the rules
 
-    - the function should fail using the "type_error" helper function if the 
+   - the function should fail using the "type_error" helper function if the 
       type is 
 
-    - l is just an ast node that provides source location information for
+   - l is just an ast node that provides source location information for
       generating error messages (it's only needed for the type_error generation)
 
-    - tc contains the structure definition context
- *)
+   - tc contains the structure definition context
+*)
 let rec typecheck_ty (l : 'a Ast.node) (tc : Tctxt.t) (t : Ast.ty) : unit =
   failwith "todo: implement typecheck_ty"
 
@@ -106,14 +136,14 @@ let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
    This function should implement the statment typechecking rules from oat.pdf.  
 
    Inputs:
-    - tc: the type context
-    - s: the statement node
-    - to_ret: the desired return type (from the function declaration)
+   - tc: the type context
+   - s: the statement node
+   - to_ret: the desired return type (from the function declaration)
 
    Returns:
-     - the new type context (which includes newly declared variables in scope
+   - the new type context (which includes newly declared variables in scope
        after this statement
-     - A boolean indicating the return behavior of a statement:
+   - A boolean indicating the return behavior of a statement:
         false:  might not return
         true: definitely returns 
 
@@ -122,7 +152,7 @@ let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
         Intuitively: if one of the two branches of a conditional does not 
         contain a return statement, then the entier conditional statement might 
         not return.
-  
+
         looping constructs never definitely return 
 
    Uses the type_error function to indicate a (useful!) error message if the
@@ -140,7 +170,7 @@ let rec typecheck_stmt (tc : Tctxt.t) (s:Ast.stmt node) (to_ret:ret_ty) : Tctxt.
 (* struct type declarations ------------------------------------------------- *)
 (* Here is an example of how to implement the TYP_TDECLOK rule, which is 
    is needed elswhere in the type system.
- *)
+*)
 
 (* Helper function to look for duplicate field names *)
 let rec check_dups fs =
@@ -155,10 +185,10 @@ let typecheck_tdecl (tc : Tctxt.t) id fs  (l : 'a Ast.node) : unit =
 
 (* function declarations ---------------------------------------------------- *)
 (* typecheck a function declaration 
-    - extends the local context with the types of the formal parameters to the 
+   - extends the local context with the types of the formal parameters to the 
       function
-    - typechecks the body of the function (passing in the expected return type
-    - checks that the function actually returns
+   - typechecks the body of the function (passing in the expected return type
+   - checks that the function actually returns
 *)
 let typecheck_fdecl (tc : Tctxt.t) (f : Ast.fdecl) (l : 'a Ast.node) : unit =
   failwith "todo: typecheck_fdecl"
@@ -208,7 +238,7 @@ let typecheck_program (p:Ast.prog) : unit =
   let fc = create_function_ctxt sc p in
   let tc = create_global_ctxt fc p in
   List.iter (fun p ->
-    match p with
-    | Gfdecl ({elt=f} as l) -> typecheck_fdecl tc f l
-    | Gtdecl ({elt=(id, fs)} as l) -> typecheck_tdecl tc id fs l 
-    | _ -> ()) p
+      match p with
+      | Gfdecl ({elt=f} as l) -> typecheck_fdecl tc f l
+      | Gtdecl ({elt=(id, fs)} as l) -> typecheck_tdecl tc id fs l 
+      | _ -> ()) p
