@@ -322,6 +322,7 @@ let rec typecheck_stmt (tc : Tctxt.t) (s:Ast.stmt node) (to_ret:ret_ty) : Tctxt.
       if not @@ subtype tc rhs_ty lhs_ty
       then type_error s @@ Printf.sprintf "expected rhs of type %s, but got %s" (string_of_ty lhs_ty) (string_of_ty rhs_ty);
       (tc, false)
+    | Decl (id, exp) -> (add_new_local tc s id @@ typecheck_exp tc exp, false)
     | Ret exp ->
       let actual_ty = begin match exp with
         | Some exp -> RetVal (typecheck_exp tc exp)
@@ -364,10 +365,9 @@ let typecheck_block (tc : Tctxt.t) (b : Ast.block) (ret_ty : Ast.ret_ty) : bool 
    - checks that the function actually returns
 *)
 let typecheck_fdecl (tc : Tctxt.t) (f : Ast.fdecl) (l : 'a Ast.node) : unit =
-  (* TODO check that the function returns *)
   let fc = List.fold_left (fun cur_c (a_ty, a_name) -> 
       add_new_local cur_c l a_name a_ty
-    ) Tctxt.empty f.args in
+    ) tc f.args in
   begin match typecheck_block fc f.body f.frtyp with
     | true -> ()
     | false -> type_error l "function may not return"
@@ -381,20 +381,20 @@ let typecheck_fdecl (tc : Tctxt.t) (f : Ast.fdecl) (l : 'a Ast.node) : unit =
    create_struct_ctxt: - adds all the struct types to the struct 'S'
    context (checking to see that there are no duplicate fields
 
-     H |-s prog ==> H'
+   H |-s prog ==> H'
 
 
    create_function_ctxt: - adds the the function identifiers and their
    types to the 'F' context (ensuring that there are no redeclared
    function identifiers)
 
-     H ; G1 |-f prog ==> G2
+   H ; G1 |-f prog ==> G2
 
 
    create_global_ctxt: - typechecks the global initializers and adds
    their identifiers to the 'G' global context
 
-     H ; G1 |-g prog ==> G2    
+   H ; G1 |-g prog ==> G2    
 
 
    NOTE: global initializers may mention function identifiers as
@@ -422,7 +422,7 @@ let create_function_ctxt (tc:Tctxt.t) (p:Ast.prog) : Tctxt.t =
           add_new_global c node fname @@ TRef (RFun (List.map fst args, frtyp))
         | _ -> c
       end
-    ) Tctxt.empty p
+    ) tc p
 
 let create_global_ctxt (tc:Tctxt.t) (p:Ast.prog) : Tctxt.t =
   List.fold_left (fun c decl ->
@@ -432,7 +432,7 @@ let create_global_ctxt (tc:Tctxt.t) (p:Ast.prog) : Tctxt.t =
           add_new_global c node name @@ typecheck_exp tc init
         | _ -> c
       end
-    ) Tctxt.empty p
+    ) tc p
 
 
 (* This function implements the |- prog and the H ; G |- prog 
