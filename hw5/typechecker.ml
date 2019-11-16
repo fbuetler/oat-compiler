@@ -357,7 +357,10 @@ let rec typecheck_stmt (tc : Tctxt.t) (s:Ast.stmt node) (to_ret:ret_ty) : Tctxt.
       then type_error s @@ Printf.sprintf "expected %s return, but got %s" (ml_string_of_ret_ty to_ret) (ml_string_of_ret_ty actual_ty);
       (tc, true)
     | SCall (f_exp, args) ->
-      ignore @@ typecheck_call tc f_exp args;
+      begin match typecheck_call tc f_exp args with
+        | RetVoid -> ()
+        | RetVal ty -> type_error s @@ Printf.sprintf "expected void-returning function in call statement, but function has return type %s" @@ string_of_ty ty
+      end;
       (tc, false)
     | If (cond, if_block, else_block) -> 
       assert_exp_type tc TBool cond;
