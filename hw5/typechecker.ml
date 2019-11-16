@@ -376,9 +376,13 @@ let rec typecheck_stmt (tc : Tctxt.t) (s:Ast.stmt node) (to_ret:ret_ty) : Tctxt.
         | Some update -> ignore @@ typecheck_stmt for_c update to_ret
         | None -> ()
       end; 
-      let block_returns = typecheck_block for_c block to_ret in
-      (tc, block_returns)
-    | _ -> failwith "stmt not implemented yet"
+      ignore @@ typecheck_block for_c block to_ret;
+      (tc, false)
+    | While (cond, block) ->
+      assert_exp_type tc TBool cond;
+      ignore @@ typecheck_block tc block to_ret;
+      (tc, false)
+    | _ -> failwith "stmt not implemented"
   end
 
 (* TODO check the return type *)
