@@ -197,9 +197,17 @@ let oat_alloc_array ct (t:Ast.ty) (size:Ll.operand) : Ll.ty * operand * stream =
 
    - make sure to calculate the correct amount of space to allocate!
 *)
-let oat_alloc_struct ct (id:Ast.id) : Ll.ty * operand * stream =
-  failwith "TODO: oat_alloc_struct"
-
+let oat_alloc_struct (ct: TypeCtxt.t) (id:Ast.id) : Ll.ty * operand * stream =
+  let ans_id, raw_id = gensym "ans", gensym "raw" in
+  let fields = TypeCtxt.lookup id ct in
+  let ans_ty = cmp_ty ct @@ TRef (RStruct id) in
+  let raw_ty = Ptr I64 in
+  ans_ty, Id ans_id, lift
+    [
+      raw_id, Call(raw_ty, Gid "oat_malloc",
+                   [I64, Const (Int64.of_int @@ 8 * List.length fields)]);
+      ans_id, Bitcast(raw_ty, Id raw_id, ans_ty);
+    ] 
 
 let str_arr_ty s = Array(1 + String.length s, I8)
 let i1_op_of_bool b   = Ll.Const (if b then 1L else 0L)
@@ -336,7 +344,7 @@ let rec cmp_exp (tc : TypeCtxt.t) (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.ope
      - store the resulting value into the structure
   *)
   | Ast.CStruct (id, l) ->
-    failwith "TODO: Ast.CStruct"
+    oat_alloc_struct tc id      
 
   | Ast.Proj (e, id) ->
     let ans_ty, ptr_op, code = cmp_exp_lhs tc c exp in
@@ -358,7 +366,21 @@ and cmp_exp_lhs (tc : TypeCtxt.t) (c:Ctxt.t) (e:exp node) : Ll.ty * Ll.operand *
      You will find the TypeCtxt.lookup_field_name function helpfule.
   *)
   | Ast.Proj (e, i) ->
-    failwith "todo: Ast.Proj case of cmp_exp_lhs"
+    let rec_ty, rec_op, rec_stream = cmp_exp tc c e in
+    let struct_id = begin match rec_ty with 
+      | Ptr (Namedt id) -> id
+      | _ -> failwith "not a struct"
+    end in
+    let index = TypeCtxt.index_of_field struct_id i tc in
+    let ptr_id, tmp1, tmp2 = gensym "index_ptr", gensym "tmp1", gensym "tmp2" in
+    let ret_ty = cmp_ty tc @@ TypeCtxt.lookup_field struct_id i tc in
+    ret_ty, Id ptr_id,
+    rec_stream >@ lift
+      [
+        tmp1, Bitcast (rec_ty, rec_op, Ptr I64);
+        tmp2, Gep (Ptr I64, Id tmp1, [i64_op_of_int index]);
+        ptr_id, Bitcast (Ptr I64, Id tmp2, Ptr ret_ty);
+      ]
 
   | Ast.Index (e, i) ->
     let arr_ty, arr_op, arr_code = cmp_exp tc c e in
