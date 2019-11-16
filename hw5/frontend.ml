@@ -430,19 +430,18 @@ and cmp_stmt (tc : TypeCtxt.t) (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt
        >:: L le >@ else_code >:: T(Br lm) 
        >:: L lm
 
-  (* CAST TASK: Fill in this case of the compiler to implement the 'if?' checked
-     null downcast statement.  
-     - check whether the value computed by exp is null, if so jump to
-         the 'null' block, otherwise take the 'notnull' block
-
-     - the identifier id is in scope in the 'nutnull' block and so 
-         needs to be allocated (and added to the context)
-
-     - as in the if-the-else construct, you should jump to the common
-         merge label after either block
-  *)
   | Ast.Cast (typ, id, exp, notnull, null) ->
-    failwith "todo: implement Ast.Cast case"
+    let exp_ty, exp_op, exp_code = cmp_exp tc c exp in
+    let then_code = cmp_block tc c rt @@
+      (no_loc @@ Decl (id, exp)) :: notnull in
+    let else_code = cmp_block tc c rt null in
+    let guard_id, lt, le, lm = gensym "guard", gensym "then", gensym "else", gensym "merge" in
+    c, exp_code
+       >:: I(guard_id, Icmp (Ne, exp_ty, exp_op, Null))
+       >:: T(Cbr (Id guard_id, lt, le))
+       >:: L lt >@ then_code >:: T(Br lm) 
+       >:: L le >@ else_code >:: T(Br lm) 
+       >:: L lm
 
   | Ast.While (guard, body) ->
     let guard_ty, guard_op, guard_code = cmp_exp tc c guard in
