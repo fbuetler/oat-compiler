@@ -394,12 +394,20 @@ let rec typecheck_stmt (tc : Tctxt.t) (s:Ast.stmt node) (to_ret:ret_ty) : Tctxt.
       (tc, false)
   end
 
-(* TODO check the return type *)
 and typecheck_block (tc : Tctxt.t) (b : Ast.block) (ret_ty : Ast.ret_ty) : bool = 
-  snd @@ List.fold_left 
-    (fun (old_c, old_b) s -> let c, b = typecheck_stmt old_c s ret_ty in (c, old_b || b)) 
-    (tc, false) 
-    b
+  let _, returns = List.fold_left 
+      (fun (old_c, old_b) s -> let c, b = typecheck_stmt old_c s ret_ty in (c, b::old_b)) 
+      (tc, []) 
+      b in
+  ignore @@ List.fold_left (fun did_return (s, will_return) -> 
+      if did_return
+      then type_error s "unreachable code";
+      will_return
+    ) false @@ List.map2 (fun s r -> (s, r)) b @@ List.rev returns;
+  begin match List.nth_opt returns 0 with
+    | Some b -> b
+    | None -> false
+  end
 
 (* struct type declarations ------------------------------------------------- *)
 (* Here is an example of how to implement the TYP_TDECLOK rule, which is 
