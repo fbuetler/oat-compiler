@@ -469,6 +469,12 @@ let typecheck_fdecl (tc : Tctxt.t) (f : Ast.fdecl) (l : 'a Ast.node) : unit =
    NOTE: global initializers may mention function identifiers as
    constants, but can't mention other global values *)
 
+
+(*
+TODO check this:
+  "NOTE: global initializers may mention function identifiers as
+  constants, but can't mention other global values"
+*)
 let create_struct_ctxt (p:Ast.prog) : Tctxt.t =
   List.fold_left (fun c decl ->
       begin match decl with
@@ -484,6 +490,9 @@ let create_struct_ctxt (p:Ast.prog) : Tctxt.t =
     ) Tctxt.empty p
 
 let create_function_ctxt (tc:Tctxt.t) (p:Ast.prog) : Tctxt.t =
+  let builtin_c = List.fold_left (fun c (name, (args, r)) ->
+      Tctxt.add_global c name @@ TRef (RFun (args, r))
+    ) tc builtins in
   List.fold_left (fun c decl ->
       begin match decl with
         | Gfdecl node ->
@@ -491,7 +500,7 @@ let create_function_ctxt (tc:Tctxt.t) (p:Ast.prog) : Tctxt.t =
           add_new_global c node fname @@ TRef (RFun (List.map fst args, frtyp))
         | _ -> c
       end
-    ) tc p
+    ) builtin_c p
 
 let create_global_ctxt (tc:Tctxt.t) (p:Ast.prog) : Tctxt.t =
   List.fold_left (fun c decl ->
