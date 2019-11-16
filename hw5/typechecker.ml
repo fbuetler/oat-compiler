@@ -246,10 +246,17 @@ let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
     | Bop (op, l, r) -> begin match op with
         | Add | Sub | Mul | IAnd | IOr | Shl | Shr | Sar ->
           assert_exp_type c TInt l; assert_exp_type c TInt r; TInt
-        | Eq | Neq | Lt | Lte | Gt | Gte ->
+        | Lt | Lte | Gt | Gte ->
           assert_exp_type c TInt l; assert_exp_type c TInt r; TBool
         | And | Or ->
           assert_exp_type c TBool l; assert_exp_type c TBool r; TBool
+        | Eq | Neq ->
+          let l_ty = typecheck_exp c l in
+          let r_ty = typecheck_exp c r in
+          if not (subtype c l_ty r_ty && subtype c r_ty l_ty)
+          then type_error e @@
+            Printf.sprintf "incompatible types for equality: %s and %s" (string_of_ty l_ty) (string_of_ty r_ty);
+          TBool
       end
     | Uop (op, r) -> begin match op with
         | Neg -> assert_exp_type c TInt r; TInt
@@ -259,9 +266,18 @@ let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
   end
 
 and assert_exp_type (tc: Tctxt.t) (expected_ty : Ast.ty) (exp : Ast.exp node) : unit =
+  assert_exp_type_custom tc expected_ty exp "" @@ format_of_string "expected %s, but got %s"
+
+and assert_exp_type_custom
+    (tc: Tctxt.t)
+    (expected_ty : Ast.ty)
+    (exp : Ast.exp node)
+    (prefix : string)
+    (msg : (string -> string -> 'f, 'b, 'c, 'd, 'd, 'f) format6)
+  : unit =
   let actual_ty = typecheck_exp tc exp in
   if not @@ subtype tc actual_ty expected_ty
-  then type_error exp @@ Printf.sprintf "expected %s, but got %s" (string_of_ty expected_ty) (string_of_ty actual_ty)
+  then type_error exp @@ prefix ^ Printf.sprintf msg (string_of_ty expected_ty) (string_of_ty actual_ty)
 
 and assert_exp_type_any_array (tc: Tctxt.t) (exp: Ast.exp node) : ty =
   begin match typecheck_exp tc exp with
@@ -339,8 +355,34 @@ let rec typecheck_stmt (tc : Tctxt.t) (s:Ast.stmt node) (to_ret:ret_ty) : Tctxt.
     | SCall (f_exp, args) ->
       ignore @@ typecheck_call tc f_exp args;
       (tc, false)
+    | If (cond, if_block, else_block) -> 
+      assert_exp_type tc TBool cond;
+      let if_returns = typecheck_block tc if_block to_ret in
+      let else_returns = typecheck_block tc else_block to_ret in
+      (tc, if_returns && else_returns)
+    | For (init, cond, update, block) ->
+      begin match cond with
+        | Some cond -> assert_exp_type tc TBool cond
+        | None -> ()
+      end;
+      let for_c = List.fold_left (fun c (id, exp) ->
+          add_new_local c exp id @@ typecheck_exp c exp
+        ) tc init in 
+      begin match update with
+        | Some update -> ignore @@ typecheck_stmt for_c update to_ret
+        | None -> ()
+      end; 
+      let block_returns = typecheck_block for_c block to_ret in
+      (for_c, block_returns)
     | _ -> failwith "stmt not implemented yet"
   end
+
+(* TODO check the return type *)
+and typecheck_block (tc : Tctxt.t) (b : Ast.block) (ret_ty : Ast.ret_ty) : bool = 
+  snd @@ List.fold_left 
+    (fun (old_c, old_b) s -> let c, b = typecheck_stmt old_c s ret_ty in (c, old_b || b)) 
+    (tc, false) 
+    b
 
 (* struct type declarations ------------------------------------------------- *)
 (* Here is an example of how to implement the TYP_TDECLOK rule, which is 
@@ -358,12 +400,6 @@ let typecheck_tdecl (tc : Tctxt.t) id fs  (l : 'a Ast.node) : unit =
   then type_error l ("Repeated fields in " ^ id) 
   else List.iter (fun f -> typecheck_ty l tc f.ftyp) fs
 
-(* TODO check the return type *)
-let typecheck_block (tc : Tctxt.t) (b : Ast.block) (ret_ty : Ast.ret_ty) : bool = 
-  snd @@ List.fold_left 
-    (fun (old_c, old_b) s -> let c, b = typecheck_stmt old_c s ret_ty in (c, old_b || b)) 
-    (tc, false) 
-    b
 
 (* function declarations ---------------------------------------------------- *)
 (* typecheck a function declaration 
