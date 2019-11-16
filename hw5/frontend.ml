@@ -307,16 +307,6 @@ let rec cmp_exp (tc : TypeCtxt.t) (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.ope
     let ind_code = List.(fold_left add_elt [] @@ mapi (fun i e -> i, e) cs) in
     arr_ty, arr_op, alloc_code >@ ind_code
 
-  (* ARRAY TASK: Modify the compilation of the NewArr construct to implement the 
-     initializer:
-     - the initializer is a loop that uses id as the index
-     - each iteration of the loop the code evaluates e2 and assigns it
-           to the index stored in id.
-
-     Note: You can either write code to generate the LL loop directly, or
-     you could write the loop using abstract syntax and then call cmp_stmt to
-     compile that into LL code...
-  *)
   | Ast.NewArr (elt_ty, e1, i_id, e2) ->    
     let n_id, temp_id = gensym "n", gensym "temp" in
     let save_n_c, save_n_stream = cmp_stmt tc c Void @@ no_loc @@ Decl (n_id, e1) in
