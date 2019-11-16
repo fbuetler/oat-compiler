@@ -18,6 +18,20 @@ module SAstField = Set.Make(
   end
   );;
 
+module SS = Set.Make(String);;
+
+let sort_by_str (get_key: 'a -> string) (l: 'a list) : 'a list =
+  List.sort (fun a b -> String.compare (get_key a) (get_key b)) l
+
+let find_duplicate_string (l : string list) : string option =
+  fst @@ List.fold_left (fun (dup, seen) s ->
+      begin match (dup, SS.find_opt s seen) with
+        | Some _, _ -> (dup, seen)
+        | None, Some _ -> (Some s, seen)
+        | None, None -> (None, SS.add s seen)
+      end
+    ) (None, SS.empty) l
+
 (* initial context: G0 ------------------------------------------------------ *)
 (* The Oat types of the Oat built-in functions *)
 let builtins =
@@ -126,6 +140,11 @@ and typecheck_ret_ty  (l : 'a Ast.node) (tc : Tctxt.t) (t : Ast.ret_ty) : unit =
     | RetVal x -> typecheck_ty l tc x
   end
 
+let add_new_local (c : Tctxt.t) (node: 'a node) (id : id) (bnd : Ast.ty) : Tctxt.t =
+  begin match lookup_option id c with
+    | Some _ -> type_error node @@ Printf.sprintf "can not redeclare variable %s" id
+    | None -> add_local c id bnd
+  end
 
 (* typechecking expressions ------------------------------------------------- *)
 (* Typechecks an expression in the typing context c, returns the type of the
@@ -153,7 +172,96 @@ and typecheck_ret_ty  (l : 'a Ast.node) (tc : Tctxt.t) (t : Ast.ret_ty) : unit =
 
 *)
 let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
-  failwith "todo: implement typecheck_exp"
+  let get_struct (struct_name : string) = 
+    begin match lookup_struct_option struct_name c with 
+      | Some fields -> fields
+      | None -> type_error e @@ Printf.sprintf "struct %s does not exist in ctxt" struct_name
+    end in
+  begin match e.elt with
+    | CNull rty -> TNullRef rty
+    | CBool b -> TBool
+    | CInt i -> TInt
+    | CStr s -> TRef RString
+    | Id id -> lookup id c 
+    | CArr (ty, l) -> List.iter (assert_exp_type c ty) l; TRef (RArray ty)
+    | NewArr (ty, len_exp, index, init_exp) ->
+      assert_exp_type c TInt len_exp;
+      assert_exp_type (add_new_local c e index TInt) ty init_exp;
+      TRef (RArray ty)
+    | Index (arr, index) -> 
+      assert_exp_type c TInt index; 
+      assert_exp_type_any_array c arr
+    | Length arr -> ignore @@ assert_exp_type_any_array c arr; TInt
+    | CStruct (struct_name, field_vals) ->
+      begin match find_duplicate_string @@ List.map fst field_vals with
+        | Some s -> type_error e @@ Printf.sprintf "duplicate field %s in struct literal" s
+        | None -> ()
+      end; 
+      let field_defs = get_struct struct_name in 
+      if List.length field_defs <> List.length field_vals
+      then type_error e @@ Printf.sprintf "struct %s: expected %d fields, but got %d" struct_name (List.length field_defs) (List.length field_vals);
+      let groups = List.map2
+          (fun { ftyp } (n, v) -> (n, ftyp, v))
+          (sort_by_str (fun e -> e.fieldName) field_defs)
+          (sort_by_str fst field_vals) in
+      List.iter (fun (n, ftyp, v) -> 
+          let actual_ty = typecheck_exp c v in
+          if not @@ subtype c actual_ty ftyp
+          then type_error e @@ Printf.sprintf "field %s of %s: expected %s, but got %s" n struct_name (string_of_ty ftyp) (string_of_ty actual_ty)
+        ) groups;
+      TRef (RStruct struct_name)
+    | Proj (exp, field_name) -> 
+      let struct_name = begin match typecheck_exp c exp with
+        | TRef (RStruct x) -> x
+        | ty -> type_error exp @@ Printf.sprintf "expected struct, but got %s" @@ string_of_ty ty
+      end in 
+      let fields = get_struct struct_name in 
+      begin match List.find_opt (fun el -> el.fieldName == field_name) fields with
+        | Some { ftyp } -> ftyp
+        | None -> type_error e @@ Printf.sprintf "struct %s does not have field %s" struct_name field_name 
+      end
+    | Call (f_exp, args) -> 
+      let arg_tys, r_ty = begin match typecheck_exp c f_exp with 
+        | TRef (RFun (arg_tys, r_ty)) -> (arg_tys, r_ty)
+        | _ -> type_error e "expression is not a function"
+      end in
+      if List.length arg_tys <> List.length args
+      then type_error e @@ Printf.sprintf "expected %d arguments, but got %d" (List.length arg_tys) (List.length args);
+      let groups = List.map2 (fun ty v -> (ty, v)) arg_tys args in
+      List.iteri (fun i (ty, v) -> 
+          let actual_ty = typecheck_exp c v in
+          if not @@ subtype c actual_ty ty
+          then type_error e @@ Printf.sprintf "argument %d: expected %s, but got %s" (i + 1) (string_of_ty ty) (string_of_ty actual_ty)
+        ) groups;
+      begin match r_ty with
+        | RetVoid -> type_error e "call of void function is not an expression"
+        | RetVal ty -> ty
+      end
+    | Bop (op, l, r) -> begin match op with
+        | Add | Sub | Mul | IAnd | IOr | Shl | Shr | Sar ->
+          assert_exp_type c TInt l; assert_exp_type c TInt r; TInt
+        | Eq | Neq | Lt | Lte | Gt | Gte ->
+          assert_exp_type c TInt l; assert_exp_type c TInt r; TBool
+        | And | Or ->
+          assert_exp_type c TBool l; assert_exp_type c TBool r; TBool
+      end
+    | Uop (op, r) -> begin match op with
+        | Neg -> assert_exp_type c TInt r; TInt
+        | Lognot -> assert_exp_type c TBool r; TBool
+        | Bitnot -> assert_exp_type c TInt r; TInt
+      end
+  end
+
+and assert_exp_type (tc: Tctxt.t) (expected_ty : Ast.ty) (exp : Ast.exp node) : unit =
+  let actual_ty = typecheck_exp tc exp in
+  if not @@ subtype tc actual_ty expected_ty
+  then type_error exp @@ Printf.sprintf "expected %s, but got %s" (string_of_ty expected_ty) (string_of_ty actual_ty)
+
+and assert_exp_type_any_array (tc: Tctxt.t) (exp: Ast.exp node) : ty =
+  begin match typecheck_exp tc exp with
+    | TRef (RArray ty) -> ty
+    | ty -> type_error exp @@ Printf.sprintf "expected array, but got %s" @@ string_of_ty ty
+  end
 
 (* statements --------------------------------------------------------------- *)
 
