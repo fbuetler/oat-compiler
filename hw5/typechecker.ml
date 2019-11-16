@@ -67,7 +67,7 @@ let typ_of_unop : Ast.unop -> Ast.ty * Ast.ty = function
       (Don't forget about OCaml's 'and' keyword.)
 *)
 let rec subtype (c : Tctxt.t) (t1 : Ast.ty) (t2 : Ast.ty) : bool =
-  begin match (t1, t2, t1 == t2) with
+  begin match (t1, t2, t1 = t2) with
     | (_, _, true) -> true
     | (TNullRef r1, TNullRef r2, _) -> subtype_ref c r1 r2
     | (TRef r1, TRef r2, _) -> subtype_ref c r1 r2
@@ -77,12 +77,12 @@ let rec subtype (c : Tctxt.t) (t1 : Ast.ty) (t2 : Ast.ty) : bool =
 
 (* Decides whether H |-r ref1 <: ref2 *)
 and subtype_ref (c : Tctxt.t) (t1 : Ast.rty) (t2 : Ast.rty) : bool =
-  begin match (t1, t2, t1 == t2) with
+  begin match (t1, t2, t1 = t2) with
     | (_, _, true) -> true
     | (RStruct s1, RStruct s2, _) -> subtype_struct (lookup_struct s1 c) (lookup_struct s2 c)
     | (RFun (t1, rt1), RFun (t2, rt2), _) ->
       (subtype_return c rt1 rt2) &&
-      (List.length t1 == List.length t2) &&
+      (List.length t1 = List.length t2) &&
       (List.fold_left (&&) true @@ List.map2 (subtype c) t2 t1)
     | _ -> false
   end
@@ -91,7 +91,7 @@ and subtype_struct (s1: Ast.field list) (s2: Ast.field list) : bool =
   SAstField.subset (SAstField.of_list s2) (SAstField.of_list s1)
 
 and subtype_return (c : Tctxt.t) (t1 : Ast.ret_ty) (t2 : Ast.ret_ty) : bool =
-  begin match (t1, t2, t1 == t2) with
+  begin match (t1, t2, t1 = t2) with
     | (_, _, true) -> true
     | (RetVal v1, RetVal v2, _) -> subtype c v1 v2
     | _ -> false
@@ -231,7 +231,7 @@ let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
           Printf.sprintf "expected struct, but got %s" @@ string_of_ty ty
       end in 
       let fields = get_struct struct_name in 
-      begin match List.find_opt (fun el -> el.fieldName == field_name) fields with
+      begin match List.find_opt (fun el -> el.fieldName = field_name) fields with
         | Some { ftyp } -> ftyp
         | None -> type_error e @@
           Printf.sprintf "struct %s does not have field %s" struct_name field_name 
