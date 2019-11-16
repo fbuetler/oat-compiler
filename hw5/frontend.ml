@@ -30,29 +30,29 @@ let lift : (uid * insn) list -> stream = List.rev_map (fun (x,i) -> I (x,i))
 
 (* Build a CFG and collection of global variable definitions from a stream *)
 let cfg_of_stream (code:stream) : Ll.cfg * (Ll.gid * Ll.gdecl) list  =
-    let gs, einsns, insns, term_opt, blks = List.fold_left
+  let gs, einsns, insns, term_opt, blks = List.fold_left
       (fun (gs, einsns, insns, term_opt, blks) e ->
-        match e with
-        | L l ->
+         match e with
+         | L l ->
            begin match term_opt with
-           | None -> 
-              if (List.length insns) = 0 then (gs, einsns, [], None, blks)
-              else failwith @@ Printf.sprintf "build_cfg: block labeled %s has\
-                                               no terminator" l
-           | Some term ->
-              (gs, einsns, [], None, (l, {insns; term})::blks)
+             | None -> 
+               if (List.length insns) = 0 then (gs, einsns, [], None, blks)
+               else failwith @@ Printf.sprintf "build_cfg: block labeled %s has\
+                                                no terminator" l
+             | Some term ->
+               (gs, einsns, [], None, (l, {insns; term})::blks)
            end
-        | T t  -> (gs, einsns, [], Some (Llutil.Parsing.gensym "tmn", t), blks)
-        | I (uid,insn)  -> (gs, einsns, (uid,insn)::insns, term_opt, blks)
-        | G (gid,gdecl) ->  ((gid,gdecl)::gs, einsns, insns, term_opt, blks)
-        | E (uid,i) -> (gs, (uid, i)::einsns, insns, term_opt, blks)
+         | T t  -> (gs, einsns, [], Some (Llutil.Parsing.gensym "tmn", t), blks)
+         | I (uid,insn)  -> (gs, einsns, (uid,insn)::insns, term_opt, blks)
+         | G (gid,gdecl) ->  ((gid,gdecl)::gs, einsns, insns, term_opt, blks)
+         | E (uid,i) -> (gs, (uid, i)::einsns, insns, term_opt, blks)
       ) ([], [], [], None, []) code
-    in
-    match term_opt with
-    | None -> failwith "build_cfg: entry block has no terminator" 
-    | Some term -> 
-       let insns = einsns @ insns in
-       ({insns; term}, blks), gs
+  in
+  match term_opt with
+  | None -> failwith "build_cfg: entry block has no terminator" 
+  | Some term -> 
+    let insns = einsns @ insns in
+    ({insns; term}, blks), gs
 
 
 (* compilation contexts ----------------------------------------------------- *)
@@ -112,9 +112,9 @@ module TypeCtxt = struct
     match c with
     | [] -> failwith "lookup_field_name: Not found"
     | (id, field) :: t -> 
-        match index_of f field 0 with
-        | None -> lookup_field_name f t
-        | Some x -> List.(nth field x).ftyp, Int64.of_int x
+      match index_of f field 0 with
+      | None -> lookup_field_name f t
+      | Some x -> List.(nth field x).ftyp, Int64.of_int x
 end
 
 (* compiling OAT types ------------------------------------------------------ *)
@@ -147,8 +147,8 @@ and cmp_rty ct : Ast.rty -> Ll.ty = function
   | Ast.RArray u -> Struct [I64; Array(0, cmp_ty ct u)]
   | Ast.RStruct r -> Namedt r
   | Ast.RFun (ts, t) -> 
-      let args, ret = cmp_fty ct (ts, t) in
-      Fun (args, ret)
+    let args, ret = cmp_fty ct (ts, t) in
+    Fun (args, ret)
 
 let typ_of_binop : Ast.binop -> Ast.ty * Ast.ty * Ast.ty = function
   | Add | Mul | Sub | Shl | Shr | Sar | IAnd | IOr -> (TInt, TInt, TInt)
@@ -191,7 +191,7 @@ let oat_alloc_array ct (t:Ast.ty) (size:Ll.operand) : Ll.ty * operand * stream =
 
 (* STRUCT TASK: Complete this helper function that allocates an oat structure on the 
    heap and returns a target operand with the appropriate reference.  
-   
+
    - generate a call to 'oat_malloc' and use bitcast to conver the
      resulting pointer to the right type
 
@@ -241,9 +241,9 @@ let rec cmp_exp (tc : TypeCtxt.t) (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.ope
     let gid = gensym "str_arr" in
     let str_typ = str_arr_ty s in
     let uid = gensym "str" in
-        Ptr I8, Id uid, []
-    >:: G(gid, (str_typ, GString s))
-    >:: I(uid, Gep(Ptr str_typ, Gid gid, [Const 0L; Const 0L;]))
+    Ptr I8, Id uid, []
+                    >:: G(gid, (str_typ, GString s))
+                    >:: I(uid, Gep(Ptr str_typ, Gid gid, [Const 0L; Const 0L;]))
 
   | Ast.Bop (bop, e1, e2) ->
     let t, _, ret_ty = typ_of_binop bop in
@@ -273,12 +273,17 @@ let rec cmp_exp (tc : TypeCtxt.t) (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.ope
       | _ -> failwith "broken invariant: identifier not a pointer"
     end
 
-  (* ARRAY TASK: complete this case to compilet the length(e) expression.
-       The emitted code should yield the integer stored as part 
-       of the array struct representation.
-  *)
   | Ast.Length e ->
-    failwith "todo:implement Ast.Length case"
+    let arr_ty, arr_op, arr_code = cmp_exp tc c e in
+    begin match arr_ty with
+      | Ptr (Struct [_; Array (_,_)]) -> ()
+      | _ -> failwith "can not get length of non-array expression"
+    end;
+    let len_id, ptr_id = gensym "len", gensym "ptr" in
+    I64, (Id len_id),
+    arr_code >@ lift
+      [ ptr_id, Gep(arr_ty, arr_op, [i64_op_of_int 0; i64_op_of_int 0])
+      ; len_id, Load(Ptr I64, Id ptr_id) ]
 
   | Ast.Index (e, i) ->
     let ans_ty, ptr_op, code = cmp_exp_lhs tc c exp in
@@ -304,8 +309,8 @@ let rec cmp_exp (tc : TypeCtxt.t) (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.ope
 
   (* ARRAY TASK: Modify the compilation of the NewArr construct to implement the 
      initializer:
-         - the initializer is a loop that uses id as the index
-         - each iteration of the loop the code evaluates e2 and assigns it
+     - the initializer is a loop that uses id as the index
+     - each iteration of the loop the code evaluates e2 and assigns it
            to the index stored in id.
 
      Note: You can either write code to generate the LL loop directly, or
@@ -317,12 +322,12 @@ let rec cmp_exp (tc : TypeCtxt.t) (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.ope
     let arr_ty, arr_op, alloc_code = oat_alloc_array tc elt_ty size_op in
     arr_ty, arr_op, size_code >@ alloc_code
 
-   (* STRUCT TASK: complete this code that compiles struct expressions.
-      For each field component of the struct
-       - use the TypeCtxt operations to compute getelementptr indices
-       - compile the initializer expression
-       - store the resulting value into the structure
-   *)
+  (* STRUCT TASK: complete this code that compiles struct expressions.
+     For each field component of the struct
+     - use the TypeCtxt operations to compute getelementptr indices
+     - compile the initializer expression
+     - store the resulting value into the structure
+  *)
   | Ast.CStruct (id, l) ->
     failwith "TODO: Ast.CStruct"
 
@@ -366,7 +371,7 @@ and cmp_exp_lhs (tc : TypeCtxt.t) (c:Ctxt.t) (e:exp node) : Ll.ty * Ll.operand *
     arr_code >@ ind_code >@ lift
       [ptr_id, Gep(arr_ty, arr_op, [i64_op_of_int 0; i64_op_of_int 1; ind_op]) ]
 
-   
+
 
   | _ -> failwith "invalid lhs expression"
 
@@ -397,76 +402,76 @@ and cmp_exp_as (tc : TypeCtxt.t) (c:Ctxt.t) (e:Ast.exp node) (t:Ll.ty) : Ll.oper
    Left-hand-sides of assignment statements must either be OAT identifiers,
    or an index into some arbitrary expression of array type. Otherwise, the
    program is not well-formed and your compiler may throw an error.
- *)
+*)
 and cmp_stmt (tc : TypeCtxt.t) (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt.t * stream =
-    
+
   match stmt.elt with
   | Ast.Decl (id, init) ->
-     let ll_ty, init_op, init_code = cmp_exp tc c init in
-     let res_id = gensym id in
-     let c' = Ctxt.add c id (Ptr ll_ty, Id res_id) in
-     c', init_code 
-         >:: E(res_id, Alloca ll_ty)
-         >:: I("",     Store (ll_ty, init_op, Id res_id))
-     
+    let ll_ty, init_op, init_code = cmp_exp tc c init in
+    let res_id = gensym id in
+    let c' = Ctxt.add c id (Ptr ll_ty, Id res_id) in
+    c', init_code 
+        >:: E(res_id, Alloca ll_ty)
+        >:: I("",     Store (ll_ty, init_op, Id res_id))
+
   | Ast.Assn (path ,e) ->
-     let _, pop, path_code = cmp_exp_lhs tc c path in
-     let ll_ty, eop, exp_code = cmp_exp tc c e in
-     c, path_code >@ exp_code >:: I("", (Store (ll_ty, eop, pop)))
+    let _, pop, path_code = cmp_exp_lhs tc c path in
+    let ll_ty, eop, exp_code = cmp_exp tc c e in
+    c, path_code >@ exp_code >:: I("", (Store (ll_ty, eop, pop)))
 
   | Ast.If (guard, st1, st2) -> 
-     let guard_ty, guard_op, guard_code = cmp_exp tc c guard in
-     let then_code = cmp_block tc c rt st1 in
-     let else_code = cmp_block tc c rt st2 in
-     let lt, le, lm = gensym "then", gensym "else", gensym "merge" in
-     c, guard_code 
-        >:: T(Cbr (guard_op, lt, le))
-        >:: L lt >@ then_code >:: T(Br lm) 
-        >:: L le >@ else_code >:: T(Br lm) 
-        >:: L lm
+    let guard_ty, guard_op, guard_code = cmp_exp tc c guard in
+    let then_code = cmp_block tc c rt st1 in
+    let else_code = cmp_block tc c rt st2 in
+    let lt, le, lm = gensym "then", gensym "else", gensym "merge" in
+    c, guard_code 
+       >:: T(Cbr (guard_op, lt, le))
+       >:: L lt >@ then_code >:: T(Br lm) 
+       >:: L le >@ else_code >:: T(Br lm) 
+       >:: L lm
 
   (* CAST TASK: Fill in this case of the compiler to implement the 'if?' checked
      null downcast statement.  
-       - check whether the value computed by exp is null, if so jump to
+     - check whether the value computed by exp is null, if so jump to
          the 'null' block, otherwise take the 'notnull' block
 
-       - the identifier id is in scope in the 'nutnull' block and so 
+     - the identifier id is in scope in the 'nutnull' block and so 
          needs to be allocated (and added to the context)
 
-       - as in the if-the-else construct, you should jump to the common
+     - as in the if-the-else construct, you should jump to the common
          merge label after either block
   *)
   | Ast.Cast (typ, id, exp, notnull, null) ->
     failwith "todo: implement Ast.Cast case"
 
   | Ast.While (guard, body) ->
-     let guard_ty, guard_op, guard_code = cmp_exp tc c guard in
-     let lcond, lbody, lpost = gensym "cond", gensym "body", gensym "post" in
-     let body_code = cmp_block tc c rt body  in
-     c, [] 
-        >:: T (Br lcond)
-        >:: L lcond >@ guard_code >:: T (Cbr (guard_op, lbody, lpost))
-        >:: L lbody >@ body_code  >:: T (Br lcond)
-        >:: L lpost
+    let guard_ty, guard_op, guard_code = cmp_exp tc c guard in
+    let lcond, lbody, lpost = gensym "cond", gensym "body", gensym "post" in
+    let body_code = cmp_block tc c rt body  in
+    c, [] 
+       >:: T (Br lcond)
+       >:: L lcond >@ guard_code >:: T (Cbr (guard_op, lbody, lpost))
+       >:: L lbody >@ body_code  >:: T (Br lcond)
+       >:: L lpost
 
   | Ast.For (inits, guard, after, body) ->
-     let guard = match guard with Some e -> e | None -> no_loc (CBool true) in
-     let after = match after with Some s -> [s] | None -> [] in
-     let body = body @ after in
-     let ds = List.map (fun d -> no_loc (Decl d)) inits in
-     let stream = cmp_block tc c rt (ds @ [no_loc @@ Ast.While (guard, body)]) in
-     c, stream
+    let guard = match guard with Some e -> e | None -> no_loc (CBool true) in
+    let after = match after with Some s -> [s] | None -> [] in
+    let body = body @ after in
+    let ds = List.map (fun d -> no_loc (Decl d)) inits in
+    let stream = cmp_block tc c rt (ds @ [no_loc @@ Ast.While (guard, body)]) in
+    c, stream
 
   | Ast.Ret None ->
-     c, [T (Ret(Void, None))]
+    c, [T (Ret(Void, None))]
 
   | Ast.Ret (Some e) ->
-     let op, code = cmp_exp_as tc c e rt in
-     c, code >:: T(Ret (rt, Some op))
+    let op, code = cmp_exp_as tc c e rt in
+    c, code >:: T(Ret (rt, Some op))
 
   | Ast.SCall (f, es) ->
-     let _, op, code = cmp_call tc c f es in
-     c, code
+    let _, op, code = cmp_call tc c f es in
+    c, code
 
 (* Compile a series of statements *)
 and cmp_block (tc : TypeCtxt.t) (c:Ctxt.t) (rt:Ll.ty) (stmts:Ast.block) : stream =
@@ -483,10 +488,10 @@ and cmp_block (tc : TypeCtxt.t) (c:Ctxt.t) (rt:Ll.ty) (stmts:Ast.block) : stream
    the project less interdependent.  *)
 let get_struct_defns (p:Ast.prog) : TypeCtxt.t =
   List.fold_right (fun d ts ->
-    match d with
-    | Ast.Gtdecl { elt=(id, fs) } ->
+      match d with
+      | Ast.Gtdecl { elt=(id, fs) } ->
         TypeCtxt.add ts id fs
-    | _ -> ts) p TypeCtxt.empty
+      | _ -> ts) p TypeCtxt.empty
 
 
 (* Adds each function identifer to the context at an
@@ -495,10 +500,10 @@ let get_struct_defns (p:Ast.prog) : TypeCtxt.t =
    NOTE: The Gid of a function is just its source name
 *)
 let cmp_function_ctxt (tc : TypeCtxt.t) (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
-    List.fold_left (fun c -> function
+  List.fold_left (fun c -> function
       | Ast.Gfdecl { elt={ frtyp; fname; args } } ->
-         let ft = TRef (RFun (List.map fst args, frtyp)) in
-         Ctxt.add c fname (cmp_ty tc ft, Gid fname)
+        let ft = TRef (RFun (List.map fst args, frtyp)) in
+        Ctxt.add c fname (cmp_ty tc ft, Gid fname)
       | _ -> c
     ) c p 
 
@@ -521,15 +526,15 @@ let cmp_global_ctxt (tc : TypeCtxt.t) (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
     | x -> failwith ( "bad global initializer: " ^ (Astlib.string_of_exp (no_loc x)))
   in
   List.fold_left (fun c -> function
-    | Ast.Gvdecl { elt={ name; init } } ->
+      | Ast.Gvdecl { elt={ name; init } } ->
         Ctxt.add c name (Ptr (gexp_ty c init.elt), Gid name)
-    | _ -> c) c p
+      | _ -> c) c p
 
 
 (* Compile a function declaration in global context c. Return the LLVMlite cfg
    and a list of global declarations containing the string literals appearing
    in the function.
- *)
+*)
 let cmp_fdecl (tc : TypeCtxt.t) (c:Ctxt.t) (f:Ast.fdecl node) : Ll.fdecl * (Ll.gid * Ll.gdecl) list =
   let {frtyp; args; body} = f.elt in
   let add_arg (s_typ, s_id) (c,code,args) =
@@ -598,8 +603,8 @@ let internals =
 (* Oat builtin function context --------------------------------------------- *)
 let builtins = List.map
     (fun (fname, ftyp) -> 
-      let args, ret = cmp_fty TypeCtxt.empty ftyp in
-      (fname, Ll.Fun (args, ret)))
+       let args, ret = cmp_fty TypeCtxt.empty ftyp in
+       (fname, Ll.Fun (args, ret)))
     Typechecker.builtins
 
 
@@ -623,13 +628,13 @@ let cmp_prog (p:Ast.prog) : Ll.prog =
     List.fold_right (fun d (fs, gs) ->
         match d with
         | Ast.Gvdecl { elt=gd } -> 
-           let ll_gd, gs' = cmp_gexp c tc gd.init in
-           (fs, (gd.name, ll_gd)::gs' @ gs)
+          let ll_gd, gs' = cmp_gexp c tc gd.init in
+          (fs, (gd.name, ll_gd)::gs' @ gs)
         | Ast.Gfdecl fd ->
-           let fdecl, gs' = cmp_fdecl tc c fd in
-           (fd.elt.fname,fdecl)::fs, gs' @ gs
+          let fdecl, gs' = cmp_fdecl tc c fd in
+          (fd.elt.fname,fdecl)::fs, gs' @ gs
         | Ast.Gtdecl _ ->
-            fs, gs
+          fs, gs
       ) p ([], [])
   in
   (* gather external declarations *)
