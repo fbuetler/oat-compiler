@@ -13,18 +13,18 @@ void bucket_sort(int[] a, int len) {
       min = value;
     }
   }
-  var length = max - min + 1;
-  if (length > 1000) {
-    print_string(string_cat("Too many buckets needed: ", string_of_int(length)));
+  var length_val = max - min + 1;
+  if (length_val > 1000) {
+    print_string(string_cat("Too many buckets needed: ", string_of_int(length_val)));
     return;
   }
-  var buckets = new int[length];
+  var buckets = new int[length_val]{i -> 0};
   for (var i = 0; i < len; i = i + 1;) {
     var index = a[i] - min;
     buckets[index] = buckets[index] + 1;
   }
   var j = 0;
-  for (var i = 0; i < length; i = i + 1;) {
+  for (var i = 0; i < length_val; i = i + 1;) {
     var value = i + min;
     var count = buckets[i];
     for (var c = 0; c < count; c = c + 1;) {

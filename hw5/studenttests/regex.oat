@@ -15,7 +15,7 @@ global allocated_ast = 1;
 int alloc_ast_node (int[] ast_node) {
   if (next_id == allocated_ast) {
     var new_alloc = allocated_ast * 2;
-    var new_arr = new int[][new_alloc];
+    var new_arr = new int[][new_alloc]{i -> int[] null};
     for (var i = 0; i < allocated_ast; i = i + 1;) {
       new_arr[i] = ast_nodes[i];
     }

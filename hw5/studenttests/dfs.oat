@@ -1,7 +1,7 @@
 
 global n = 10;
 global count = 0;
-global visited = int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+global visited = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 void dfs(int i, bool[][] graph) {
 	count = count + 1;

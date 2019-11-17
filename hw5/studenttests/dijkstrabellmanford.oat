@@ -5,12 +5,12 @@ global inf = 255;
 no negative weights supported */
 int[] dijkstra (int[][] graph, int nodecount, int start){
   /* Array of visited nodes*/
-  var visited = new int[nodecount];
+  var visited = new int[nodecount]{i -> 0};
   for(var i=0; i<nodecount; i=i+1;){
     visited[i]=0;
   }
   /* Init. distances from start to all other points to values read from graph*/
-  var dist = new int[nodecount];
+  var dist = new int[nodecount]{i -> 0};
   for(var i=0; i<nodecount; i=i+1;){
     dist[i] = graph[start][i];
   }
@@ -50,7 +50,7 @@ int[] dijkstra (int[][] graph, int nodecount, int start){
 /* Calculates shortest distances to all nodes from a single source,
 supports negative weights. This implementation assumes no negatives cycles exist. */
 int[] bellman_ford (int [][] graph, int nodecount, int start){
-  var dist = new int[nodecount];
+  var dist = new int[nodecount]{i -> 0};
   for(var i=0; i<nodecount; i=i+1;){
     dist[i]=inf;
   }
@@ -76,7 +76,7 @@ int[] bellman_ford (int [][] graph, int nodecount, int start){
 }
 
 int program (int argc, string[] argv) {
-  var res = new int[3];
+  var res = new int[3]{i -> 0};
 
   var nodecount0 = 5;
   var start0 = 3;

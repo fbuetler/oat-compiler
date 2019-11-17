@@ -1,6 +1,6 @@
 
 int[][] partition_array(int[] a, int split_point, int len) {
-  var split_a = new int[][]{new int[split_point], new int[len - split_point]};
+  var split_a = new int[][]{new int[split_point]{i -> 0}, new int[len - split_point]{i -> 0}};
 
   for (var i = 0; i < len; i = i + 1;) {
     if (i < split_point) {
@@ -14,7 +14,7 @@ int[][] partition_array(int[] a, int split_point, int len) {
 }
 
 int[] merge(int[] a, int[] b, int len1, int len2) {
-  var merged_a = new int[len1 + len2];
+  var merged_a = new int[len1 + len2]{i -> 0};
   var i = 0;
   var i1 = 0;
   var i2 = 0;

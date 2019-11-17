@@ -42,7 +42,7 @@ int int_of_string(string str) {
  * Prints all prime numbers up to (excl.) n
  */
 void print_primes(int n) {
-    var isComposite = new bool[n];
+    var isComposite = new bool[n]{i -> false};
 
     /* find the square root of n (rounded up) */
     var r = 1;

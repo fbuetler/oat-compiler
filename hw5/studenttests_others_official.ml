@@ -148,31 +148,31 @@ let primesieve_tests =
     ]
 
 let provided_tests : suite = [
-    (* GradedTest ("primesieve tests", 0, executed_oat_file primesieve_tests); *)
+    GradedTest ("primesieve tests", 0, executed_oat_file primesieve_tests);
     GradedTest ("bubble sort", 0, executed_oat_file [
         ("studenttests/bubble_sort.oat", "", "kpyf{shomfhkmopsy{255");]);
-    (* GradedTest("bucket_sort test", 0, executed_oat_file ["studenttests/bucket_sort.oat", "", "42"]); *)
-    (* GradedTest("Merge Sort", 0, executed_oat_file 
-    [ ("studenttests/merge_sort.oat", "", "lkdfjkwegkljdfhljwegrnkljsvfw+.a+.addeefffgghjjjjkkkkllllnrsvwww255")]); *)
-    (* GradedTest("Regex", 0, executed_oat_file [ ("studenttests/regex.oat", "", "fffffttttt0"); ]); *)
-    (* GradedTest("BF", 0, executed_oat_file 
-    [ ("studenttests/bf.oat", bf_sum_program ^ " '" ^(String.make 1 ('\100') ) ^ "'", "BF return value: 50500")]); *)
+    GradedTest("bucket_sort test", 0, executed_oat_file ["studenttests/bucket_sort.oat", "", "42"]);
+    GradedTest("Merge Sort", 0, executed_oat_file 
+    [ ("studenttests/merge_sort.oat", "", "lkdfjkwegkljdfhljwegrnkljsvfw+.a+.addeefffgghjjjjkkkkllllnrsvwww255")]);
+    GradedTest("Regex", 0, executed_oat_file [ ("studenttests/regex.oat", "", "fffffttttt0"); ]);
+    GradedTest("BF", 0, executed_oat_file 
+    [ ("studenttests/bf.oat", bf_sum_program ^ " '" ^(String.make 1 ('\100') ) ^ "'", "BF return value: 50500")]);
     GradedTest("Ackermann", 0, executed_oat_file [ ("studenttests/ackermann.oat", "", "125")]);
-    (* GradedTest("Insertion Sort", 0, executed_oat_file
-    [ ("studenttests/insertion_sort.oat", "", "y}xotnuwnotuwxy}255")]); *)
+    GradedTest("Insertion Sort", 0, executed_oat_file
+    [ ("studenttests/insertion_sort.oat", "", "y}xotnuwnotuwxy}255")]);
     GradedTest("Fractions", 0, executed_oat_file 
     [ ("studenttests/fractions.oat", "", "10156")]);
-    (* GradedTest ("Depth-first Search", 0, executed_oat_file
-    [ ("studenttests/dfs.oat", "", "124371056890");]); *)
-    (* GradedTest("Dijkstra-BellmanFord comparison", 0, executed_oat_file 
-    [("studenttests/dijkstrabellmanford.oat", "", "1")]); *)
+    GradedTest ("Depth-first Search", 0, executed_oat_file
+    [ ("studenttests/dfs.oat", "", "124371056890");]);
+    GradedTest("Dijkstra-BellmanFord comparison", 0, executed_oat_file 
+    [("studenttests/dijkstrabellmanford.oat", "", "1")]);
     GradedTest("quick sort", 0, executed_oat_file
     [ ("studenttests/quicksort.oat", "", "kpyf{shomfhkmopsy{0")]);
     GradedTest("selection sort", 0, executed_oat_file
     [("studenttests/selection_sort.oat", "", "kpyf{shomfhkmopsy{42")]);
-    (* GradedTest("prim", 0, executed_oat_file [
-      ("studenttests/prim.oat", "", "0-1 - 1-2 - 2-3 - 3-40") ]); *)
-    (* GradedTest("Subset sum test", 0,  executed_oat_file subset_sum_test); *)
+    GradedTest("prim", 0, executed_oat_file [
+      ("studenttests/prim.oat", "", "0-1 - 1-2 - 2-3 - 3-40") ]);
+    GradedTest("Subset sum test", 0,  executed_oat_file subset_sum_test);
     GradedTest("LCM", 0, executed_oat_file [ ("studenttests/lcm.oat", "", "99")]);
     GradedTest("is rotation of", 0, executed_oat_file [("studenttests/string_rotation.oat", "", "truefalsefalse0")]);
     GradedTest ("hex2rg", 0, executed_oat_file
@@ -189,13 +189,13 @@ let provided_tests : suite = [
   [("studenttests/s_dist_pair.oat", "", "26")]);
   GradedTest("diffie hellman test", 0, executed_oat_file 
   [ ("studenttests/diffie-hellman.oat", "", "0");]);
-  (* GradedTest("Cycles", 0, executed_oat_file [ ("studenttests/cycles.oat", "", "1") ]); *)
-  (* GradedTest("palindrome_sum", 0, executed_oat_file [ ("studenttests/palindrome.oat", "", "42")]); *)
-  (* GradedTest ("base64", 0,  executed_oat_file [
+  GradedTest("Cycles", 0, executed_oat_file [ ("studenttests/cycles.oat", "", "1") ]);
+  GradedTest("palindrome_sum", 0, executed_oat_file [ ("studenttests/palindrome.oat", "", "42")]);
+  GradedTest ("base64", 0,  executed_oat_file [
   ("studenttests/base64.oat", "walrus", "d2FscnVz0");
   ("studenttests/base64.oat", "florian", "Zmxvcmlhbg==0");
   ("studenttests/base64.oat", "philippe", "cGhpbGlwcGU=0");
   ("studenttests/base64.oat", "CompilerDesign", "Q29tcGlsZXJEZXNpZ24=0");
   ("studenttests/base64.oat", "VIS", "VklT0");
-  ("studenttests/base64.oat", "VereinDerInformatikStudierenden", "VmVyZWluRGVySW5mb3JtYXRpa1N0dWRpZXJlbmRlbg==0");]); *)
+  ("studenttests/base64.oat", "VereinDerInformatikStudierenden", "VmVyZWluRGVySW5mb3JtYXRpa1N0dWRpZXJlbmRlbg==0");]);
 ] 

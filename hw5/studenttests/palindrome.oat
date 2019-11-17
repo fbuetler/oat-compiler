@@ -1,7 +1,7 @@
 
-bool is_palindrome(int[] list, int length){
-	for(var i = 0; i < length; i = i + 1;){
-		if(list[i] != list[length - i - 1]) {
+bool is_palindrome(int[] list, int length_val){
+	for(var i = 0; i < length_val; i = i + 1;){
+		if(list[i] != list[length_val - i - 1]) {
 			return false;
 		}
 	}
@@ -10,7 +10,7 @@ bool is_palindrome(int[] list, int length){
 
 int palindrome_sum() {
 	var sum = 0;
-	var list = new int[3];
+	var list = new int[3]{i -> 0};
 	list[0] = 0; /* *1 */
 	list[1] = 9; /* *10 */
 	list[2] = 9; /* *100 */

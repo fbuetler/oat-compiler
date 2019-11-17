@@ -3,7 +3,7 @@ int run_bf(string s_code, string s_input, int data_size) {
 	var input = array_of_string(s_input);
 	var code = array_of_string(s_code);
 
-	var data = new int[data_size];
+	var data = new int[data_size]{i -> 0};
 	var data_pointer = 0;
 	var input_pointer = 0;
 

@@ -51,7 +51,7 @@ int[] encode(int[] in, int len){
     }
     var b64 = array_of_string(b64chars);
     var e_len = size_encoded(len);
-    var out = new int[e_len];
+    var out = new int[e_len]{i -> 0};
 
     var v = 0;
     var i = 0;

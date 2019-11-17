@@ -24,8 +24,8 @@ bool helper (int i, bool[] visited, bool[] stack){
 }
 
 bool is_cyclic (){
-	var visited = new bool[v];
-	var stack = new bool[v];
+	var visited = new bool[v]{i -> false};
+	var stack = new bool[v]{i -> false};
 	for(var i = 0; i < v; i = i+1;){
 		if (helper(i, visited, stack)){
 			return true;
