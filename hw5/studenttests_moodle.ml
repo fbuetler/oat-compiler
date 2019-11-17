@@ -18,5 +18,5 @@ let subtype_tests = [
 ]
 
 let provided_tests : suite = [
-  Test("Own subtypes", subtype_tests);
+  Test("Own subtypes moodle", subtype_tests);
 ] 

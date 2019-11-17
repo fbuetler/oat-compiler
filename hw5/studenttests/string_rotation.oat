@@ -1,0 +1,59 @@
+
+
+bool is_rotation_of(string a, string b) {
+  if(length_of_string(a) != length_of_string(b)){
+    return false;
+  }
+
+  var array_a = array_of_string(a);
+  var array_b = array_of_string(b);
+  var len = length_of_string(a);
+  var pos_a = 0;
+  var pos_b = 0;
+  
+  while(pos_a - pos_b < len){
+
+    if (pos_a >= len){
+      if(array_a[pos_a-len] == array_b[pos_b]){
+        pos_b = pos_b + 1;
+      } else {
+        pos_b = 0;
+      }
+    } else {
+      if(array_a[pos_a] == array_b[pos_b]){
+        pos_b = pos_b + 1;
+      } else {
+        pos_b = 0;
+      }
+    }
+
+    pos_a = pos_a + 1;
+ 
+    if(pos_b == len){
+      return true;
+    }
+  
+  }
+
+  return false;
+}
+
+int program (int argc, string[] argv) {
+
+  var string1 = "compilerdesign";
+  var string2 = "designcompiler";
+
+  print_bool(is_rotation_of(string1, string2));
+
+  string1 = "notsoeasythistime";
+  string2 = "easythistime";
+
+  print_bool(is_rotation_of(string1, string2));
+
+  string1 = "hellothereoldchum";
+  string2 = "youhavebeengnomed";
+
+  print_bool(is_rotation_of(string1, string2));
+
+  return 0;
+}

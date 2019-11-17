@@ -82,6 +82,12 @@ let run_program (args:string) (executable:string) (tmp_out:string) : string =
   let result = sh cmd (fun _ i -> i) in
   (read_file tmp_out) ^ (string_of_int result)
 
+let run_program_error (args:string) (executable:string) (tmp_out:string) : string =
+  let cmd = sprintf "%s%s %s > %s 2>&1" dot_path executable args tmp_out in
+  let result = sh cmd (fun _ i -> i)
+  in
+  (read_file tmp_out) ^ (string_of_int result)
+
 let process_ll_ast path file ll_ast =
   if !print_ll_flag then print_ll file ll_ast;
   let dot_s_file = Platform.gen_name !Platform.output_path file ".s" in

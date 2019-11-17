@@ -1,0 +1,69 @@
+
+/**
+ * This program accepts a hex color code and converts it to rgb.
+ * Ex: #FFFFFF has to be inputed as "FF FF FF" and will be converted to rgb(255, 255, 255)
+ * The program can work both with upper as well as lower case characters and you can even mix them! -> case insensitive
+ *
+ * This are the tests we've used:
+ * let hex2rgb_tests = [
+ *   ("student_atprog/hex2rgb.oat", "FF FF FF", "rgb(255, 255, 255)_0");
+ *   ("student_atprog/hex2rgb.oat", "00 00 00", "rgb(0, 0, 0)_0");
+ *   ("student_atprog/hex2rgb.oat", "44 81 eb", "rgb(68, 129, 235)_0");
+ *   ("student_atprog/hex2rgb.oat", "44 81 EB", "rgb(68, 129, 235)_0");
+ *   ("student_atprog/hex2rgb.oat", "12 34 56", "rgb(18, 52, 86)_0");
+ *   ("student_atprog/hex2rgb.oat", "78 90 aB", "rgb(120, 144, 171)_0");
+ *   ("student_atprog/hex2rgb.oat", "c6 f2 e8", "rgb(198, 242, 232)_0");
+ * ]
+ */
+
+/**
+ * convert a hex input to an integer
+ */
+int hexToInt(string hex) {
+    var len = length_of_string(hex);
+    var arr = array_of_string(hex);
+
+    var n = 0;
+    var p = 1;
+    var i = len - 1;
+    while (i >= 0) {
+        var str = arr[i];
+        var x = 0;
+        if (str >= 97 & str <= 102) {
+            x = str - 87;
+        } else if (str >= 65 & str <= 70) {
+            x = str - 55;
+        } else if (str >= 48 & str <= 57) {
+            x = str - 48;
+        }
+
+        n = n + p * x;
+        p = p * 16;
+        i = i - 1;
+    }
+
+    return n;
+}
+
+int program(int argc, string[] argv) {
+  if (argc > 3) {
+      var len1 = length_of_string(argv[1]);
+      var len2 = length_of_string(argv[2]);
+      var len3 = length_of_string(argv[3]);
+      if (true | (len1 == len2 & len2 == len3 & len1 == 2)) {
+        print_string("rgb(");
+        print_int(hexToInt(argv[1]));
+        print_string(", "); 
+        print_int(hexToInt(argv[2]));
+        print_string(", ");
+        print_int(hexToInt(argv[3]));
+        print_string(")_");
+        
+        return 0;
+      } else {
+          print_string("ERROR: Input needs to be a 6 characters hex string");
+      }
+  }
+
+  return 1;
+}
