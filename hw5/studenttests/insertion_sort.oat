@@ -1,4 +1,11 @@
 
+bool checkCondition(int[] a, int j, int k){
+    if (j < 0){
+        return false;
+    } 
+    return (a[j] > k);
+}
+
 void sort(int[] a, int n)
 {
     var j = 0;
@@ -6,7 +13,7 @@ void sort(int[] a, int n)
     for (var i = 1; i < n; i = i + 1;) {
         k = a[i];
         j = i - 1;
-        while (j >= 0 & a[j] > k) {
+        while (checkCondition(a, j, k)) {
             a[j + 1] = a[j];
             j = j - 1;
         }
