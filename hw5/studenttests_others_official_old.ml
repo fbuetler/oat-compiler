@@ -109,14 +109,14 @@ let primes_to_10k =
 9949;9967;9973]
 
 let subset_sum_test = [
-    ("studenttests/subset_sum.oat", "123456789", "1");
-    ("studenttests/subset_sum.oat", "12345678", "1");
-    ("studenttests/subset_sum.oat", "1234", "0");
-    ("studenttests/subset_sum.oat", "12", "1");
-    ("studenttests/subset_sum.oat", "123456", "0");
-    ("studenttests/subset_sum.oat", "12345678901234567890123456", "1");
-    ("studenttests/subset_sum.oat", "1", "0");
-    ("studenttests/subset_sum.oat", "123456789012", "1"); 
+    ("studenttests_old/subset_sum.oat", "123456789", "1");
+    ("studenttests_old/subset_sum.oat", "12345678", "1");
+    ("studenttests_old/subset_sum.oat", "1234", "0");
+    ("studenttests_old/subset_sum.oat", "12", "1");
+    ("studenttests_old/subset_sum.oat", "123456", "0");
+    ("studenttests_old/subset_sum.oat", "12345678901234567890123456", "1");
+    ("studenttests_old/subset_sum.oat", "1", "0");
+    ("studenttests_old/subset_sum.oat", "123456789012", "1"); 
   ]
 
 let bf_sum_program = "'>>>>>>+>,><<[<<]<<<<>[-]>>>>>[>>]<[-><<[<<]<<<<>+>>>>>[>>]<]<-+>+><[[-]<[-]+[<<]<<<<>[->>>>>[>>]>+<<+<[<<]<<<<>]>>>>>[>>]>[-<<<[<<]<<<<>+>>>>>[>>]>]<+[<<]<<>[->>>[>>]>+<<+<[<<]<<>]>>>[>>]>[-<<<[<<]<<>+>>>[>>]>]<<[-<<+>>]<-<<[<<]<<>[-]>>>[>>]<[-><<[<<]<<>+>>>[>>]<]<-+[<<]<<<<>[->>>>>[>>]>+<<+<[<<]<<<<>]>>>>>[>>]>[-<<<[<<]<<<<>+>>>>>[>>]>]<+>+><[-<<->>]<-<<[<<]<<<<>[-]>>>>>[>>]<[-><<[<<]<<<<>+>>>>>[>>]<]<-+[<<]<<<<>[->>>>>[>>]>+<<+<[<<]<<<<>]>>>>>[>>]>[-<<<[<<]<<<<>+>>>>>[>>]>]<<][-]<[-]+[<<]<<>[->>>[>>]>+<<+<[<<]<<>]>>>[>>]>[-<<<[<<]<<>+>>>[>>]>]<<'" 
@@ -132,70 +132,70 @@ let expected_output (n: int) : string =
 
 let primesieve_tests = 
     (List.map (fun n -> 
-    ("studenttests/primesieve.oat", string_of_int n, expected_output n)
+    ("studenttests_old/primesieve.oat", string_of_int n, expected_output n)
     ) @@ List.init 20 (fun x -> 500 * x))
     @ [
-        ("studenttests/primesieve.oat", "0", "0");
-        ("studenttests/primesieve.oat", "2", "0");
-        ("studenttests/primesieve.oat", "3", "2 0");
-        ("studenttests/primesieve.oat", "10", "2 3 5 7 0");
-        ("studenttests/primesieve.oat", "20", "2 3 5 7 11 13 17 19 0");
-        ("studenttests/primesieve.oat", "100", "2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97 0");
-        ("studenttests/primesieve.oat", "-5", "1");          (* invalid input *)
-        ("studenttests/primesieve.oat", "--", "1");          (* invalid input *)
-        ("studenttests/primesieve.oat", "hello world", "1"); (* invalid input *)
-        ("studenttests/primesieve.oat", "", "1");            (* missing input *)
+        ("studenttests_old/primesieve.oat", "0", "0");
+        ("studenttests_old/primesieve.oat", "2", "0");
+        ("studenttests_old/primesieve.oat", "3", "2 0");
+        ("studenttests_old/primesieve.oat", "10", "2 3 5 7 0");
+        ("studenttests_old/primesieve.oat", "20", "2 3 5 7 11 13 17 19 0");
+        ("studenttests_old/primesieve.oat", "100", "2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97 0");
+        ("studenttests_old/primesieve.oat", "-5", "1");          (* invalid input *)
+        ("studenttests_old/primesieve.oat", "--", "1");          (* invalid input *)
+        ("studenttests_old/primesieve.oat", "hello world", "1"); (* invalid input *)
+        ("studenttests_old/primesieve.oat", "", "1");            (* missing input *)
     ]
 
 let provided_tests : suite = [
     GradedTest ("primesieve tests", 0, executed_oat_file primesieve_tests);
     GradedTest ("bubble sort", 0, executed_oat_file [
-        ("studenttests/bubble_sort.oat", "", "kpyf{shomfhkmopsy{255");]);
-    GradedTest("bucket_sort test", 0, executed_oat_file ["studenttests/bucket_sort.oat", "", "42"]);
+        ("studenttests_old/bubble_sort.oat", "", "kpyf{shomfhkmopsy{255");]);
+    GradedTest("bucket_sort test", 0, executed_oat_file ["studenttests_old/bucket_sort.oat", "", "42"]);
     GradedTest("Merge Sort", 0, executed_oat_file 
-    [ ("studenttests/merge_sort.oat", "", "lkdfjkwegkljdfhljwegrnkljsvfw+.a+.addeefffgghjjjjkkkkllllnrsvwww255")]);
-    GradedTest("Regex", 0, executed_oat_file [ ("studenttests/regex.oat", "", "fffffttttt0"); ]);
+    [ ("studenttests_old/merge_sort.oat", "", "lkdfjkwegkljdfhljwegrnkljsvfw+.a+.addeefffgghjjjjkkkkllllnrsvwww255")]);
+    GradedTest("Regex", 0, executed_oat_file [ ("studenttests_old/regex.oat", "", "fffffttttt0"); ]);
     GradedTest("BF", 0, executed_oat_file 
-    [ ("studenttests/bf.oat", bf_sum_program ^ " '" ^(String.make 1 ('\100') ) ^ "'", "BF return value: 50500")]);
-    GradedTest("Ackermann", 0, executed_oat_file [ ("studenttests/ackermann.oat", "", "125")]);
+    [ ("studenttests_old/bf.oat", bf_sum_program ^ " '" ^(String.make 1 ('\100') ) ^ "'", "BF return value: 50500")]);
+    GradedTest("Ackermann", 0, executed_oat_file [ ("studenttests_old/ackermann.oat", "", "125")]);
     GradedTest("Insertion Sort", 0, executed_oat_file
-    [ ("studenttests/insertion_sort.oat", "", "y}xotnuwnotuwxy}255")]);
+    [ ("studenttests_old/insertion_sort.oat", "", "y}xotnuwnotuwxy}255")]);
     GradedTest("Fractions", 0, executed_oat_file 
-    [ ("studenttests/fractions.oat", "", "10156")]);
+    [ ("studenttests_old/fractions.oat", "", "10156")]);
     GradedTest ("Depth-first Search", 0, executed_oat_file
-    [ ("studenttests/dfs.oat", "", "124371056890");]);
+    [ ("studenttests_old/dfs.oat", "", "124371056890");]);
     GradedTest("Dijkstra-BellmanFord comparison", 0, executed_oat_file 
-    [("studenttests/dijkstrabellmanford.oat", "", "1")]);
+    [("studenttests_old/dijkstrabellmanford.oat", "", "1")]);
     GradedTest("quick sort", 0, executed_oat_file
-    [ ("studenttests/quicksort.oat", "", "kpyf{shomfhkmopsy{0")]);
+    [ ("studenttests_old/quicksort.oat", "", "kpyf{shomfhkmopsy{0")]);
     GradedTest("selection sort", 0, executed_oat_file
-    [("studenttests/selection_sort.oat", "", "kpyf{shomfhkmopsy{42")]);
+    [("studenttests_old/selection_sort.oat", "", "kpyf{shomfhkmopsy{42")]);
     GradedTest("prim", 0, executed_oat_file [
-      ("studenttests/prim.oat", "", "0-1 - 1-2 - 2-3 - 3-40") ]);
+      ("studenttests_old/prim.oat", "", "0-1 - 1-2 - 2-3 - 3-40") ]);
     GradedTest("Subset sum test", 0,  executed_oat_file subset_sum_test);
-    GradedTest("LCM", 0, executed_oat_file [ ("studenttests/lcm.oat", "", "99")]);
-    GradedTest("is rotation of", 0, executed_oat_file [("studenttests/string_rotation.oat", "", "truefalsefalse0")]);
+    GradedTest("LCM", 0, executed_oat_file [ ("studenttests_old/lcm.oat", "", "99")]);
+    GradedTest("is rotation of", 0, executed_oat_file [("studenttests_old/string_rotation.oat", "", "truefalsefalse0")]);
     GradedTest ("hex2rg", 0, executed_oat_file
     [
-      ("studenttests/hex2rgb.oat", "FF FF FF", "rgb(255, 255, 255)_0");
-      ("studenttests/hex2rgb.oat", "00 00 00", "rgb(0, 0, 0)_0");
-      ("studenttests/hex2rgb.oat", "44 81 eb", "rgb(68, 129, 235)_0");
-      ("studenttests/hex2rgb.oat", "44 81 EB", "rgb(68, 129, 235)_0");
-      ("studenttests/hex2rgb.oat", "12 34 56", "rgb(18, 52, 86)_0");
-      ("studenttests/hex2rgb.oat", "78 90 aB", "rgb(120, 144, 171)_0");
-      ("studenttests/hex2rgb.oat", "c6 f2 e8", "rgb(198, 242, 232)_0");
+      ("studenttests_old/hex2rgb.oat", "FF FF FF", "rgb(255, 255, 255)_0");
+      ("studenttests_old/hex2rgb.oat", "00 00 00", "rgb(0, 0, 0)_0");
+      ("studenttests_old/hex2rgb.oat", "44 81 eb", "rgb(68, 129, 235)_0");
+      ("studenttests_old/hex2rgb.oat", "44 81 EB", "rgb(68, 129, 235)_0");
+      ("studenttests_old/hex2rgb.oat", "12 34 56", "rgb(18, 52, 86)_0");
+      ("studenttests_old/hex2rgb.oat", "78 90 aB", "rgb(120, 144, 171)_0");
+      ("studenttests_old/hex2rgb.oat", "c6 f2 e8", "rgb(198, 242, 232)_0");
     ]);
   GradedTest("minimum distance pair", 0, executed_oat_file
-  [("studenttests/s_dist_pair.oat", "", "26")]);
+  [("studenttests_old/s_dist_pair.oat", "", "26")]);
   GradedTest("diffie hellman test", 0, executed_oat_file 
-  [ ("studenttests/diffie-hellman.oat", "", "0");]);
-  GradedTest("Cycles", 0, executed_oat_file [ ("studenttests/cycles.oat", "", "1") ]);
-  GradedTest("palindrome_sum", 0, executed_oat_file [ ("studenttests/palindrome.oat", "", "42")]);
+  [ ("studenttests_old/diffie-hellman.oat", "", "0");]);
+  GradedTest("Cycles", 0, executed_oat_file [ ("studenttests_old/cycles.oat", "", "1") ]);
+  GradedTest("palindrome_sum", 0, executed_oat_file [ ("studenttests_old/palindrome.oat", "", "42")]);
   GradedTest ("base64", 0,  executed_oat_file [
-  ("studenttests/base64.oat", "walrus", "d2FscnVz0");
-  ("studenttests/base64.oat", "florian", "Zmxvcmlhbg==0");
-  ("studenttests/base64.oat", "philippe", "cGhpbGlwcGU=0");
-  ("studenttests/base64.oat", "CompilerDesign", "Q29tcGlsZXJEZXNpZ24=0");
-  ("studenttests/base64.oat", "VIS", "VklT0");
-  ("studenttests/base64.oat", "VereinDerInformatikStudierenden", "VmVyZWluRGVySW5mb3JtYXRpa1N0dWRpZXJlbmRlbg==0");]);
+  ("studenttests_old/base64.oat", "walrus", "d2FscnVz0");
+  ("studenttests_old/base64.oat", "florian", "Zmxvcmlhbg==0");
+  ("studenttests_old/base64.oat", "philippe", "cGhpbGlwcGU=0");
+  ("studenttests_old/base64.oat", "CompilerDesign", "Q29tcGlsZXJEZXNpZ24=0");
+  ("studenttests_old/base64.oat", "VIS", "VklT0");
+  ("studenttests_old/base64.oat", "VereinDerInformatikStudierenden", "VmVyZWluRGVySW5mb3JtYXRpa1N0dWRpZXJlbmRlbg==0");]);
 ] 

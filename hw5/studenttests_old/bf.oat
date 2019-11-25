@@ -7,7 +7,7 @@ int run_bf(string s_code, string s_input, int data_size) {
 	var data_pointer = 0;
 	var input_pointer = 0;
 
-  var pLUS = 43;
+  	var pLUS = 43;
 	var mINUS = 45;
 	var lT = 60;
 	var gT = 62;
@@ -37,7 +37,7 @@ int run_bf(string s_code, string s_input, int data_size) {
 			data_pointer = data_pointer- 1;
 		}
 		else if (ins == dOT) {
-			var bb = new int[]{0};
+			var bb = new int[]{0}; 
 			if(data[data_pointer] == 0) {
 				print_string("ERROR: Tried to print a 0 bit\n");
 				return 1;
@@ -110,6 +110,4 @@ int program(int argc, string[] argv) {
 	var input = argv[argc-1];
 
 	return run_bf(code, input, 20000);
-	return 0;
 }
-
