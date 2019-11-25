@@ -20,6 +20,11 @@ let struct_test_ctxt = {
   ]
 }
 
+let context = { Tctxt.locals = [ ("x", TInt) ]
+              ; Tctxt.globals = [ ("x", TBool) ; ("y", TInt) ]
+              ; Tctxt.structs = []
+              }
+
 let struct_tctxt = {Tctxt.empty with structs = [("A", [{fieldName="f1"; ftyp=TInt}]); ("B", [{fieldName="f1"; ftyp=TInt}; {fieldName="f2"; ftyp=TBool}])]}
 
 let unit_tests = [
@@ -82,6 +87,18 @@ let unit_tests = [
   typecheck_error (fun () ->
        if Typechecker.typecheck_exp Tctxt.empty (no_loc (Bop (Neq, no_loc (CBool false), no_loc (CInt 42L)))) == TBool then ()
        else failwith "should not fail")  
+  );
+  ("Typ_Global_succeeds",
+    (fun () ->
+      if (Typechecker.typecheck_exp context (no_loc (Id "y")) == TInt)
+        then ()
+        else failwith "should not fail");
+  );
+  ("Typ_Global_fails",
+    (fun () ->
+      if (Typechecker.typecheck_exp context (no_loc (Id "x")) == TBool)
+        then failwith "should not succeed"
+        else ())
   )
 ]
 
