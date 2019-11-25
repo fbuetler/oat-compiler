@@ -1,0 +1,221 @@
+/* 15-930-902 Attila Hirschi */
+
+/*
+ *  Usage:
+ *  First argument is the brainfuck program, second argument is the standard input.
+ *  More arguments are ignored.
+ *  If nothing is printed to stdout, then the current memory value of the brainfuck
+ *  interpreter is returned; otherwise 0.
+ *  
+ *  Memory is circular and consists of 8 bit values.
+ *  Maximum 32 nested loops allowed.
+ *
+ *  IMPORTANT:
+ *  In the compilation chain, the arguments are put directly in a shell,
+ *  therefore the following conversation for brainfuck keywords are used here instead:
+ *  + -> p
+ *  - -> m
+ *  < -> l
+ *  > -> r
+ *  [ -> s
+ *  ] -> e
+ *  , -> i
+ *  . -> o
+ */
+
+
+/* Type-defs */
+struct Bfins {
+    int typ;
+    int val
+}
+
+struct Bfprog {
+    int[] mem;
+    int mem_length;
+    Bfins[] ins;
+    bool stdout_used
+}
+
+/* Constants */
+global mem_size = 512;
+global bfins_end = 0;
+global bfins_add = 1;
+global bfins_mem = 2;
+global bfins_loop_start = 4;
+global bfins_loop_end = 8;
+global bfins_stdin = 16;
+global bfins_stdout = 32;
+
+/* Global values */
+global keywords = int[] null;
+global input = int[] null;
+
+/* Functions */
+int[] map((int) -> int f, int[] list) {
+    var len = length(list);
+    for (var i = 0; i < len; i = i + 1;) {
+        list[i] = f(list[i]);
+    }
+    return list;
+}
+
+int keyword_to_ins_i(int v) {
+    var r = 0;
+    if?(int[] k = keywords) {
+        if (v == k[0]) {
+            r = bfins_add;
+        }
+        else if (v == k[1]) {
+            r = bfins_add [|] 64;
+        }
+        else if (v == k[2]) {
+            r = bfins_mem;
+        }
+        else if (v == k[3]) {
+            r = bfins_mem [|] 64;
+        }
+        else if (v == k[4]) {
+            r = bfins_loop_start;
+        }
+        else if (v == k[5]) {
+            r = bfins_loop_end;
+        }
+        else if (v == k[6]) {
+            r = bfins_stdin;
+        }
+        else if (v == k[7]) {
+            r = bfins_stdout;
+        }
+        else {
+            r = bfins_end;
+        }
+    }
+    else {
+        /* keywords = array_of_string("+-><[],."); */
+        keywords = array_of_string("pmrlseio");
+        r = keyword_to_ins_i(v);
+    }
+    return r;
+}
+
+Bfprog compile(string p) {
+    var p_arr = array_of_string(p);
+    p_arr = map(keyword_to_ins_i, p_arr);
+    
+    var len = length(p_arr);
+    var bf = new Bfins[len + 1]{i -> new Bfins {typ=0; val=0} };
+    var bf_i = -1;
+    var last_ins = 0;
+    var jump_buffer = new int[32]{i -> 0};
+    var jump_buffer_i = 0;
+
+    for (var i = 0; i < len; i = i + 1;) {
+        var ins = p_arr[i] [&] 63;
+        if ((last_ins != ins) | ((ins [&] 60) > 0)) {
+            bf_i = bf_i + 1;
+            last_ins = ins;
+        }
+        bf[bf_i].typ = ins;
+        if ((ins [&] 3) > 0) {
+            var inc = 1;
+            if (p_arr[i] >= 64) {
+                inc = -1;
+            }
+            bf[bf_i].val = bf[bf_i].val + inc;
+        }
+        else if (ins == bfins_loop_start) {
+            jump_buffer[jump_buffer_i] = bf_i;
+            jump_buffer_i = jump_buffer_i + 1;
+        }
+        else if (ins == bfins_loop_end) {
+            jump_buffer_i = jump_buffer_i - 1;
+            var tmp_i = jump_buffer[jump_buffer_i];
+            bf[bf_i].val = tmp_i;
+            bf[tmp_i].val = bf_i + 1;
+        }
+    }
+    return new Bfprog {ins=bf; mem_length=mem_size; mem=(new int[mem_size]{i -> 0}); stdout_used=false};
+}
+
+int interpret(Bfprog p) {
+    var mem_ptr = 0;
+    var ins_ptr = 0;
+    var stdout = new int[64]{i -> 0};
+    var stdout_i = 0;
+    var stdin_i = 0;
+
+    while (p.ins[ins_ptr].typ != 0) {
+        var ins = p.ins[ins_ptr].typ;
+        var val = p.ins[ins_ptr].val;
+        if (ins == bfins_add) {
+            p.mem[mem_ptr] = (p.mem[mem_ptr] + val) [&] 255;
+        }
+        else if (ins == bfins_mem) {
+            mem_ptr = (mem_ptr + val);
+            if (mem_ptr < 0) {
+                mem_ptr = mem_ptr + p.mem_length;
+            }
+            else if (mem_ptr >= p.mem_length) {
+                mem_ptr = mem_ptr - p.mem_length;
+            }
+        }
+        else if (ins == bfins_loop_start) {
+            if (p.mem[mem_ptr] == 0) {
+                ins_ptr = val - 1;
+            }
+        }
+        else if (ins == bfins_loop_end) {
+            ins_ptr = val - 1;
+        }
+        else if (ins == bfins_stdin) {
+            if? (int[] in = input) {
+                if (stdin_i < length(in)) {
+                    p.mem[mem_ptr] = in[stdin_i];
+                    stdin_i = stdin_i + 1;
+                }
+                else {
+                    print_string("Err: stdin exhausted.");
+                    return 1;
+                }
+            }
+            else {
+                print_string("Err: stdin empty.");
+                return 1;
+            }
+        }
+        else {
+            p.stdout_used = true;
+            stdout[stdout_i] = p.mem[mem_ptr];
+            stdout_i = stdout_i + 1;
+            if (stdout_i >= 64) {
+                print_string(string_of_array(stdout));
+                stdout_i = 0;
+            }
+        }
+        ins_ptr = ins_ptr + 1;
+    }
+
+    if (p.stdout_used) {
+        if (stdout_i > 0) {
+            print_string(string_of_array(new int[stdout_i]{i -> stdout[i]}));
+        }
+        return 0;
+    }
+    else {
+        return p.mem[mem_ptr];
+    }
+}
+
+int program (int argc, string[] argv) {
+    if (argc <= 1) {
+        print_string("Err: No Args");
+        return 1;
+    }
+    if (argc > 2) {
+        input = array_of_string(argv[2]);
+    }
+    
+    var program = compile(argv[1]);
+    return interpret(program);
+}

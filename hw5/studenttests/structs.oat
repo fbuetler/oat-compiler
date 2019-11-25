@@ -1,0 +1,67 @@
+/* Roy Schubiger */
+/* Diana Steffen */
+
+struct Rectangle {
+       int len;
+       int width;
+       int color
+    }
+
+Rectangle overlap(Rectangle r1, Rectangle r2){
+    var l = absDiff(r1.len, r2.len);
+    var w = absDiff(r1.width, r2.width);
+    var c = mod(r1.color + r2.color, 5);
+    var out_r = new Rectangle {len = l; width = w; color = c};
+    return out_r;
+}
+
+int getColor(int i){
+    var color_identifier = new int[5]{j -> 100 * j};
+    print_int(color_identifier[i]);
+    return 1;
+}
+
+int test(){
+    
+    var rect1 = new Rectangle { len = 9;  width = 2;  color = 3};
+    var rect2 = new Rectangle { len = 2;  width = 3;  color = 1};
+    var rect3 = new Rectangle { len = 25; width = 32; color = 0};
+    var rect4 = new Rectangle { len = 6;  width = 60; color = 5};
+
+    var overlap1 = overlap(rect1, rect2);
+    var overlap2 = overlap(rect3, rect4);
+    var final_overlap = overlap(overlap1, overlap2);
+
+    var final_area = final_overlap.len * final_overlap.width;
+
+    if(final_area == 324){
+        var color_number = final_overlap.color;
+        var res = getColor(color_number);
+        return res;
+    }
+    else {
+        return 0;
+    }
+
+}
+
+int absDiff(int i, int j){
+    if(i>j){
+        return (i-j);
+    }
+    else {return (j-i);}
+}
+
+int mod(int i, int m) {
+    if (i >= m) {
+        return mod( (i-m), m);
+    } else {
+        return i;
+    }
+}
+
+
+int program(int argc, string[] argv) {
+    var res = test();
+    return 0;
+}

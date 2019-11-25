@@ -1,0 +1,65 @@
+/* Aurel Feer */
+struct Node {
+	Node? nxt;
+	int val
+}
+
+struct LinkedList {
+	Node? head;
+	Node? last;
+	int len
+}
+
+void ll_append(Node to_app, LinkedList l) {
+	if? (Node last = l.last) {
+		last.nxt = to_app;
+		l.last = to_app;
+	} else {
+		l.head = to_app;
+		l.last = to_app;
+	}
+	l.len = l.len + 1;
+	return;
+}
+
+void ll_prepend(Node to_pre, LinkedList l) {
+	if? (Node head = l.head) {
+		to_pre.nxt = head;
+		l.head = to_pre;
+	} else {
+		l.head = to_pre;
+		l.last = to_pre;
+	}
+	l.len = l.len + 1;
+	return;
+}
+
+Node? ll_get(int n, LinkedList l) {
+	if? (Node tmp = l.head) {
+		var cur = l.head;
+		var i = 0;
+		while (i < n) {
+			i = i + 1;
+			cur = cur.nxt;
+		}
+		return cur;
+	} else {
+		return Node null;
+	}
+}
+
+int program(int argc, string[] argv) {
+	var lst = new LinkedList {
+		head=Node null;
+		last=Node null;
+		len=0
+	};
+
+	ll_append(new Node {nxt=Node null; val=0}, lst);
+	ll_append(new Node {nxt=Node null; val=1}, lst);
+	ll_prepend(new Node {nxt=Node null; val=4}, lst);
+	ll_append(new Node {nxt=Node null; val=5}, lst);
+
+	var second = ll_get(1, lst);
+	return second.val;
+}

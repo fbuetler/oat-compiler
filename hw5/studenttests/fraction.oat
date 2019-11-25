@@ -1,0 +1,96 @@
+struct Fraction {
+    bool sign;
+    int numerator;
+    int denominator
+}
+
+struct Calculator {
+    (Fraction, Fraction)-> Fraction add;
+    (Fraction, Fraction)-> Fraction mul;
+    (Fraction, Fraction)-> Fraction div;
+    (Fraction, Fraction)-> Fraction sub;
+    (Fraction)-> Fraction inv
+}
+
+
+int gcd(Fraction a) {
+  if (a.numerator==a.denominator){
+    return a.numerator;
+  }
+  if (a.numerator>a.denominator){
+    return gcd(new Fraction{sign=false; numerator=a.numerator-a.denominator; denominator=a.denominator});
+  }
+  return gcd(new Fraction{sign=false; numerator=a.numerator; denominator=a.denominator-a.numerator});
+}
+
+int divbydivisor(int a, int b) { /* c=a/b where b divides a*/
+  if (b>1) { /* make it a bit faster */
+    for (var i = 1; i<a; i=i+1;) {
+        if ((i*b)==a) {
+            return i;
+        }
+    }
+  }
+  return a;
+}
+
+Fraction simplediv(Fraction a, int d) {
+    var b=divbydivisor(a.numerator,d);
+    var c=divbydivisor(a.denominator,d);
+    return new Fraction {sign = a.sign; numerator=b; denominator =c};
+}
+
+Fraction simplify(Fraction a) {
+    if (a.numerator<0) {
+        a.sign= !(a.sign);
+        a.numerator=a.numerator*(-1);
+    }    
+    if (a.denominator<0) {
+        a.sign= !(a.sign);
+        a.denominator=a.denominator*(-1);
+    }
+    var g=gcd(a);
+    return simplediv(a,g);
+}
+
+Fraction c_add(Fraction a, Fraction b) {
+    if (a.sign & b.sign) {
+        return simplify(new Fraction {sign=true; numerator=a.numerator*b.denominator+b.numerator*a.denominator; denominator=a.denominator*b.denominator});
+    }    
+    if ((!(a.sign)) & !(b.sign)) {
+        return simplify(new Fraction {sign=false; numerator=a.numerator*b.denominator+b.numerator*a.denominator; denominator=a.denominator*b.denominator});
+    }    
+    if ((!(a.sign)) & b.sign) {
+        return simplify(new Fraction {sign=false; numerator=a.numerator*b.denominator-b.numerator*a.denominator; denominator=a.denominator*b.denominator});
+    }    
+    return simplify(new Fraction {sign=false; numerator=b.numerator*a.denominator-a.numerator*b.denominator; denominator=a.denominator*b.denominator});
+}
+
+Fraction c_sub(Fraction a, Fraction b) {
+    return c_add(a, new Fraction {sign=!(b.sign); numerator=b.numerator; denominator=b.denominator});
+}
+
+Fraction c_mul(Fraction a, Fraction b) {
+    if ((a.sign & b.sign) | (!(a.sign) & !(b.sign))) {
+        return simplify(new Fraction {sign=false; numerator=a.numerator*b.numerator; denominator=a.denominator*b.denominator});
+    }
+    return simplify(new Fraction {sign=true; numerator=a.numerator*b.numerator; denominator=a.denominator*b.denominator});
+}
+
+Fraction c_inv(Fraction a) {
+    return new Fraction {sign=a.sign; numerator=a.denominator; denominator=a.numerator};
+}
+
+Fraction c_div(Fraction a, Fraction b) {
+    return c_mul(a,c_inv(b));
+}
+
+int program (int argc, string[] argv) {
+    var calculator = new Calculator {add=c_add; sub=c_sub; mul=c_mul; div=c_div; inv=c_inv};
+    var frac1 = new Fraction {sign=false; numerator=5; denominator=1};
+    var frac2 = new Fraction {sign=true; numerator=3; denominator=3};
+    var frac3 = new Fraction {sign=false; numerator=21; denominator=8};
+    var frac4 = new Fraction {sign=false; numerator=1; denominator=4}; 
+    var result = calculator.div(calculator.mul(calculator.add(frac1,frac2),frac3),frac4); 
+    return result.numerator; 
+}

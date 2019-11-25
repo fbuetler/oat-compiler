@@ -1,0 +1,32 @@
+/* 16-916-421, Stefan Zemljic */
+
+struct ArrWrap {
+  int[]? arr
+}
+
+global arr = int[] null;
+
+int fold_left(int[]? n_array, (int, int) -> int fold, int init) {
+  if?(int[] array = n_array) {
+    var len = length(array);
+    var prev = init;
+    for (var index = 0; index < len; index = index + 1;) {
+      prev = fold(prev, array[index]);
+    }
+    return prev;
+  }
+  return init;
+}
+
+int sum(int a, int b) {
+  return a + b;
+}
+
+int program (int argc, string[] argv) {
+  arr = new int[20]{i -> i};
+  var wrap = new ArrWrap {
+    arr = arr
+  };
+  var array = wrap.arr;
+  return fold_left(array, sum, 10);
+}
