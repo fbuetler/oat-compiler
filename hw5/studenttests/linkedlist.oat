@@ -48,6 +48,23 @@ Node? ll_get(int n, LinkedList l) {
 	}
 }
 
+void print_list(LinkedList l){
+	print_string("list\n");
+	if? (Node tmp = l.head){
+		var curr = l.head;
+		var i = 0;
+		while (i<l.len){
+			print_int(curr.val);
+			print_string("\n");
+			i = i+1;
+			curr = curr.nxt;
+		}
+		return;
+	} else {
+		return;
+	}
+}
+
 int program(int argc, string[] argv) {
 	var lst = new LinkedList {
 		head=Node null;
@@ -60,6 +77,10 @@ int program(int argc, string[] argv) {
 	ll_prepend(new Node {nxt=Node null; val=4}, lst);
 	ll_append(new Node {nxt=Node null; val=5}, lst);
 
+	/* print_list(lst); */
+
 	var second = ll_get(1, lst);
+	/* print_string("res\n");
+	print_int(second.val); */
 	return second.val;
 }
