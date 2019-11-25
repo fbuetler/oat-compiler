@@ -233,6 +233,7 @@ let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
     | Proj (exp, field_name) -> 
       let struct_name = begin match typecheck_exp c exp with
         | TRef (RStruct x) -> x
+        | TNullRef (RStruct x) -> x
         | ty -> type_error exp @@
           Printf.sprintf "expected struct, but got %s" @@ string_of_ty ty
       end in 
