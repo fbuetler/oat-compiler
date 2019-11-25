@@ -40,7 +40,7 @@ Node? ll_get(int n, LinkedList l) {
 		var i = 0;
 		while (i < n) {
 			i = i + 1;
-			cur = cur.nxt;
+			cur = cur.nxt; /* TODO: [43, 9] expected struct, but got (Node)? */
 		}
 		return cur;
 	} else {

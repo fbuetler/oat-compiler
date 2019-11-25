@@ -96,7 +96,7 @@ let provided_tests : suite = [
   Test("Others: another_su.oat", executed_oat_file [("studenttests/another_sum.oat", "", "200")]); 
   (* Test ("Others: Performance Comparison", [("studenttests/manually", assert_eq true false)]);  *) (* TODO the fuck ? *)
   Test("Others: Moodle Fraction Test", executed_oat_file [("studenttests/fraction.oat", "", "42")]);
-  Test("Others: linked list tests", Gradedtests.executed_oat_file [("studenttests/linkedlist.oat", "", "4")]);
+  Test("Others: linked list tests", executed_oat_file [("studenttests/linkedlist.oat", "", "4")]);
   Test("Others: SP: brainfuck tests", executed_oat_file brainfuck_tests);
-  Test("Others: Struct Student Test", executed_oat_file [("studenttests/linkedlist.oat", "", "4")]);
+  Test("Others: Struct Student Test", executed_oat_file [("studenttests/structs.oat", "", "4000")]);
 ] 
