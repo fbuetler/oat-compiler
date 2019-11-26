@@ -39,7 +39,7 @@ int dequeue(Queue q) {
     q.front = front.next;
 
     /* if list is empty now, change back to NULL too */
-    if?(Node  = q.front) {} else {
+    if?(Node tmp = q.front) {} else {
       q.back = Node null;
     }
 
