@@ -1,0 +1,63 @@
+/* 15-935-828 Jonathan Ehrat */
+/* 15-915-614 Jonas Passweg */
+
+struct Position {
+    int x;
+    int y
+}
+
+Position get_initial_position() {
+    return new Position {x = 0; y = 0};
+}
+
+Position move(Grid g, (Position) -> Position f, Position pos) {
+    var newpos = f(pos);
+    if(newpos.x < 0 | newpos.x >= g.width) {
+        return pos;
+    }
+    if(newpos.y < 0 | newpos.y >= g.height) {
+        return pos;
+    }
+    return f(pos);
+}
+
+Position move_right(Position pos) {
+    return new Position {x = pos.x + 1; y = pos.y};
+}
+
+Position move_left(Position pos) {
+    return new Position {x = pos.x - 1; y = pos.y};
+}
+
+struct Grid {
+    int height;
+    int width;
+    Position? treasure
+}
+
+Grid add_treasure(Grid g, Position pos) {
+    g.treasure = pos;
+    return g;
+}
+
+bool is_treasure_not_here(Grid g, Position pos) {
+    if?(Position tres = g.treasure) {
+        if(tres.x == pos.x & tres.y == pos.y) {
+            return false;
+        }
+    }
+    return true;
+}
+
+int program (int argc, string[] argv) {
+  var trespos = new Position {x = 120; y = 0};
+  var mygrid = new Grid {width = 500; height = 4; treasure = Position null};
+  mygrid = add_treasure(mygrid, trespos);
+  var myposition = get_initial_position();
+
+  while(is_treasure_not_here(mygrid, myposition)) {
+      myposition = move(mygrid, move_right, myposition);
+  }
+
+  return myposition.x;
+}

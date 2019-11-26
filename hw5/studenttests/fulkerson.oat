@@ -1,0 +1,138 @@
+/* Gabriel Niklaus Fringeli */
+/* Nico Darryl Haenggi */
+
+global n_vertices = 8;
+
+struct Queue {
+  Node? front;
+  Node? back
+}
+
+struct Node {
+  int value;
+  Node? next
+}
+
+Queue createQueue() {
+  return new Queue { front = Node null; back = Node null };
+}
+
+void enqueue(Queue q, int value) {
+  var temp = new Node { value = value; next = Node null };
+
+  /* check if queue is empty */
+  if?(Node back = q.back) {
+    back.next = temp;
+    q.back = temp;
+  } else {
+    q.front = temp;
+    q.back = temp;
+  }
+
+  return;
+}
+
+int dequeue(Queue q) {
+  /* return NULL if queue empty */
+  if?(Node front = q.front) {
+    /* remove element from front */
+    q.front = front.next;
+
+    /* if list is empty now, change back to NULL too */
+    if?(Node  = q.front) {} else {
+      q.back = Node null;
+    }
+
+    return front.value;
+  } else {
+    return -1;
+  }
+}
+
+bool empty(Queue q) {
+  if?(Node front = q.front) {
+    return false;
+  } else {
+    return true;
+  }
+}
+
+bool bfs(int[][] residual, int from, int to, int[] parent) {
+  /* create a new array and set visited to false */
+  var visited = new bool[n_vertices]{ i -> false };
+
+  /* create new queue */
+  var queue = createQueue();
+
+  /* enqueue the source vertex initialize values */
+  enqueue(queue, from);
+  visited[from] = true;
+  parent[from] = -1;
+
+  /* breadth-first search loop */
+  while (!empty(queue)) {
+    /* remove the first value from the queue */
+    var v = dequeue(queue);
+
+    for (var u = 0; u < n_vertices; u = u + 1;) {
+      if (!visited[u] & residual[v][u] > 0) {
+        /* enqueue vertex */
+        enqueue(queue, u);
+        parent[u] = v;
+        visited[u] = true;
+      }
+    }
+  }
+
+  /* if we ever reach the sink 'to', we know that there is still a traversal in the residual graph */
+  return visited[to];
+}
+
+int fulkerson((int[][], int, int, int[]) -> bool search, int[][] graph, int from, int to) {
+  /* build residual graph */
+  var residual = new int[][n_vertices]{ i -> new int[n_vertices]{ j -> graph[i][j]} };
+  
+  /* init variables for the augmenting paths loop */
+  var parent = new int[n_vertices]{ i -> 0 };
+  var max_flow = 0;
+
+  /* find augmenting paths in the residual graph */
+  while(search(residual, from, to, parent)) {
+    /* find maximum flow */
+    var curr_flow = 2147483647;
+    for (var v = to; v != from; v = parent[v];) {
+      var new_flow = residual[parent[v]][v];
+      /* only set if new flow is smaller */
+      if (new_flow < curr_flow) {
+        curr_flow = new_flow;
+      }
+    }
+
+    /* update residual capacities */
+    for (var v = to; v != from; v = parent[v];) {
+      var u = parent[v];
+      residual[u][v] = residual[u][v] - curr_flow;
+      residual[v][u] = residual[v][u] + curr_flow;
+    }
+
+    /* increase maximum flow */
+    max_flow = max_flow + curr_flow;
+  }
+
+  return max_flow;
+}
+
+int program(int argc, string[] argv) {
+  /* define graph to run ford fulkerson on */
+  var graph = new int[][]{new int[]{0, 25, 12, 0, 0, 0, 0, 0},
+                           new int[]{0, 0, 17, 0, 0, 0, 10, 0},
+                           new int[]{0, 0, 0, 9, 13, 2, 28, 0},
+                           new int[]{23, 0, 0, 0, 29, 0, 0, 0},
+                           new int[]{0, 0, 0, 0, 0, 19, 0, 5},
+                           new int[]{0, 0, 0, 0, 8, 0, 34, 0},
+                           new int[]{0, 0, 15, 0, 0, 0, 0, 65},
+                           new int[]{0, 0, 0, 0, 0, 0, 0, 0}};
+
+  /* run fulkerson to calculate maximum flow */
+  return fulkerson(bfs, graph, 0, n_vertices-1);
+}

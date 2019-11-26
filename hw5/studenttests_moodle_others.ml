@@ -25,7 +25,20 @@ let context = { Tctxt.locals = [ ("x", TInt) ]
               ; Tctxt.structs = []
               }
 
+let e1 = CArr(TInt, [no_loc @@ CInt 64L; no_loc @@ CInt (-12L); no_loc @@ CInt 48L])
+let e2 = CArr(TInt, [no_loc @@ CInt (-128L); no_loc @@ CBool false])
+
 let struct_tctxt = {Tctxt.empty with structs = [("A", [{fieldName="f1"; ftyp=TInt}]); ("B", [{fieldName="f1"; ftyp=TInt}; {fieldName="f2"; ftyp=TBool}])]}
+
+let s1 = "s1", [{fieldName="a";ftyp=TNullRef(RString)};{fieldName="b";ftyp=TInt}]
+let s2 = "s2", [{fieldName="a";ftyp=TNullRef(RString)}]
+let s3 = "s3", [{fieldName="a";ftyp=TRef(RString)}]
+
+let ourcontext : Tctxt.t = {
+  locals = [];
+  globals = [];
+  structs = [s1;s2;s3];
+}
 
 let unit_tests = [
   ("subtype_string_array_nullable_string_array",
@@ -99,7 +112,30 @@ let unit_tests = [
       if (Typechecker.typecheck_exp context (no_loc (Id "x")) == TBool)
         then failwith "should not succeed"
         else ())
-  )
+  );
+  ("TYP_CARR_succeeds", (fun () ->
+    match Typechecker.typecheck_exp Tctxt.empty @@ no_loc e1 with
+      | TRef (RArray TInt) -> ()
+      | _ -> failwith "should not fail")
+  ); 
+  ("TYP_CARR_fails",
+  Gradedtests.typecheck_error (fun () ->
+    match Typechecker.typecheck_exp Tctxt.empty @@ no_loc e2 with
+      | TRef (RArray TInt) -> failwith "should not succeed"
+      | _ -> ())
+  );
+  ("subtype_struct_width",
+   (fun () ->
+      if Typechecker.subtype ourcontext (TRef (RStruct "s1")) (TRef (RStruct "s2"))
+      then ()
+      else failwith "should not fail")
+   );
+  ("no_subtype_struct_depth",
+   (fun () ->
+      if Typechecker.subtype ourcontext (TRef (RStruct "s3")) (TRef (RStruct "s2"))
+      then failwith "should not succeed" 
+      else ())
+  );
 ]
 
 let brainfuck_tests = [
@@ -116,4 +152,6 @@ let provided_tests : suite = [
   Test("Others: linked list tests", executed_oat_file [("studenttests/linkedlist.oat", "", "0")]); (* TODO discuss *)
   Test("Others: SP: brainfuck tests", executed_oat_file brainfuck_tests);
   Test("Others: Struct Student Test", executed_oat_file [("studenttests/structs.oat", "", "4000")]);
+  Test("Others: Fulkerson Test", executed_oat_file [("studenttests/fulkerson.oat", "", "37")]);
+  Test("Others: hard test", executed_oat_file [("studenttests/game.oat", "", "120")]);
 ] 
