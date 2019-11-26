@@ -155,8 +155,8 @@ let provided_tests : suite = [
     GradedTest("Merge Sort", 0, executed_oat_file 
     [ ("studenttests_old/merge_sort.oat", "", "lkdfjkwegkljdfhljwegrnkljsvfw+.a+.addeefffgghjjjjkkkkllllnrsvwww255")]);
     GradedTest("Regex", 0, executed_oat_file [ ("studenttests_old/regex.oat", "", "fffffttttt0"); ]);
-    GradedTest("BF", 0, executed_oat_file 
-    [ ("studenttests_old/bf.oat", bf_sum_program ^ " '" ^(String.make 1 ('\100') ) ^ "'", "BF return value: 50500")]);
+    (* GradedTest("BF", 0, executed_oat_file 
+    [ ("studenttests_old/bf.oat", bf_sum_program ^ " '" ^(String.make 1 ('\100') ) ^ "'", "BF return value: 50500")]); *) (* TODO discuss *)
     GradedTest("Ackermann", 0, executed_oat_file [ ("studenttests_old/ackermann.oat", "", "125")]);
     GradedTest("Insertion Sort", 0, executed_oat_file
     [ ("studenttests_old/insertion_sort.oat", "", "y}xotnuwnotuwxy}255")]);
