@@ -1,0 +1,121 @@
+/* Shime Henry */
+/* Till Arnold */
+
+/*
+ * helper function that returns the string `s` if it is not null
+ * and the string `otherwise` otherwise
+ */
+string or_else(string? s, string otherwise) {
+	if? (string x = s) {
+		return x;
+	}
+	else {
+		return otherwise;
+	}
+}
+
+/*
+ * An ordered list of strings data structure like the c++ vector or the java ArrayList
+ */
+struct Vector {
+  int len;
+  string[] data
+}
+
+
+/*
+ * Allocate a new vector with capacity cap
+ */
+Vector new_vector_with_capacity(int cap) {
+	return new Vector {
+		len = 0;
+		data = new string[cap] {j -> ""}
+	};
+}
+
+/*
+ * Allocate a new vector with default capacity
+ */
+Vector new_vector() {
+	return new_vector_with_capacity(2);
+}
+
+/*
+ * Get the capacity of the vector
+ */
+int capacity(Vector v) {
+	return length(v.data);
+}
+
+/*
+ * Add the element to the vector
+ * this reallocates the underlying array if necessary
+ */
+void push(Vector v, string el) {
+	if(v.len == capacity(v)) {
+			v.data = new string[capacity(v) * 2] {j -> or_else(get(v, j), "") };
+	}
+	v.data[v.len] = el;
+	v.len = v.len +1;
+	return;
+}
+
+
+/* 
+ * returns the string at the given position in the vector
+ * or null if the index is out of bounds
+ */
+string? get(Vector v, int index) {
+	if( index < 0 | index >= v.len ) {
+		return string null;
+	}
+
+	return v.data[index];
+}
+
+/*
+ * Join the vector elements with the given separator into a string
+ */
+string join(Vector v, string j) {
+	var s = or_else(get(v, 0), "");
+
+	for(var i = 1; i < v.len; i = i + 1;) {
+		s = string_cat(s, j);
+		s = string_cat(s, v.data[i]);
+	}
+
+	return s;
+}
+
+
+/*
+ * apply the function fn to all elements of the vector in a map operation
+ */ 
+void map(Vector v, (string) -> string fn) {
+	
+	for(var i = 0; i < v.len; i = i + 1;) {
+		v.data[i] = fn(v.data[i]);
+	}
+	
+	return;
+}
+
+
+
+string length_as_string(string s) {
+	return string_of_int(length_of_string(s));
+}
+
+int program(int argc, string[] argv) {
+
+	var x = new_vector();
+	for(var i = 1; i< argc; i= i + 1;) {
+		push(x, argv[i]);
+	}
+
+	map(x, length_as_string);
+	print_string(join(x, ", "));
+	return 0;
+} 
+
+

@@ -146,6 +146,42 @@ let unit_tests = [
        if Typechecker.subtype Tctxt.empty (TRef (RArray TInt)) (TRef (RArray TBool)) then
          failwith "should not succeed" else ())
   );
+  ("Subtype_ref_on_arrays_pass", (fun () -> 
+    if Typechecker.subtype_ref Tctxt.empty (RArray (TInt)) (RArray (TInt)) 
+    then () else failwith "should not fail")
+  );
+  ("Subtype_ref_on_arrays_fail", (fun () -> 
+    if Typechecker.subtype_ref Tctxt.empty (RArray (TInt)) (RArray (TBool)) 
+    then failwith "Should not succed" else () )
+  ); 
+  ("typ_bop_succ",
+   (fun () ->
+     if Ast.TInt == Typechecker.typecheck_exp Tctxt.empty
+     (Ast.no_loc (Ast.Bop (Ast.Add, Ast.no_loc(Ast.CInt 0L), Ast.no_loc (Ast.CInt 0L))))
+     then () else failwith "should not fail")
+  ); 
+  ("typ_bop_fail",
+   (fun () ->
+     try if Ast.TInt == Typechecker.typecheck_exp Tctxt.empty
+     (Ast.no_loc (Ast.Bop (Ast.Add, Ast.no_loc(Ast.CInt 0L), Ast.no_loc (Ast.CBool true))))
+     then failwith "should not succeed"
+     else failwith "should not succeed"
+     with type_error -> ())
+  );
+  ("lenght_of_array_typecheck",
+   Gradedtests.typecheck_correct(fun () ->
+			 let inner_arr : Ast.exp = Ast.CArr (Ast.TInt, [Ast.no_loc (Ast.CInt 12L); Ast.no_loc (Ast.CInt 13L)] ) in
+			 let exp : Ast.exp Ast.node = Ast.no_loc (Ast.Length (Ast.no_loc inner_arr))  in
+			 if Typechecker.typecheck_exp Tctxt.empty exp != Ast.TInt then failwith "incorrect type for length"
+			)
+  ); 
+  ("length_of_bool_no_typecheck",
+   Gradedtests.typecheck_error (fun () ->
+			 let exp : Ast.exp Ast.node = Ast.no_loc (Ast.Length (Ast.no_loc (Ast.CBool true)))  in
+			 let _ = Typechecker.typecheck_exp Tctxt.empty exp in
+			 ()
+      )
+  );
 ]
 
 let brainfuck_tests = [
@@ -165,4 +201,7 @@ let provided_tests : suite = [
   Test("Others: Fulkerson Test", executed_oat_file [("studenttests/fulkerson.oat", "", "37")]); (* TODO discuss *)
   Test("Others: hard test", executed_oat_file [("studenttests/game.oat", "", "120")]);
   Test("Others: Inverted-Index-Boolean-Query",executed_oat_file [("studenttests/inv_index.oat", "","12354")]);
+  Test("Others: Directed DFS Test", executed_oat_file [("studenttests/directed_dfs.oat", "", "79")]);
+  (* Test("Others: Tree", executed_oat_file [("studenttests/tree.oat", "", "13")]); *) (* TODO accroding to their post this will follow *)
+	Test("Student Provided vector test", executed_oat_file [("studenttests/vector.oat", "hello oat test00000 test t", "5, 3, 9, 4, 10")]);
 ] 

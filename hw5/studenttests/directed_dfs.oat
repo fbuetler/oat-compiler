@@ -1,0 +1,126 @@
+/* Shengyu Huang */ 
+/* Silvan Renggli */
+
+
+
+/* DFS for the value of a key in a Graph with directed edges */
+
+/* The struct for a node in the graph with it's key and value fields and a LinkedList with all the edges to other nodes*/
+struct Node {
+  int value;
+  int key;
+  bool visited;
+  LinkedList? edgesTo  
+}
+
+/* A linked list of nodes */
+struct LinkedList {
+  Node val;
+  LinkedList? next
+}
+
+/* add a new node to the end of the linked list*/
+void addToList (LinkedList list, Node node){
+  var hasNext = true;
+  while (hasNext){
+    hasNext = false;
+    if?(LinkedList l = list.next){
+      hasNext = true;
+      list = l;
+    }
+  }
+  list.next = new LinkedList { val = node; next = LinkedList null};
+  return;
+}
+
+/* recursive dfs traversal of the graph, which stops when either the key was found and returns the corresponding value or returns -1 otherwise */
+int dfs (int key, Node node){
+  node.visited = true;
+  var k = node.key;
+  if( k == key ) { /* return value if the key was found */
+    return node.value;
+  }
+  
+  if?(LinkedList neighbours = node.edgesTo){
+ 
+      /* If the nodes has neighbours traverse them */
+      var unvisitedNeighbours = true;
+      while (unvisitedNeighbours){
+        var neighbour = neighbours.val;
+        if(!(neighbour.visited)){
+          var res = dfs (key, neighbour);
+          if(res != 0){ 
+            return res; 
+          }
+        }  
+        unvisitedNeighbours = false;
+        if?(LinkedList l = neighbours.next){
+           unvisitedNeighbours = true;
+           neighbours = l;
+        }
+      }
+    } 
+  return 0;
+}
+
+int program(int argc, string[] argv){
+  /* create nodes */
+  var n0 = new Node{value = 20; key = 0; visited = false; edgesTo = LinkedList null};
+  var n1 = new Node{value = 21; key = 1; visited = false; edgesTo = LinkedList null};
+  var n2 = new Node{value = 22; key = 2; visited = false; edgesTo = LinkedList null};
+  var n3 = new Node{value = 23; key = 3; visited = false; edgesTo = LinkedList null};
+  var n4 = new Node{value = 37; key = 4; visited = false; edgesTo = LinkedList null};
+  var n5 = new Node{value = 25; key = 5; visited = false; edgesTo = LinkedList null};
+  var n6 = new Node{value = 26; key = 6; visited = false; edgesTo = LinkedList null};
+  var n7 = new Node{value = 42; key = 7; visited = false; edgesTo = LinkedList null};
+  var n8 = new Node{value = 28; key = 8; visited = false; edgesTo = LinkedList null};
+  
+  /* create linked lists for edges */
+  var e0 = new LinkedList {val = n1; next = LinkedList null};
+  var e1 = new LinkedList {val = n2; next = LinkedList null};
+  var e2 = new LinkedList {val = n3; next = LinkedList null};
+  addToList (e2, n4);
+  addToList (e2, n6);
+  var e3 = new LinkedList {val = n4; next = LinkedList null};
+  var e4 = new LinkedList {val = n5; next = LinkedList null};
+  var e6 = new LinkedList {val = n7; next = LinkedList null};
+  addToList (e6, n8);
+  
+  /* add linked lists to nodes*/
+  n0.edgesTo = e0;
+  n1.edgesTo = e1;
+  n2.edgesTo = e2;
+  n3.edgesTo = e3;
+  n4.edgesTo = e4;
+  n6.edgesTo = e6;
+  
+  var res1 = dfs (7, n0); /* finds value 42 */
+  
+  /* set all nodes to not visited */
+  n0.visited = false;
+  n1.visited = false;
+  n2.visited = false;
+  n3.visited = false;
+  n4.visited = false;
+  n5.visited = false;
+  n6.visited = false;
+  n7.visited = false;
+  n8.visited = false;
+
+  var res2 = dfs (4, n0); /* finds value 37 */
+
+  /* set all nodes to not visited */
+  n0.visited = false;
+  n1.visited = false;
+  n2.visited = false;
+  n3.visited = false;
+  n4.visited = false;
+  n5.visited = false;
+  n6.visited = false;
+  n7.visited = false;
+  n8.visited = false;
+  var res3 = dfs (12, n0); /* finds no value => 0 */
+  var res = (res1 + res2) + res3; /* res = 79 */
+  return res; 
+ 
+}
