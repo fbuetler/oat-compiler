@@ -355,10 +355,10 @@ let provided_tests : suite = [
   Test("Others: another_su.oat", executed_oat_file [("studenttests/another_sum.oat", "", "200")]); 
   (* Test ("Others: Performance Comparison", [("studenttests/manually", assert_eq true false)]);  *) (* TODO the fuck ? *)
   Test("Others: Moodle Fraction Test", executed_oat_file [("studenttests/fraction.oat", "", "42")]);
-  Test("Others: linked list tests", executed_oat_file [("studenttests/linkedlist.oat", "", "0")]); (* TODO discuss *)
+  Test("Others: linked list tests", executed_oat_file [("studenttests/linkedlist.oat", "", "0")]); (* TODO discuss: wrong result ? https://gitlab.ethz.ch/flbuetle/compiler-design/commit/c42a0129556f6172dc48b993471a4c3eb18bf537 *)
   Test("Others: SP: brainfuck tests", executed_oat_file brainfuck_tests);
   Test("Others: Struct Student Test", executed_oat_file [("studenttests/structs.oat", "", "4000")]);
-  Test("Others: Fulkerson Test", executed_oat_file [("studenttests/fulkerson.oat", "", "37")]); (* TODO discuss *)
+  Test("Others: Fulkerson Test", executed_oat_file [("studenttests/fulkerson.oat", "", "37")]); (* TODO discuss: variable redeclaration https://gitlab.ethz.ch/flbuetle/compiler-design/commit/6cbeed4da92d08339f0b7e2d56c71dc87174b614 *)
   Test("Others: hard test", executed_oat_file [("studenttests/game.oat", "", "120")]);
   Test("Others: Inverted-Index-Boolean-Query",executed_oat_file [("studenttests/inv_index.oat", "","12354")]);
   Test("Others: Directed DFS Test", executed_oat_file [("studenttests/directed_dfs.oat", "", "79")]);
