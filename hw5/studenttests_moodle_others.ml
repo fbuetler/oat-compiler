@@ -213,6 +213,70 @@ let unit_tests = [
       with Typechecker.TypeError s -> ()
     )
   );
+  ("subtype_func_ret",
+   (fun () ->
+       if Typechecker.subtype Tctxt.empty (TRef (RFun ([], RetVoid))) (TRef (RFun ([], RetVoid))) then ()
+       else failwith "should not fail")                                                                                     
+  ); 
+  ("no_subtype_func_ret",
+   (fun () ->
+       if Typechecker.subtype Tctxt.empty (TRef (RFun ([], RetVal (TNullRef RString)))) (TRef (RFun ([], RetVoid))) then
+         failwith "should not succeed" else ())
+  );
+  ("typecheck fdecl 1", typecheck_correct
+   (fun () -> 
+       Typechecker.typecheck_fdecl Tctxt.empty { frtyp = RetVal TInt
+                                               ; fname = "f"
+                                               ; args = []
+                                               ; body = [ no_loc (Decl ("a", no_loc (CInt 42L)))
+                                                        ; no_loc (Ret (Some (no_loc (Id "a"))))
+                                                        ]
+                                               } (no_loc "")
+       )
+  ); 
+  ("typecheck fdecl 2", typecheck_error
+   (fun () ->
+       Typechecker.typecheck_fdecl Tctxt.empty { frtyp = RetVal TInt
+                                               ; fname = "f"
+                                               ; args = []
+                                               ; body = [ no_loc (Decl ("a", no_loc (CInt 42L)))
+                                                        ; no_loc (Ret (Some (no_loc (Id "a"))))
+                                                        ; no_loc (Decl ("b", no_loc (CInt 42L)))
+                                                        ; no_loc (Ret (Some (no_loc (Id "b"))))
+                                                        ]
+                                               } (no_loc "")
+       )
+  );
+  ("overwrite global variable in for loop vdecls", (typecheck_correct (fun () -> Typechecker.typecheck_program
+                                          [ Gvdecl (no_loc {name="x"; init=no_loc @@ CInt 0L})
+                                          ; Gfdecl (no_loc {frtyp=RetVoid; fname="f"; args=[]; body=[ no_loc @@ For ([("x", no_loc @@ CInt 1L)], None, None, [])
+                                                                                                    ; no_loc @@ Ret None ]});]))
+  );
+  ("overwrite local variable in for loop vdecls", (typecheck_error (fun () -> Typechecker.typecheck_program 
+                                          [ Gfdecl (no_loc {frtyp=RetVoid; fname="f"; args=[]; body=[ no_loc @@ Decl ("x", no_loc @@ CInt 0L)
+                                                                                                    ; no_loc @@ For ([("x", no_loc @@ CInt 1L)], None, None, [])
+                                                                                                    ; no_loc @@ Ret None ]});]))
+  );
+  ("subtype_correct",
+   (fun () ->
+       if Typechecker.subtype Tctxt.empty ((TRef (RArray (TRef (RArray TBool))))) ((TRef (RArray (TRef (RArray TBool))))) then ()
+       else failwith "should not fail")
+  );
+  ("subtype_fail",
+   (fun () ->
+       if Typechecker.subtype Tctxt.empty ((TRef (RArray (TRef (RArray TBool))))) (TRef (RArray ((TRef (RArray (TRef (RArray TBool))))))) then
+         failwith "should not succeed" else ())
+  );
+  ("Subtype Test Positive",
+   (fun () ->
+       if Typechecker.subtype Tctxt.empty (TRef (RArray TInt)) (TRef (RArray TInt)) then ()
+       else failwith "should not fail")
+  ); 
+  ("Subtype Test Negative",
+   (fun () ->
+       if Typechecker.subtype Tctxt.empty (TRef (RArray TInt)) (TRef (RArray TBool)) then
+         failwith "should not succeed" else ())
+  );
 ]
 
 let brainfuck_tests = [
@@ -366,4 +430,13 @@ let provided_tests : suite = [
   Test("Others: vector test", executed_oat_file [("studenttests/vector.oat", "hello oat test00000 test t", "5, 3, 9, 4, 10")]);
   Test("Others: search_tree", executed_oat_file [("studenttests/searchtree.oat", "", "29335566255")]);
   Test("Others: sl tests", executed_oat_file sl_tests);
+  Test("Others: search_tree", executed_oat_file [("studenttests/searchtree.oat", "", "29335566255")]);
+  Test("Others: NevilleTest", executed_oat_file [("studenttests/treePostorder.oat", "", "579112210")]);
+  Test("Others: tc struct tests", typecheck_file_correct ["studenttests/tc_correct_struct.oat"]);
+  Test("Others: tc struct tests", typecheck_file_error [ "studenttests/tc_error_struct.oat"; "studenttests/tc_error_struct_recursion.oat";]);
+  Test("Others: Generators", executed_oat_file [("studenttests/gen.oat", "", "810111214161718201420263238445056620")]);
+  Test("Others: Binary tree with insertion and deletion", executed_oat_file [("studenttests/binary_tree_structs.oat", "", "-5 -4 -3 -2 -1 1 2 3 4 5 | -5 -4 -2 -1 2 3 5 | return: 1")]);
+  Test("Others: Palindrome", executed_oat_file [("studenttests/palindrome.oat", "","42")]);
+  Test("Others: Binary Tree", executed_oat_file [("studenttests/BinaryTree.oat", "", "0")]);
+
 ] 

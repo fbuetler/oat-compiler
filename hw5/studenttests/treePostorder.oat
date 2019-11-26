@@ -1,0 +1,44 @@
+/* Zur Shmaria */
+/* Neville Walo */
+
+struct Node {
+    Node? leftChild;
+    Node? rightChild;
+    int val
+}
+
+struct Tree {
+    Node root
+}
+
+void traverseUtil(Node cur){
+    if?(Node leftChildN = cur.leftChild) {
+        traverseUtil(leftChildN);
+    }
+    if?(Node rightChildN = cur.rightChild) {
+        traverseUtil(rightChildN); 
+    }
+    print_int(cur.val);
+    return;
+}
+
+void traverse(Tree t){
+    traverseUtil(t.root);
+    return;
+}
+
+int program (int argc, string[] argv) {
+
+var node1 = new Node { leftChild = Node null; rightChild = Node null; val = 5 };
+var node2 = new Node { leftChild = node1; rightChild = Node null; val = 7 };
+var node3 = new Node { leftChild = Node null; rightChild = Node null; val = 9 };
+var node4 = new Node { leftChild = node2; rightChild = node3; val = 11 };
+var node5 = new Node { leftChild = Node null; rightChild = Node null; val = 22 };
+var head = new Node { leftChild = node4; rightChild = node5; val = 1 };
+var tree = new Tree { root = head };
+
+traverse(tree);
+
+return 0;
+}
+

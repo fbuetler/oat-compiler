@@ -1,0 +1,76 @@
+/* 17-915-398, Daniel Frey   */
+/* 17-931-452, Jasmin Schult */
+
+
+
+struct Gen {
+  ((int) -> int) generate;
+  int first;
+  int step
+}
+
+  int times_2 (int i) {
+    return i * 2;
+  }
+
+int silly (int i) {
+  var x = int[] null;
+  if? (int[] y = x) {
+      return length(y);
+    } else {
+    return i;
+  }
+}
+
+
+
+void union (Gen s1, Gen s2, int size){
+  var i1 = s1.first;
+  var i2 = s2.first;
+  for(var i = 0; i < size; i = i + 1;) {
+    if(s1.generate(i1) == s2.generate(i2)) {
+      print_int(s1.generate(i1));
+      i1 = i1 + s1.step;
+      i2 = i2 + s2.step;
+    } else {
+      if(s1.generate(i1) < s2.generate(i2)) {
+	print_int(s1.generate(i1));
+	i1 = i1 + s1.step;
+      } else {
+	print_int(s2.generate(i2));
+	i2 = i2 + s2.step;
+      }
+    }
+  }
+  return;
+}
+
+void intersection (Gen s1, Gen s2, int size){
+  var i1 = s1.first;
+  var i2 = s2.first;
+  var i = 0;
+  while(i < size) {
+    if(s1.generate(i1) == s2.generate(i2)) {
+      print_int(s1.generate(i1));
+      i1 = i1 + s1.step;
+      i2 = i2 + s2.step;
+      i = i + 1;
+    } else {
+      if(s1.generate(i1) < s2.generate(i2)) {
+	i1 = i1 + s1.step;
+      } else {
+	i2 = i2 + s2.step;
+      }
+    }
+  }
+  return;
+}
+
+int program (int argc, string[] argv) {
+  var g1 = new Gen {generate = silly; first = 11; step = 3};
+  var g2 = new Gen {generate = times_2; step = 1; first = 4};
+  union (g1, g2, 9);
+  intersection (g1, g2, 9);
+  return 0;
+}
+  

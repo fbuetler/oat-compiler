@@ -1,0 +1,24 @@
+/* 17-914-086, Neville Walo */
+/* 15-915-853, Zur Shmaria */
+
+
+
+struct S1 {
+  S2 a
+}
+
+struct S2 {
+  S3 a
+}
+
+struct S3 {
+  S4 a
+}
+
+struct S5 {
+  S6 a
+}
+
+struct S6 {
+  S1 a
+}

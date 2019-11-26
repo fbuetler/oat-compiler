@@ -1,0 +1,40 @@
+/* 16-929-036, Jakob Roffler */
+/* xx-xxx-xxx, Armon Carigiet */
+
+struct Number {
+       int firstDigit;
+       int secondDigit;
+       int thirdDigit
+    }
+
+bool is_palindrome(Number num){
+	if(num.firstDigit != num.thirdDigit){
+		return false;
+	}
+	return true;
+}
+
+int palindrome_sum() {
+	var sum = 0;
+	var num = new Number{firstDigit = 0; secondDigit = 9; thirdDigit = 9};
+
+	for(var i = 0; i < 900; i = i + 1;){
+		num.thirdDigit = num.thirdDigit + 1;
+		if(num.thirdDigit == 10){
+			num.thirdDigit = 0;
+			num.secondDigit = num.secondDigit + 1;
+		}
+		if(num.secondDigit == 10){
+			num.secondDigit = 0;
+			num.firstDigit = num.firstDigit + 1;
+		}
+		if(is_palindrome(num)){
+			sum = sum + 100 * num.firstDigit + 10 * num.secondDigit + num.thirdDigit;
+		}
+	}
+	return sum;
+}
+
+int program (int argc, string[] argv) {
+	return palindrome_sum() - 49458; /*bias such that the correct result is in [0, 255]*/
+}	

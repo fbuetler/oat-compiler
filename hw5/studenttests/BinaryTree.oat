@@ -1,0 +1,90 @@
+/* Diluxion Marku */
+/* Predrag Krnetic */
+
+struct BinaryTree {
+    Node? root
+}
+
+struct Node {
+    int value;
+    Node? left;
+    Node? right
+}
+
+void insert (int val, Node? current) {
+    if? (Node curr = current) {
+        if (val < curr.value) {
+            if? (Node curr_left = curr.left) {
+                insert(val, curr_left);
+            } else {
+                curr.left = new Node{
+                            value = val; 
+                            left = Node null; 
+                            right = Node null
+                            };
+            }
+            return;
+        }
+        if (val > curr.value) {
+            if? (Node curr_right = curr.right) {
+                insert(val, curr_right);
+            } else {
+                curr.right = new Node{
+                                value = val; 
+                                left = Node null; 
+                                right = Node null
+                                }; 
+            }
+            return;
+        }
+    } else {
+        current = new Node{
+                        value = val; 
+                        left = Node null; 
+                        right = Node null
+                        };
+        return; 
+    }
+    
+    return;
+}
+
+int find (int val, Node? current) {
+    if? (Node curr = current){
+        if (val == curr.value) {
+           return 0;
+        } if (val < curr.value) { 
+           return find(val, curr.left);
+        }
+        if (val > curr.value) {
+           return find(val, curr.right);
+        }
+    }
+    return 1;
+}
+
+int program(int argc, string[] argv) {
+    var tree = new BinaryTree {
+                    root = new Node{
+                                value = 0; 
+                                left = Node null; 
+                                right = Node null
+                                }};
+   
+    insert(16, tree.root);
+    insert(7, tree.root); 
+    insert(29, tree.root); 
+    insert(-2, tree.root); 
+    insert(20, tree.root); 
+    insert(31, tree.root); 
+    insert(11, tree.root); 
+    insert(20, tree.root); 
+    insert(15, tree.root); 
+
+    var res = new int[]{find(15, tree.root), find(11, tree.root), find(7, tree.root), find(20, tree.root), find(16, tree.root), (1 - find(50, tree.root)), (1 - find(-4, tree.root))};
+    
+    return res[0]+res[1]+res[2]+res[3]+res[4]+res[5]+
+    res[6];
+}
+
+

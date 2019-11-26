@@ -1,0 +1,121 @@
+struct Node {
+	int value;
+  	Node? left;
+  	Node? right	
+}
+
+global root = Node null;
+
+Node get_min (Node n){
+	if?(Node l = n.left){
+		return get_min(l);
+	}
+	return n;
+}
+
+Node get_max (Node n){
+	if?(Node r = n.right){
+		return get_max(r);
+	}
+	return n;
+}
+
+Node? insert (int value, Node? n){
+	if?(Node t = n){
+		if(value < t.value){
+			t.left = insert(value, t.left);
+		} else if (value > t.value) {
+			t.right = insert(value, t.right);
+		}
+		return t;
+	} else {
+		return new Node{value = value; right = Node null; left = Node null};
+	}
+}
+
+void append (Node n, Node tree){
+	if(n.value > tree.value){
+		if?(Node l = n.left){
+			append(l, tree);
+		} else {
+			n.left = tree;
+		}
+	} else if (n.value < tree.value) {
+		if?(Node r = n.right){
+			append(r, tree);
+		} else {
+			n.right = tree;
+		}
+	}
+	return;
+}
+
+Node? delete (int value, Node? n){
+	if?(Node t = n){
+		if(value == t.value){
+			if?(Node l = t.left){
+				var replacement = get_max(l);
+				if?(Node l_new = delete(replacement.value, l)){
+					append(replacement, l_new);
+				}
+				if?(Node r = t.right){
+					append(replacement, r);
+				}
+				return replacement;
+			} else if?(Node r = t.right){
+				return r;
+			} else {
+				return Node null;
+			}
+		} else {
+			if(value < t.value){
+				t.left = delete(value, t.left);
+			} else if (value > t.value) {
+				t.right = delete(value, t.right);
+			}
+		}
+	}
+	return n;
+}
+
+void bulk_insert (int[] values){
+	if?(int[] v = values){
+		for(var i = 0; i < length(v); i = i + 1;){
+			root = insert(v[i], root);
+		}
+	}
+	return;
+}
+
+void in_order_print(Node? n){
+	if?(Node t = n){
+		in_order_print(t.left);
+		print_int(t.value);
+		print_string(" ");
+		in_order_print(t.right);
+	}
+	return;
+}
+
+void print_array(int[] a){
+	for(var i = 0; i < length(a); i = i + 1;){
+		print_int(a[i]);
+	}
+	return;
+}
+
+int program (int argc, string[] argv){
+	var a = new int[5]{i->i+1};
+	var b = new int[5]{i->-i-1};
+	bulk_insert(a);
+	bulk_insert(b);
+	in_order_print(root);
+	print_string("| ");
+	root = delete(-3, root);
+	root = delete(4, root);
+	root = delete(1, root);
+	in_order_print(root);
+	print_string("| return: ");
+
+	return 1;
+}

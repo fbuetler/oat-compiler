@@ -1,0 +1,8 @@
+/* 17-914-086, Neville Walo */
+/* 15-915-853, Zur Shmaria */
+
+
+struct S {
+  int f1;
+  int f2
+}
