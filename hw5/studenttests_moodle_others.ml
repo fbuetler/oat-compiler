@@ -152,6 +152,6 @@ let provided_tests : suite = [
   Test("Others: linked list tests", executed_oat_file [("studenttests/linkedlist.oat", "", "0")]); (* TODO discuss *)
   Test("Others: SP: brainfuck tests", executed_oat_file brainfuck_tests);
   Test("Others: Struct Student Test", executed_oat_file [("studenttests/structs.oat", "", "4000")]);
-  Test("Others: Fulkerson Test", executed_oat_file [("studenttests/fulkerson.oat", "", "37")]);
+  Test("Others: Fulkerson Test", executed_oat_file [("studenttests/fulkerson.oat", "", "37")]); (* TODO discuss *)
   Test("Others: hard test", executed_oat_file [("studenttests/game.oat", "", "120")]);
 ] 
