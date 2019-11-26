@@ -79,11 +79,9 @@ Node? delete (int value, Node? n){
 }
 
 void bulk_insert (int[] values){
-	if?(int[] v = values){
-		for(var i = 0; i < length(v); i = i + 1;){
-			root = insert(v[i], root);
+		for(var i = 0; i < length(values); i = i + 1;){
+			root = insert(values[i], root);
 		}
-	}
 	return;
 }
 

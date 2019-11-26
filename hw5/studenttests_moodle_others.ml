@@ -435,7 +435,7 @@ let provided_tests : suite = [
   Test("Others: tc struct tests", typecheck_file_correct ["studenttests/tc_correct_struct.oat"]);
   Test("Others: tc struct tests", typecheck_file_error [ "studenttests/tc_error_struct.oat"; "studenttests/tc_error_struct_recursion.oat";]);
   Test("Others: Generators", executed_oat_file [("studenttests/gen.oat", "", "810111214161718201420263238445056620")]);
-  Test("Others: Binary tree with insertion and deletion", executed_oat_file [("studenttests/binary_tree_structs.oat", "", "-5 -4 -3 -2 -1 1 2 3 4 5 | -5 -4 -2 -1 2 3 5 | return: 1")]);
+  Test("Others: Binary tree with insertion and deletion", executed_oat_file [("studenttests/binary_tree_structs.oat", "", "-5 -4 -3 -2 -1 1 2 3 4 5 | -5 -4 -2 -1 2 3 5 | return: 1")]); (* TODO discuss: if? for int[] *)
   Test("Others: Palindrome", executed_oat_file [("studenttests/palindrome.oat", "","42")]);
   Test("Others: Binary Tree", executed_oat_file [("studenttests/BinaryTree.oat", "", "0")]);
 
