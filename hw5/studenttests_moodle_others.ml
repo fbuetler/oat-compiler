@@ -136,6 +136,16 @@ let unit_tests = [
       then failwith "should not succeed" 
       else ())
   );
+  ("subtype_Arr_Arr",
+   (fun () ->
+       if Typechecker.subtype Tctxt.empty (TRef (RArray TInt)) (TRef (RArray TInt)) then ()
+       else failwith "should not fail")
+  );
+  ("no_subtype_Int_Bool",
+   (fun () ->
+       if Typechecker.subtype Tctxt.empty (TRef (RArray TInt)) (TRef (RArray TBool)) then
+         failwith "should not succeed" else ())
+  );
 ]
 
 let brainfuck_tests = [
@@ -154,4 +164,5 @@ let provided_tests : suite = [
   Test("Others: Struct Student Test", executed_oat_file [("studenttests/structs.oat", "", "4000")]);
   Test("Others: Fulkerson Test", executed_oat_file [("studenttests/fulkerson.oat", "", "37")]); (* TODO discuss *)
   Test("Others: hard test", executed_oat_file [("studenttests/game.oat", "", "120")]);
+  Test("Others: Inverted-Index-Boolean-Query",executed_oat_file [("studenttests/inv_index.oat", "","12354")]);
 ] 

@@ -1,0 +1,139 @@
+/* 17-930-959 Gianluca Moro */
+/* 17-916-636 Eric Enzler */
+struct PList{
+	int id;
+	int[]posting;
+	int posting_len
+}
+
+struct Inv_index{
+	PList a;
+	PList b;
+	PList c;
+	PList d
+}
+
+int[] insertionSort(int[]arr, int len)  {
+  
+    	var key =0;
+	var j = 0; 
+    	for (var i = 1; i < len; i=i+1;){  
+        	key = arr[i];  
+        	j = i - 1;  
+  
+		while (j >= 0 & arr[j] > key) {  
+		    arr[j + 1] = arr[j];  
+		    j = j - 1;  
+		}  
+        	arr[j + 1] = key;  
+    	}  
+	return arr;
+}  
+
+
+int intersect(int[]a, int lena, int[]b, int lenb){
+
+	var c = insertionSort(a,lena);
+	var d = insertionSort(b,lenb);
+	
+	var sol = 0;
+	for(var i = 0; i < lena; i=i+1;){
+		for(var j = 0; j < lenb; j=j+1;){
+			if(c[i] == d[j]){
+				print_int(c[i]);
+				sol = sol+1;
+			}		
+		}
+			
+	}
+
+	return sol;
+}
+
+int weirdUnion(int[]a, int lena, int[]b, int lenb){
+	var c = insertionSort(a,lena);
+	var d = insertionSort(b,lenb);
+
+	var sol = 0;
+	var i = 0;
+	var j = 0;
+	while(i < lena & j < lenb){
+		if(a[i] == b[i]){
+			print_int(a[i]);
+			i = i+1;
+			j = j+1;
+			sol = sol + 1;
+		} else {
+			if(a[i] < b[j]){
+				print_int(a[i]);
+				i = i+1;
+				sol = sol+1;					
+			} else {
+				print_int(b[j]);
+				j=j+1;
+				sol = sol+1;
+			}
+		
+		}
+
+	
+	}
+	while(i < lena){
+		print_int(a[i]);
+		i = i+1;
+		sol = sol+1;
+	}
+	while(j < lenb){
+		print_int(b[j]);
+		j = j+1;
+		sol = sol+1;
+		}
+
+	return sol;
+}
+
+
+int[] queryProc(Inv_index bib, int query) {
+	if(bib.a.id == query){
+		return bib.a.posting;
+	}
+	if(bib.b.id == query){
+		return bib.b.posting;
+	}
+	if(bib.c.id == query){
+		return bib.c.posting;
+	} 
+	if(bib.d.id == query){
+		return bib.d.posting;
+	} else {
+		var ret = new int[1]{i->0};
+		return ret;
+	}
+
+}
+
+
+global l1 = new int[]{1,2,4,5,3,9,10,11};
+global l2 = new int[]{2,3};
+global l3 = new int[]{1,2,3,5};
+global l4 = new int[]{1};
+global q1 = 1;
+global q2 = 3;
+
+int program(int argc, string[]argv){
+	var brutus = new PList {id=1; posting = l1;posting_len=8};
+	var from = new PList{id = 2; posting = l2;posting_len=2};
+	var calpurnius = new PList{id = 3; posting = l3; posting_len=4};
+	var was = new PList{id = 4; posting = l4;posting_len=1};
+
+	var index = new Inv_index{a=brutus;b=from;c=calpurnius;d=was};
+	
+	var inp1 = queryProc(index,q1);
+	var inp2 = queryProc(index,q2);
+
+	var e = intersect(inp1,length(inp1),inp2,length(inp2));
+	
+	return e;
+	
+
+}
