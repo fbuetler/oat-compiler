@@ -25,6 +25,11 @@ let context = { Tctxt.locals = [ ("x", TInt) ]
               ; Tctxt.structs = []
               }
 
+let context2 = { Tctxt.locals = [ ("i", TInt) ]
+              ; Tctxt.globals = []
+              ; Tctxt.structs = []
+              }              
+
 let e1 = CArr(TInt, [no_loc @@ CInt 64L; no_loc @@ CInt (-12L); no_loc @@ CInt 48L])
 let e2 = CArr(TInt, [no_loc @@ CInt (-128L); no_loc @@ CBool false])
 
@@ -182,12 +187,167 @@ let unit_tests = [
 			 ()
       )
   );
+  ("subtype_func_ret",
+   (fun () ->
+       if Typechecker.subtype Tctxt.empty (TRef (RFun ([], RetVoid))) (TRef (RFun ([], RetVoid))) then ()
+       else failwith "should not fail")                                                                                     
+  ); 
+  ("no_subtype_func_ret",
+   (fun () ->
+       if Typechecker.subtype Tctxt.empty (TRef (RFun ([], RetVal (TNullRef RString)))) (TRef (RFun ([], RetVoid))) then
+         failwith "should not succeed" else ())
+  );
+  ("typ_newarray_ok",
+    (fun () ->
+      let t = Typechecker.typecheck_exp context2 (no_loc (NewArr (TInt, no_loc (CInt 5L), "x", no_loc (CInt 0L)))) in
+      if (t = TRef (RArray TInt))
+        then ()
+        else failwith "should not fail"
+    )
+  );
+  ("typ_newarray_err",
+    (fun () ->
+      try 
+        let _ = Typechecker.typecheck_exp context2 (no_loc (NewArr (TInt, no_loc (CInt 5L), "i", no_loc (CInt 0L))))
+      in failwith "should have a type error"
+      with Typechecker.TypeError s -> ()
+    )
+  );
 ]
 
 let brainfuck_tests = [
   (* Hello World from Wikipedia *)
   ("studenttests/brainfuck.oat", "ppppppppppsrppppppprpppppppppprppprpllllmerpporpopppppppooppporppollppppppppppppppporopppommmmmmommmmmmmmorpo", "Hello World!0");
   ("studenttests/brainfuck.oat", "ririririririspplerorororororo Abc123", "Cde3450");
+]
+
+let prepend list = List.map (fun (path, input, output) -> 
+    ("studenttests/" ^ path, input, output)
+) list
+
+(* Push string "Hello" onto the stack and print each character one by one *)
+let prog1 = String.concat "\n" 
+["P111"; "P108"; "P108"; "P101"; "P72"; "."; "."; "."; "."; "."; "E"; ]
+
+(* Push Null-terminated string "Hello" onto the stack write it to memory and 
+ * print each character one by one *)
+let prog2 = String.concat "\n"
+[
+    (* Push string characters on the stack *)
+    "P0"; "P111"; "P108"; "P108"; "P101"; "P72";
+    (* Store string in memory *)
+    "P0"; ">"; "P1"; ">"; "P2"; ">"; "P3"; ">"; "P4"; ">";
+
+    "P0"; "<"; ".";
+    "P1"; "<"; ".";
+    "P2"; "<"; ".";
+    "P3"; "<"; ".";
+    "P4"; "<"; ".";
+    "E"
+]
+
+(* Push Null-terminated string "Hello" onto the stack, write it to memory,
+ * and print each character in a loop *)
+let prog3 = String.concat "\n" 
+[
+    (* Push string characters on the stack in reverse order *)
+    "P0"; "P111"; "P108"; "P108"; "P101"; "P72";
+    (* Store string in memory *)
+    "P1"; ">"; "P2"; ">"; "P3"; ">"; "P4"; ">"; "P5"; ">";
+    (* Print string from memory *)
+
+    (* Set counter at mem[0] to 1 *)
+    "P1"; "P0"; ">";
+
+    (* Read counter *)
+    "P0"; "<";
+
+    (* Load character from memory *)
+    "<";
+
+    "C";
+    (* Terminate if character is \0 *)
+    "?8";
+
+    "."; 
+    (* Increment counter at mem[0] *)
+    "P0"; "<"; "P1"; "+"; "P0"; ">";
+
+    (* Jump back to Read counter *)
+    "J-13";
+
+    "E";
+]
+
+(* Calculate factorial *)
+let prog4 = String.concat "\n" [
+    (* The number to calculate the factorial of will be prepended by the
+     * testcase *)
+
+    (* Store result in mem[0] *)
+    "P1"; "P0"; ">";
+
+    "C"; "?10";
+
+    "C"; "P0"; "<"; "*"; "P0"; ">";
+
+    "P-1"; "+";
+    "J-11";
+
+    "P0"; "<"; ",";
+    "P32"; ".";
+    "E";
+]
+
+(* Print fibonacci numbers *)
+let prog5 = String.concat "\n" [
+    (* The number of iterations is prepended by the testcase *)
+    "P0"; ">";
+    "P0"; "P1"; 
+
+    "P0"; "<"; "?21";
+
+    "C"; ",";
+
+    "C"; "P1"; ">"; 
+
+    "+"; "P2"; ">";
+
+    "P1"; "<";
+    "P2"; "<";
+
+    (* Decrement counter *)
+    "P0"; "<"; "P-1"; "+"; "P0"; ">";
+
+    (* Print space *)
+    "P32"; ".";
+
+    "J-24";
+    "E";
+]
+
+let sl_tests = prepend [
+    ("sl.oat", "\'" ^ prog1 ^ "\'", "Hello0");
+    ("sl.oat", "\'" ^ prog2 ^ "\'", "Hello0");
+    ("sl.oat", "\'" ^ prog3 ^ "\'", "Hello0");
+    ("sl.oat", "\'P0\n" ^ prog4 ^ "\'", "1 0");
+    ("sl.oat", "\'P1\n" ^ prog4 ^ "\'", "1 0");
+    ("sl.oat", "\'P2\n" ^ prog4 ^ "\'", "2 0");
+    ("sl.oat", "\'P3\n" ^ prog4 ^ "\'", "6 0");
+    ("sl.oat", "\'P4\n" ^ prog4 ^ "\'", "24 0");
+    ("sl.oat", "\'P5\n" ^ prog4 ^ "\'", "120 0");
+    ("sl.oat", "\'P6\n" ^ prog4 ^ "\'", "720 0");
+    ("sl.oat", "\'P1\n" ^ prog5 ^ "\'", "1 0");
+    ("sl.oat", "\'P2\n" ^ prog5 ^ "\'", "1 1 0");
+    ("sl.oat", "\'P3\n" ^ prog5 ^ "\'", "1 1 2 0");
+    ("sl.oat", "\'P4\n" ^ prog5 ^ "\'", "1 1 2 3 0");
+    ("sl.oat", "\'P5\n" ^ prog5 ^ "\'", "1 1 2 3 5 0");
+    ("sl.oat", "\'P6\n" ^ prog5 ^ "\'", "1 1 2 3 5 8 0");
+    ("sl.oat", "\'P7\n" ^ prog5 ^ "\'", "1 1 2 3 5 8 13 0");
+    ("sl.oat", "\'P8\n" ^ prog5 ^ "\'", "1 1 2 3 5 8 13 21 0");
+    ("sl.oat", "\'P9\n" ^ prog5 ^ "\'", "1 1 2 3 5 8 13 21 34 0");
+    ("sl.oat", "\'P10\n" ^ prog5 ^ "\'", "1 1 2 3 5 8 13 21 34 55 0");
+    ("sl.oat", "\'P11\n" ^ prog5 ^ "\'", "1 1 2 3 5 8 13 21 34 55 89 0");
 ]
 
 let provided_tests : suite = [
@@ -203,5 +363,7 @@ let provided_tests : suite = [
   Test("Others: Inverted-Index-Boolean-Query",executed_oat_file [("studenttests/inv_index.oat", "","12354")]);
   Test("Others: Directed DFS Test", executed_oat_file [("studenttests/directed_dfs.oat", "", "79")]);
   (* Test("Others: Tree", executed_oat_file [("studenttests/tree.oat", "", "13")]); *) (* TODO accroding to their post this will follow *)
-	Test("Student Provided vector test", executed_oat_file [("studenttests/vector.oat", "hello oat test00000 test t", "5, 3, 9, 4, 10")]);
+  Test("Others: vector test", executed_oat_file [("studenttests/vector.oat", "hello oat test00000 test t", "5, 3, 9, 4, 10")]);
+  Test("Others: search_tree", executed_oat_file [("studenttests/searchtree.oat", "", "29335566255")]);
+  Test("Others: sl tests", executed_oat_file sl_tests);
 ] 

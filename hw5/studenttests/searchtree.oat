@@ -1,0 +1,111 @@
+/* 17913823, Martin Erhart */
+/* 17943077, Paul Elvinger */
+
+struct Point {
+    int x;
+    int y
+}
+
+struct Node {
+   Point value;   
+   Node? leftChild;
+   Node? rightChild;
+   (Point, Point) -> int compare  /* < 0 means first arg is smaller */
+}
+
+bool insert(Node root, Point val) {
+    var cmp = root.compare(val, root.value);
+    /* duplicate values are not allowed */
+    if(cmp == 0) {
+        return false;
+    }
+
+    if(cmp < 0) {
+        if?(Node n = root.leftChild) {
+            if(!insert(n, val)) { return false; }
+        } else {
+            var to_ins = new Node { value=val; leftChild=Node null; rightChild=Node null; compare=root.compare };
+            root.leftChild = to_ins;
+        }
+    } else {
+        if?(Node n = root.rightChild) {
+            if(!insert(n, val)) { return false; }
+        } else {
+            var to_ins = new Node { value=val; leftChild=Node null; rightChild=Node null; compare=root.compare };
+            root.rightChild = to_ins;
+        }
+    }
+
+    return true;
+}
+
+bool contains(Node root, Point val) {
+    var cmp = root.compare(val, root.value);
+
+    if(cmp==0) {
+        return true;
+    } else {
+        if(cmp<0) {
+            if?(Node n = root.leftChild) {
+                return contains(n, val);
+            } 
+        } else {
+            if?(Node n = root.rightChild) {
+                return contains(n, val);
+            }
+        }
+    }
+    return false;
+}
+
+void print_point(Point p) {
+    print_int(p.x);
+    print_int(p.y);
+    return;
+}
+
+void print_inorder(Node? root) {
+    if?(Node n = root) {
+        print_inorder(n.leftChild);
+        print_point(n.value);
+        print_inorder(n.rightChild);
+    }
+    return;
+}
+
+int comp_asc (Point a, Point b) {
+    var cmp = a.x-b.x;
+    if(cmp == 0) {
+        return a.y-b.y;
+    } else {
+        return cmp;
+    }
+}
+
+int comp_desc (Point a, Point b) {
+    var cmp = b.x-a.x;
+    if(cmp == 0) {
+        return b.y-a.y;
+    } else {
+        return cmp;
+    }
+}
+
+int program(int argc, string[] argv) {
+    var root = new Node { value = new Point {x=5;y=5}; leftChild = Node null; rightChild = Node null; compare=comp_asc };
+
+    var input = new Point[] {new Point {x=2;y=9}, new Point {x=3;y=3}, new Point {x=6; y=6}};
+    for(var i = 0; i < length(input); i = i + 1;) {
+        if(!insert(root, input[i])) {
+            return -1;
+        }
+    }
+    
+    print_inorder(root);
+
+    if(contains(root, new Point {x=2;y=3})) {
+        return 0;
+    } else {
+        return -1;
+    }
+}
