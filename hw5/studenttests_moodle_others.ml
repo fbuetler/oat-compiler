@@ -497,5 +497,5 @@ let provided_tests : suite = [
   Test("Others: Binary Tree", executed_oat_file [("studenttests/BinaryTree.oat", "", "0")]);
   Test("Others: Perceptron Test", executed_oat_file [("studenttests/single_perceptron.oat", "", "correctly classified1")]);
   Test("Others: complex numbers", executed_oat_file [("studenttests/complexnumbers.oat", "", "5")]);
-  Test("Others: Moodle Oat Test", executed_oat_file [("studenttests/oat_test.oat", "", "2")]);
+  Test("Others: Moodle Oat Test", executed_oat_file [("studenttests/oat_test.oat", "", "2")]); (* TODO discuss *)
 ] 
