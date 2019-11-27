@@ -154,6 +154,56 @@ bool can_parse(ParseResult res) {
   return res.count > 0;
 }
 
+ParseState copy_parse_state(ParseState state) {
+  return new ParseState {
+    str = new int[length(state.str)]{i -> state.str[i]};
+    pos = state.pos
+  };
+}
+
+ParseResult copy_parse_result(ParseResult res) {
+  return new ParseResult {
+    input = copy_parse_state(res.input);
+    node = res.node;
+    str = res.str;
+    count = res.count
+  };
+}
+
+ParseResult fail_parse(ParseState input) {
+  return new ParseResult {
+    input = input;
+    node = Json null;
+    str = string null;
+    count = 0
+  };
+}
+
+ParseResult parse_this(ParseState input, string s) {
+  var len = length_of_string(s);
+  var chars = array_of_string(s);
+
+  /* TODO Something in the compiler crashes if you supply a value for a field which does not exist */
+  var ok_result = new ParseResult {
+    input = input;
+    node = Json null;
+    str = s;
+    count = len
+  };
+
+  var i = 0;
+  while (i + input.pos < length(input.str)) {
+    if (input.str[i + input.pos] != chars[i]) {
+      return fail_parse(input);
+    }
+    i = i + 1;
+    if (i == len) {
+      return ok_result;
+    }
+  }
+  return fail_parse(input);
+}
+
 void test_must_parse_str() {
   var state = parse_state_of_string("walrus");
   assert(length(state.str) == 6);
@@ -308,10 +358,32 @@ void test_can_parse() {
   return;
 }
 
+void assert_parse_string(ParseResult result, string expected) {
+  assert(str_eq(must_parse_str(copy_parse_result(result)), expected));
+  return;
+}
+
+void test_parse_this() {
+  var state = parse_state_of_string("say walrus please");
+  var output = must_parse_str(parse_this(state, "say w"));
+  assert(str_eq(output, "say w"));
+
+  state = parse_state_of_string("say walrus please");
+  assert_parse_string(parse_this(state, "say walrus please"), "say walrus please");
+  assert_parse_string(parse_this(state, "say w"), "say w");
+  assert_parse_string(parse_this(state, "s"), "s");
+  assert(!can_parse(parse_this(state, "say walrus please ")));
+  assert(!can_parse(parse_this(state, " say w")));
+  assert(!can_parse(parse_this(state, "x")));
+
+  return;
+}
+
 void test_parser(){
   test_must_parse_str();
   test_must_parse_node();
   test_can_parse();
+  test_parse_this();
 
   if (assert_disabled_for_test) {
     /* await_assert() without matching did_assert() */
