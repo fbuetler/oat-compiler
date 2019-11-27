@@ -78,6 +78,85 @@ global char_zero = 48;
 global char_upper_a = 65;
 global char_lower_a = 97;
 
+
+global empty_json = new Json {
+  obj = JsonObject null;
+  arr = JsonArray null;
+  str = JsonString null;
+  number = JsonNumber null;
+  boolean = JsonBoolean null;
+  nil = JsonNull null
+};
+
+/*********** BEGIN PARSER ***********/
+
+/* ParseResult is returned from every parser */
+struct ParseResult {
+  ParseState input;
+  Json? node;
+  string? str;
+  int count
+}
+
+/* ParseState is the input to every parser */
+struct ParseState {
+  int[] str;
+  int pos
+}
+
+ParseState parse_state_of_string(string s) {
+  return new ParseState { str = array_of_string(s); pos = 0 };
+}
+
+/*
+must_parse_str asserts that the given ParseResult contains a string 
+and advances the ParseState. It returns the string from the ParseResult.
+*/
+string must_parse_str(ParseResult res) {
+  /* TODO if? else if? is broken in our compiler */
+  if? (Json node = res.node) {
+    assert(false);
+    return "";
+  }
+  if? (string str = res.str) {
+    assert(length_of_string(str) == res.count);
+    assert(res.count > 0);
+    res.input.pos = res.input.pos + res.count;
+    return str;
+  }
+  assert(false);
+  return "";
+}
+
+/*
+must_parse_node asserts that the given ParseResult contains a JSON node
+and advances the ParseState. It returns the Json struct from the ParseResult.
+*/
+Json must_parse_node(ParseResult res) {
+  if? (string str = res.str) {
+    assert(false);
+    return empty_json;
+  }
+  if? (Json node = res.node) {
+    assert(res.count > 0);
+    res.input.pos = res.input.pos + res.count;
+    return node;
+  }
+  assert(false);
+  return empty_json;
+}
+
+/*
+can_parse_some checks whether the given ParseResult would consume any
+characters if applied with must_parse_string or must_parse_node.
+*/
+bool can_parse_some(ParseResult res) {
+  return res.count > 0;
+}
+
+
+/************ END PARSER ************/
+
 global indent_size = "  ";
 
 string convert_quotes(string s) {
@@ -89,11 +168,6 @@ string convert_quotes(string s) {
     }
   }
   return string_of_array(chars);
-}
-
-void parse(){
-  /* TODO */
-  return;
 }
 
 string print_indent(int depth){
@@ -195,7 +269,36 @@ string print_json(Json? tmp, int depth){
   return "TODO print_json"; 
 }
 
+global assert_disabled_for_test = false;
+global would_fail_assert = false;
+
+void await_assert() {
+  if (assert_disabled_for_test) {
+    print_string("already waiting for assert\n");
+    assert_disabled_for_test = false;
+    assert(false);
+    return;
+  }
+  assert_disabled_for_test = true;
+  would_fail_assert = false;
+  return;
+}
+
+bool did_assert() {
+  if (!assert_disabled_for_test) {
+    print_string("not waiting for assert\n");
+    assert(false);
+    return false;
+  }
+  assert_disabled_for_test = false;
+  return would_fail_assert;
+}
+
 void assert(bool condition) {
+  if (assert_disabled_for_test) {
+    would_fail_assert = would_fail_assert | !condition;
+    return;
+  }
   if (condition) {
     return;
   }
@@ -410,7 +513,161 @@ void test_null(){
   return;
 }
 
-void run_tests() {
+void test_parse_str() {
+  var state = parse_state_of_string("walrus");
+  assert(length(state.str) == 6);
+  assert(state.pos == 0);
+
+  /* Case: Typical parse */
+  var output = must_parse_str(new ParseResult {
+    input = state;
+    node = Json null;
+    str = "wal";
+    count = 3
+  });
+  assert(str_eq(output, "wal"));
+  assert(state.pos == 3);
+
+  /* Case: Continues from existing parse state */
+  output = must_parse_str(new ParseResult {
+    input = state;
+    node = Json null;
+    str = "r";
+    count = 1
+  });
+  assert(str_eq(output, "r"));
+  assert(state.pos == 4);
+
+  /* Case: Count does not match string */
+  await_assert();
+  state = parse_state_of_string("walrus");
+  output = must_parse_str(new ParseResult {
+    input = state;
+    node = Json null;
+    str = "wal";
+    count = 2
+  });
+  assert(did_assert());
+
+  /* Case: Null string */
+  await_assert();
+  state = parse_state_of_string("walrus");
+  output = must_parse_str(new ParseResult {
+    input = state;
+    node = Json null;
+    str = string null;
+    count = 2
+  });
+  assert(did_assert());
+
+  /* Case: Empty string */
+  await_assert();
+  state = parse_state_of_string("walrus");
+  output = must_parse_str(new ParseResult {
+    input = state;
+    node = Json null;
+    str = "";
+    count = 0
+  });
+  assert(did_assert());
+
+  /* Case: Also contains JSON node */
+  await_assert();
+  output = must_parse_str(new ParseResult {
+    input = state;
+    node = wrap_nil(new JsonNull {});
+    str = "wal";
+    count = 3
+  });
+  assert(did_assert());
+
+  return;
+}
+
+void test_parse_node() {
+  /* Case: Typical */
+  var state = parse_state_of_string("walrus");
+  var output = must_parse_node(new ParseResult {
+    input = state;
+    node = wrap_nil(new JsonNull {});
+    str = string null;
+    count = 3
+  });
+  assert(state.pos == 3);
+
+  /* Case: Continues from existing parse state */
+  output = must_parse_node(new ParseResult {
+    input = state;
+    node = wrap_nil(new JsonNull {});
+    str = string null;
+    count = 1
+  });
+  assert(state.pos == 4);
+
+  /* Case: Null node */
+  await_assert();
+  state = parse_state_of_string("walrus");
+  output = must_parse_node(new ParseResult {
+    input = state;
+    node = Json null;
+    str = string null;
+    count = 2
+  });
+  assert(did_assert());
+
+  /* Case: Also contains string */
+  await_assert();
+  state = parse_state_of_string("walrus");
+  output = must_parse_node(new ParseResult {
+    input = state;
+    node = wrap_nil(new JsonNull {});
+    str = "wa";
+    count = 2
+  });
+  assert(did_assert());
+
+  return;
+}
+
+void test_can_parse_some() {
+  var state = parse_state_of_string("walrus");
+
+  /* Case: Typical node */
+  assert(can_parse_some(new ParseResult {
+    input = state;
+    node = wrap_nil(new JsonNull {});
+    str = string null;
+    count = 3
+  }));
+
+  /* Case: Typical string */
+  assert(can_parse_some(new ParseResult {
+    input = state;
+    node = Json null;
+    str = "wal";
+    count = 3
+  }));
+
+  /* Case: Empty string */
+  assert(!can_parse_some(new ParseResult {
+    input = state;
+    node = Json null;
+    str = "";
+    count = 0
+  }));
+
+  /* Case: Totally empty */
+  assert(!can_parse_some(new ParseResult {
+    input = state;
+    node = Json null;
+    str = string null;
+    count = 0
+  }));
+
+  return;
+}
+
+void run_tests_printer() {
   test_null();
   test_boolean();
   test_str();
@@ -418,8 +675,22 @@ void run_tests() {
   return;
 }
 
+void run_tests_parser(){
+  test_parse_str();
+  test_parse_node();
+  test_can_parse_some();
+
+  if (assert_disabled_for_test) {
+    /* await_assert() without matching did_assert() */
+    assert_disabled_for_test = false;
+    assert(false);
+  }
+  return;
+}
+
 int program(int argc, string[] argv) {
-  run_tests();
+  run_tests_printer();
+  run_tests_parser();
   print_string("PASSED");
 
   var input = convert_quotes("
