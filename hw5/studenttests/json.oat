@@ -145,6 +145,15 @@ Json must_parse_node(ParseResult res) {
   return empty_json;
 }
 
+/*
+can_parse_some checks whether the given ParseResult would consume any
+characters if applied with must_parse_string or must_parse_node.
+*/
+bool can_parse_some(ParseResult res) {
+  return res.count > 0;
+}
+
+
 /************ END PARSER ************/
 
 string convert_quotes(string s) {
@@ -453,10 +462,49 @@ void test_parse_node() {
   return;
 }
 
+void test_can_parse_some() {
+  var state = parse_state_of_string("walrus");
+
+  /* Case: Typical node */
+  assert(can_parse_some(new ParseResult {
+    input = state;
+    node = wrap_nil(new JsonNull {});
+    str = string null;
+    count = 3
+  }));
+
+  /* Case: Typical string */
+  assert(can_parse_some(new ParseResult {
+    input = state;
+    node = Json null;
+    str = "wal";
+    count = 3
+  }));
+
+  /* Case: Empty string */
+  assert(!can_parse_some(new ParseResult {
+    input = state;
+    node = Json null;
+    str = "";
+    count = 0
+  }));
+
+  /* Case: Totally empty */
+  assert(!can_parse_some(new ParseResult {
+    input = state;
+    node = Json null;
+    str = string null;
+    count = 0
+  }));
+
+  return;
+}
+
 void run_tests() {
   test_null();
   test_parse_str();
   test_parse_node();
+  test_can_parse_some();
 
   if (assert_disabled_for_test) {
     /* await_assert() without matching did_assert() */
