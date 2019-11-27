@@ -156,6 +156,47 @@ bool can_parse_some(ParseResult res) {
 
 /************ END PARSER ************/
 
+/*********** BEGIN VECTOR ***********/
+
+struct IntVector {
+  int[] data;
+  int len;
+  int capacity
+}
+
+IntVector int_vector_new() {
+  var initialCapacity = 8;
+  return new IntVector {
+    data = new int[initialCapacity]{i -> 0};
+    len = 0;
+    capacity = initialCapacity
+  };
+}
+
+int int_vector_get(IntVector vector, int index, int default) {
+  if (index < 0 | index >= vector.len) {
+    return default;
+  }
+  return vector.data[index];
+}
+
+IntVector int_vector_append(IntVector inVector, int value) {
+  var outVector = inVector;
+  if (inVector.len + 1 >= inVector.capacity) {
+    var outCapacity = inVector.capacity * 2;
+    outVector = new IntVector {
+      data = new int[outCapacity]{i -> int_vector_get(inVector, i, 0)};
+      len = inVector.len;
+      capacity = outCapacity
+    };
+  }
+  outVector.data[outVector.len] = value;
+  outVector.len = outVector.len + 1;
+  return outVector;
+}
+
+/************ END VECTOR ************/
+
 string convert_quotes(string s) {
   var len = length_of_string(s);
   var chars = array_of_string(s);
@@ -500,11 +541,30 @@ void test_can_parse_some() {
   return;
 }
 
+void test_vector() {
+  var vec = int_vector_new();
+  assert(vec.len == 0);
+  vec = int_vector_append(vec, 1);
+  vec = int_vector_append(vec, 8);
+  vec = int_vector_append(vec, 3);
+  assert(vec.len == 3);
+  assert(vec.data[0] == 1);
+  assert(vec.data[1] == 8);
+  assert(vec.data[2] == 3);
+  for (var i = 0; i < 100; i = i + 1;) {
+    vec = int_vector_append(vec, 7);
+  }
+  assert(vec.len == 103);
+  assert(vec.data[102] == 7);
+  return;
+}
+
 void run_tests() {
   test_null();
   test_parse_str();
   test_parse_node();
   test_can_parse_some();
+  test_vector();
 
   if (assert_disabled_for_test) {
     /* await_assert() without matching did_assert() */
