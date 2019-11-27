@@ -1,0 +1,41 @@
+/*Clemens Bachmann
+Sara Steiner */
+
+struct Compnum {
+    int re;
+    int im
+}
+
+Compnum newcom(int x, int y){
+    return new Compnum {re = x; im = y};
+}
+
+Compnum addcom(Compnum x, Compnum y){
+    return new Compnum {re = x.re + y.re; im = x.im + y.re};
+}
+
+Compnum mulcom(Compnum x, Compnum y){
+    var re = x.re * y.re + x.im * y.im;  
+    var im = x.re * y.im + x.im * y.re;
+    return newcom(re,im);
+}
+
+int abscomroundeddown(Compnum c){
+    var temp = c.re * c.re + c.im * c.im;
+    var sol = 1;
+    while (sol * sol < temp){
+        sol = sol + 1;
+    }
+    return sol;
+}
+
+
+int program(int argc, int[] argv){
+    var a = newcom(1,2);
+    var b = newcom(-1,-1);
+    var c = newcom(3,4);
+
+    var z = addcom(a,b);
+    z = mulcom(z,c);
+    return abscomroundeddown(z);
+}

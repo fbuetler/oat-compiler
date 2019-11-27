@@ -45,6 +45,17 @@ let ourcontext : Tctxt.t = {
   structs = [s1;s2;s3];
 }
 
+let square = "square", [{fieldName="l"; ftyp=TInt}]
+let rectangle = "rectangle", [{fieldName="l"; ftyp=TInt};{fieldName="h"; ftyp=TInt}]
+
+
+let myctxt : Tctxt.t = {
+  structs = [square;rectangle];
+  locals = [];
+  globals = [];
+
+}
+
 let unit_tests = [
   ("subtype_string_array_nullable_string_array",
    (fun () ->
@@ -277,6 +288,16 @@ let unit_tests = [
        if Typechecker.subtype Tctxt.empty (TRef (RArray TInt)) (TRef (RArray TBool)) then
          failwith "should not succeed" else ())
   );
+  ("sub_substruct_test",
+  (fun () ->
+    if Typechecker.subtype myctxt (TRef (RStruct "rectangle")) (TRef (RStruct "square")) then ()
+    else failwith "shall not pass");
+  );
+  ("array_struct_test",
+  (fun () ->
+    if Typechecker.subtype myctxt (TRef (RStruct "rectangle")) (TNullRef (RArray TInt)) then failwith "shall not succeed"
+    else ());
+  );
 ]
 
 let brainfuck_tests = [
@@ -439,5 +460,5 @@ let provided_tests : suite = [
   Test("Others: Palindrome", executed_oat_file [("studenttests/palindrome.oat", "","42")]);
   Test("Others: Binary Tree", executed_oat_file [("studenttests/BinaryTree.oat", "", "0")]);
   Test("Others: Perceptron Test", executed_oat_file [("studenttests/single_perceptron.oat", "", "correctly classified1")]);
-
+  Test("Others: complex numbers", executed_oat_file [("studenttests/complexnumbers.oat", "", "5")]);
 ] 
