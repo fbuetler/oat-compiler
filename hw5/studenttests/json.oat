@@ -1,67 +1,67 @@
 /*
 json
-    element
+  element
 
 element
-    object
-    array
-    string
-    number
-    "true"
-    "false"
-    "null"
+  object
+  array
+  string
+  number
+  "true"
+  "false"
+  "null"
 
 object
-    '{' members '}'
+  '{' members '}'
 
 members
-    member
-    member ',' members
+  member
+  member ',' members
 
 member
-    string ':' element
+  string ':' element
 
 array
-    '[' elements ']'
+  '[' elements ']'
 
 elements
-    element
-    element ',' elements
+  element
+  element ',' elements
 
 */
 
 struct Json {
-    JsonObject? obj;
-    JsonArray? arr;
-    JsonString? str;
-    JsonNumber? number;
-    JsonBoolean? boolean;
-    JsonNull? nil
+  JsonObject? obj;
+  JsonArray? arr;
+  JsonString? str;
+  JsonNumber? number;
+  JsonBoolean? boolean;
+  JsonNull? nil
 }
 
 struct JsonObject{
-    JsonMember[] members
+  JsonMember[] members
 }
 
 struct JsonMember {
-    string str;
-    Json element
+  string str;
+  Json element
 }
 
 struct JsonArray{
-    Json[] element
+  Json[] element
 }
 
 struct JsonString{
-    string str
+  string str
 }
 
 struct JsonNumber{
-    int number
+  int number
 }
 
 struct JsonBoolean{
-    bool boolean
+  bool boolean
 }
 
 struct JsonNull {
@@ -90,58 +90,58 @@ string convert_quotes(string s) {
 }
 
 void parse(){
-    /* TODO */
-    return;
+  /* TODO */
+  return;
 }
 
 void print_obj(JsonObject tmp){
-    return;
+  return;
 }
 
 void print_array(JsonArray tmp){
-    return;
+  return;
 }
 
 void print_str(JsonString tmp){
-    return;
+  return;
 }
 
 void print_number(JsonNumber tmp){
-    print_int(tmp.number);
-    return;
+  print_int(tmp.number);
+  return;
 }
 
 void print_boolean(JsonBoolean tmp){
-    print_bool(tmp.boolean);
-    return;
+  print_bool(tmp.boolean);
+  return;
 }
 
 string print_null(JsonNull tmp){
-    return "null";
+  return "null";
 }
 
 string print_json(Json? tmp){
-    if? (Json j = tmp){
-        if? (JsonObject obj = j.obj){
-            print_obj(obj);
-        }
-        if? (JsonArray arr = j.arr){
-            print_array(arr);
-        }
-        if? (JsonString str = j.str){
-            print_str(str);
-        }
-        if? (JsonNumber number = j.number){
-            print_number(number);
-        } 
-        if? (JsonBoolean boolean = j.boolean){
-            print_boolean(boolean);
-        }
-        if? (JsonNull nil = j.nil){
-            return print_null(nil);
-        }
+  if? (Json j = tmp){
+    if? (JsonObject obj = j.obj){
+      print_obj(obj);
     }
-    return "TODO"; 
+    if? (JsonArray arr = j.arr){
+      print_array(arr);
+    }
+    if? (JsonString str = j.str){
+      print_str(str);
+    }
+    if? (JsonNumber number = j.number){
+      print_number(number);
+    } 
+    if? (JsonBoolean boolean = j.boolean){
+      print_boolean(boolean);
+    }
+    if? (JsonNull nil = j.nil){
+      return print_null(nil);
+    }
+  }
+  return "TODO"; 
 }
 
 void assert(bool condition) {
@@ -172,101 +172,101 @@ bool str_eq(string a, string b) {
 }
 
 Json wrap_obj(JsonObject obj){
-    return new Json {
-        obj = obj;
-        arr = JsonArray null;
-        str = JsonString null;
-        number = JsonNumber null;
-        boolean = JsonBoolean null;
-        nil = JsonNull null
-    };
+  return new Json {
+    obj = obj;
+    arr = JsonArray null;
+    str = JsonString null;
+    number = JsonNumber null;
+    boolean = JsonBoolean null;
+    nil = JsonNull null
+  };
 }
 
 Json wrap_arr(JsonArray arr){
-    return new Json {
-        obj = JsonObject null;
-        arr = arr;
-        str = JsonString null;
-        number = JsonNumber null;
-        boolean = JsonBoolean null;
-        nil = JsonNull null
-    };
+  return new Json {
+    obj = JsonObject null;
+    arr = arr;
+    str = JsonString null;
+    number = JsonNumber null;
+    boolean = JsonBoolean null;
+    nil = JsonNull null
+  };
 }
 
 Json wrap_str(JsonString str){
-    return new Json {
-        obj = JsonObject null;
-        arr = JsonArray null;
-        str = str;
-        number = JsonNumber null;
-        boolean = JsonBoolean null;
-        nil = JsonNull null
-    };
+  return new Json {
+    obj = JsonObject null;
+    arr = JsonArray null;
+    str = str;
+    number = JsonNumber null;
+    boolean = JsonBoolean null;
+    nil = JsonNull null
+  };
 }
 
 Json wrap_number(JsonNumber number){
-    return new Json {
-        obj = JsonObject null;
-        arr = JsonArray null;
-        str = JsonString null;
-        number = number;
-        boolean = JsonBoolean null;
-        nil = JsonNull null
-    };
+  return new Json {
+    obj = JsonObject null;
+    arr = JsonArray null;
+    str = JsonString null;
+    number = number;
+    boolean = JsonBoolean null;
+    nil = JsonNull null
+  };
 }
 
 Json wrap_boolean(JsonBoolean boolean){
-    return new Json {
-        obj = JsonObject null;
-        arr = JsonArray null;
-        str = JsonString null;
-        number = JsonNumber null;
-        boolean = boolean;
-        nil = JsonNull null
-    };
+  return new Json {
+    obj = JsonObject null;
+    arr = JsonArray null;
+    str = JsonString null;
+    number = JsonNumber null;
+    boolean = boolean;
+    nil = JsonNull null
+  };
 }
 
 Json wrap_nil(JsonNull nil){
-    return new Json {
-        obj = JsonObject null;
-        arr = JsonArray null;
-        str = JsonString null;
-        number = JsonNumber null;
-        boolean = JsonBoolean null;
-        nil = nil
-    };
+  return new Json {
+    obj = JsonObject null;
+    arr = JsonArray null;
+    str = JsonString null;
+    number = JsonNumber null;
+    boolean = JsonBoolean null;
+    nil = nil
+  };
 }
 
 void test_null(){
-    assert(str_eq(
-        print_json(wrap_nil(new JsonNull {})), "null"
-    ));
-    return;
+  assert(str_eq(
+    print_json(wrap_nil(new JsonNull {})), "null"
+  ));
+  return;
 }
 
 void run_tests() {
-    test_null();
-    return;
+  test_null();
+  return;
 }
 
 int program(int argc, string[] argv) {
-    run_tests();
-    print_string("PASSED");
+  run_tests();
+  print_string("PASSED");
 
-    var input = convert_quotes("
-        {'menu': {
-            'id': 'file',
-            'value': 'File',
-            'popup': {
-                'menuitem': [
-                {'value': 'New', 'onclick': 'CreateNewDoc()'},
-                {'value': 'Open', 'onclick': 'OpenDoc()'},
-                {'value': 'Close', 'onclick': 'CloseDoc()'}
-                ]
-            }
-        }}
-    ");
-    /* print_string(input); */
+  var input = convert_quotes("
+    {'menu': {
+      'id': 'file',
+      'value': 'File',
+      'popup': {
+        'menuitem': [
+          {'value': 'New', 'onclick': 'CreateNewDoc()'},
+          {'value': 'Open', 'onclick': 'OpenDoc()'},
+          {'value': 'Close', 'onclick': 'CloseDoc()'}
+        ]
+      }
+    }}
+  ");
+  /* print_string(input); */
 
-    return 0;
+  return 0;
 }
