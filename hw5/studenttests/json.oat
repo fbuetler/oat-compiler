@@ -49,7 +49,7 @@ struct JsonMember {
 }
 
 struct JsonArray{
-  Json[] element
+  Json[] arr
 }
 
 struct JsonString{
@@ -77,6 +77,7 @@ global char_single_quote = 39;
 global char_zero = 48;
 global char_upper_a = 65;
 global char_lower_a = 97;
+
 
 global empty_json = new Json {
   obj = JsonObject null;
@@ -151,240 +152,6 @@ characters if applied with must_parse_string or must_parse_node.
 */
 bool can_parse_some(ParseResult res) {
   return res.count > 0;
-}
-
-
-/************ END PARSER ************/
-
-/*********** BEGIN VECTOR ***********/
-
-struct IntVector {
-  int[] data;
-  int len;
-  int capacity
-}
-
-IntVector int_vector_new() {
-  var initialCapacity = 8;
-  return new IntVector {
-    data = new int[initialCapacity]{i -> 0};
-    len = 0;
-    capacity = initialCapacity
-  };
-}
-
-int int_vector_get(IntVector vector, int index, int default) {
-  if (index < 0 | index >= vector.len) {
-    return default;
-  }
-  return vector.data[index];
-}
-
-IntVector int_vector_append(IntVector inVector, int value) {
-  var outVector = inVector;
-  if (inVector.len + 1 >= inVector.capacity) {
-    var outCapacity = inVector.capacity * 2;
-    outVector = new IntVector {
-      data = new int[outCapacity]{i -> int_vector_get(inVector, i, 0)};
-      len = inVector.len;
-      capacity = outCapacity
-    };
-  }
-  outVector.data[outVector.len] = value;
-  outVector.len = outVector.len + 1;
-  return outVector;
-}
-
-/************ END VECTOR ************/
-
-string convert_quotes(string s) {
-  var len = length_of_string(s);
-  var chars = array_of_string(s);
-  for (var i = 0; i < len; i = i + 1;) {
-    if (chars[i] == char_single_quote) {
-      chars[i] = char_double_quote;
-    }
-  }
-  return string_of_array(chars);
-}
-
-void print_obj(JsonObject tmp){
-  return;
-}
-
-void print_array(JsonArray tmp){
-  return;
-}
-
-void print_str(JsonString tmp){
-  return;
-}
-
-void print_number(JsonNumber tmp){
-  print_int(tmp.number);
-  return;
-}
-
-void print_boolean(JsonBoolean tmp){
-  print_bool(tmp.boolean);
-  return;
-}
-
-string print_null(JsonNull tmp){
-  return "null";
-}
-
-string print_json(Json? tmp){
-  if? (Json j = tmp){
-    if? (JsonObject obj = j.obj){
-      print_obj(obj);
-    }
-    if? (JsonArray arr = j.arr){
-      print_array(arr);
-    }
-    if? (JsonString str = j.str){
-      print_str(str);
-    }
-    if? (JsonNumber number = j.number){
-      print_number(number);
-    } 
-    if? (JsonBoolean boolean = j.boolean){
-      print_boolean(boolean);
-    }
-    if? (JsonNull nil = j.nil){
-      return print_null(nil);
-    }
-  }
-  return "TODO"; 
-}
-
-global assert_disabled_for_test = false;
-global would_fail_assert = false;
-
-void await_assert() {
-  if (assert_disabled_for_test) {
-    print_string("already waiting for assert\n");
-    assert_disabled_for_test = false;
-    assert(false);
-    return;
-  }
-  assert_disabled_for_test = true;
-  would_fail_assert = false;
-  return;
-}
-
-bool did_assert() {
-  if (!assert_disabled_for_test) {
-    print_string("not waiting for assert\n");
-    assert(false);
-    return false;
-  }
-  assert_disabled_for_test = false;
-  return would_fail_assert;
-}
-
-void assert(bool condition) {
-  if (assert_disabled_for_test) {
-    would_fail_assert = would_fail_assert | !condition;
-    return;
-  }
-  if (condition) {
-    return;
-  }
-  var a = new int[0]{i -> 0};
-  a[123456789] = 1;
-  return;
-}
-
-bool str_eq(string a, string b) {
-  var a_len = length_of_string(a);
-  var b_len = length_of_string(b);
-  if (a_len != b_len) {
-    return false;
-  }
-
-  var a_chars = array_of_string(a);
-  var b_chars = array_of_string(b);
-
-  for (var i = 0; i < a_len; i = i + 1;) {
-    if (a_chars[i] != b_chars[i]) {
-      return false;
-    }
-  }
-  return true;
-}
-
-Json wrap_obj(JsonObject obj){
-  return new Json {
-    obj = obj;
-    arr = JsonArray null;
-    str = JsonString null;
-    number = JsonNumber null;
-    boolean = JsonBoolean null;
-    nil = JsonNull null
-  };
-}
-
-Json wrap_arr(JsonArray arr){
-  return new Json {
-    obj = JsonObject null;
-    arr = arr;
-    str = JsonString null;
-    number = JsonNumber null;
-    boolean = JsonBoolean null;
-    nil = JsonNull null
-  };
-}
-
-Json wrap_str(JsonString str){
-  return new Json {
-    obj = JsonObject null;
-    arr = JsonArray null;
-    str = str;
-    number = JsonNumber null;
-    boolean = JsonBoolean null;
-    nil = JsonNull null
-  };
-}
-
-Json wrap_number(JsonNumber number){
-  return new Json {
-    obj = JsonObject null;
-    arr = JsonArray null;
-    str = JsonString null;
-    number = number;
-    boolean = JsonBoolean null;
-    nil = JsonNull null
-  };
-}
-
-Json wrap_boolean(JsonBoolean boolean){
-  return new Json {
-    obj = JsonObject null;
-    arr = JsonArray null;
-    str = JsonString null;
-    number = JsonNumber null;
-    boolean = boolean;
-    nil = JsonNull null
-  };
-}
-
-Json wrap_nil(JsonNull nil){
-  return new Json {
-    obj = JsonObject null;
-    arr = JsonArray null;
-    str = JsonString null;
-    number = JsonNumber null;
-    boolean = JsonBoolean null;
-    nil = nil
-  };
-}
-
-void test_null(){
-  assert(str_eq(
-    print_json(wrap_nil(new JsonNull {})), "null"
-  ));
-  return;
 }
 
 void test_parse_str() {
@@ -559,8 +326,7 @@ void test_vector() {
   return;
 }
 
-void run_tests() {
-  test_null();
+void run_tests_parser(){
   test_parse_str();
   test_parse_node();
   test_can_parse_some();
@@ -574,8 +340,416 @@ void run_tests() {
   return;
 }
 
+/************ END PARSER ************/
+
+/*********** BEGIN VECTOR ***********/
+
+struct IntVector {
+  int[] data;
+  int len;
+  int capacity
+}
+
+IntVector int_vector_new() {
+  var initialCapacity = 8;
+  return new IntVector {
+    data = new int[initialCapacity]{i -> 0};
+    len = 0;
+    capacity = initialCapacity
+  };
+}
+
+int int_vector_get(IntVector vector, int index, int default) {
+  if (index < 0 | index >= vector.len) {
+    return default;
+  }
+  return vector.data[index];
+}
+
+IntVector int_vector_append(IntVector inVector, int value) {
+  var outVector = inVector;
+  if (inVector.len + 1 >= inVector.capacity) {
+    var outCapacity = inVector.capacity * 2;
+    outVector = new IntVector {
+      data = new int[outCapacity]{i -> int_vector_get(inVector, i, 0)};
+      len = inVector.len;
+      capacity = outCapacity
+    };
+  }
+  outVector.data[outVector.len] = value;
+  outVector.len = outVector.len + 1;
+  return outVector;
+}
+
+/************ END VECTOR ************/
+
+global indent_size = "  ";
+
+string convert_quotes(string s) {
+  var len = length_of_string(s);
+  var chars = array_of_string(s);
+  for (var i = 0; i < len; i = i + 1;) {
+    if (chars[i] == char_single_quote) {
+      chars[i] = char_double_quote;
+    }
+  }
+  return string_of_array(chars);
+}
+
+string print_indent(int depth){
+  var indent = "";
+  for(var i=0;i<depth;i=i+1;){
+    indent = string_cat(indent, indent_size);
+  }
+  return indent;
+}
+
+string print_obj(JsonObject tmp){
+  return "";
+}
+
+string print_array(JsonArray tmp, int depth){
+  var s = "[\n";
+  for(var i=0;i<length(tmp.arr);i=i+1;){
+    s = string_cat(s, print_indent(depth));
+    s = string_cat(s, print_json(tmp.arr[i], depth+1));
+    if (i<length(tmp.arr)-1){
+      s = string_cat(s, ",");
+    }
+    s = string_cat(s, "\n");
+  }
+  s = string_cat(s, "]\n");
+  return s;
+}
+
+string print_str(JsonString tmp){
+  return tmp.str;
+}
+
+string print_number(JsonNumber tmp){
+  if (tmp.number == 0) {
+    return "0";
+  }
+  if (tmp.number == 1) {
+    return "1";
+  }
+  if (tmp.number == 2) {
+    return "2";
+  }
+  if (tmp.number == 3) {
+    return "3";
+  }
+  if (tmp.number == 4) {
+    return "4";
+  }
+  if (tmp.number == 5) {
+    return "5";
+  }
+  if (tmp.number == 6) {
+    return "6";
+  }
+  if (tmp.number == 7) {
+    return "7";
+  }
+  if (tmp.number == 8) {
+    return "8";
+  }
+  if (tmp.number == 9) {
+    return "9";
+  }
+  return "TODO print_number";
+}
+
+string print_boolean(JsonBoolean tmp){
+  if (tmp.boolean){
+    return "true";
+  }
+  return "false";
+}
+
+string print_null(JsonNull tmp){
+  return "null";
+}
+
+string print_json(Json? tmp, int depth){
+  if? (Json j = tmp){
+    if? (JsonObject obj = j.obj){
+      return print_obj(obj);
+    }
+    if? (JsonArray arr = j.arr){
+      return print_array(arr, depth);
+    }
+    if? (JsonString str = j.str){
+      return print_str(str);
+    }
+    if? (JsonNumber number = j.number){
+      return print_number(number);
+    } 
+    if? (JsonBoolean boolean = j.boolean){
+      return print_boolean(boolean);
+    }
+    if? (JsonNull nil = j.nil){
+      return print_null(nil);
+    }
+  }
+  return "TODO print_json"; 
+}
+
+global assert_disabled_for_test = false;
+global would_fail_assert = false;
+
+void await_assert() {
+  if (assert_disabled_for_test) {
+    print_string("already waiting for assert\n");
+    assert_disabled_for_test = false;
+    assert(false);
+    return;
+  }
+  assert_disabled_for_test = true;
+  would_fail_assert = false;
+  return;
+}
+
+bool did_assert() {
+  if (!assert_disabled_for_test) {
+    print_string("not waiting for assert\n");
+    assert(false);
+    return false;
+  }
+  assert_disabled_for_test = false;
+  return would_fail_assert;
+}
+
+void assert(bool condition) {
+  if (assert_disabled_for_test) {
+    would_fail_assert = would_fail_assert | !condition;
+    return;
+  }
+  if (condition) {
+    return;
+  }
+  var a = new int[0]{i -> 0};
+  a[123456789] = 1;
+  return;
+}
+
+void print_int_array(int[] arr){
+  for(var i=0;i<length(arr);i=i+1;){
+    print_int(arr[i]);
+    print_string(" ");
+  }
+  print_string("\n");
+  return;
+}
+
+bool str_eq(string a, string b) {
+  var a_len = length_of_string(a);
+  var b_len = length_of_string(b);
+  if (a_len != b_len) {
+    return false;
+  }
+
+  var a_chars = array_of_string(a);
+  var b_chars = array_of_string(b);
+
+  for (var i = 0; i < a_len; i = i + 1;) {
+    if (a_chars[i] != b_chars[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+Json wrap_obj(JsonObject obj){
+  return new Json {
+    obj = obj;
+    arr = JsonArray null;
+    str = JsonString null;
+    number = JsonNumber null;
+    boolean = JsonBoolean null;
+    nil = JsonNull null
+  };
+}
+
+Json wrap_arr(JsonArray arr){
+  return new Json {
+    obj = JsonObject null;
+    arr = arr;
+    str = JsonString null;
+    number = JsonNumber null;
+    boolean = JsonBoolean null;
+    nil = JsonNull null
+  };
+}
+
+Json wrap_str(JsonString str){
+  return new Json {
+    obj = JsonObject null;
+    arr = JsonArray null;
+    str = str;
+    number = JsonNumber null;
+    boolean = JsonBoolean null;
+    nil = JsonNull null
+  };
+}
+
+Json wrap_number(JsonNumber number){
+  return new Json {
+    obj = JsonObject null;
+    arr = JsonArray null;
+    str = JsonString null;
+    number = number;
+    boolean = JsonBoolean null;
+    nil = JsonNull null
+  };
+}
+
+Json wrap_boolean(JsonBoolean boolean){
+  return new Json {
+    obj = JsonObject null;
+    arr = JsonArray null;
+    str = JsonString null;
+    number = JsonNumber null;
+    boolean = boolean;
+    nil = JsonNull null
+  };
+}
+
+Json wrap_nil(JsonNull nil){
+  return new Json {
+    obj = JsonObject null;
+    arr = JsonArray null;
+    str = JsonString null;
+    number = JsonNumber null;
+    boolean = JsonBoolean null;
+    nil = nil
+  };
+}
+
+void test_arr(){
+  assert(str_eq(
+    print_json(wrap_arr(
+      new JsonArray {
+        arr = new Json[]{
+          wrap_number(new JsonNumber {number = 0}),
+          wrap_number(new JsonNumber {number = 0}),
+          wrap_number(new JsonNumber {number = 0})
+         }
+      }
+    ), 1), 
+"[
+  0,
+  0,
+  0
+]
+"
+  ));
+  assert(str_eq(
+    print_json(wrap_arr(
+      new JsonArray {
+        arr = new Json[]{
+          wrap_number(new JsonNumber {number = 0}),
+          wrap_boolean(new JsonBoolean {boolean = true}),
+          wrap_boolean(new JsonBoolean {boolean = false}),
+          wrap_nil(new JsonNull {})
+         }
+      }
+    ), 1), 
+"[
+  0,
+  true,
+  false,
+  null
+]
+"
+  ));
+
+  return;
+}
+
+void test_str(){
+  assert(str_eq(
+    print_json(wrap_str(
+      new JsonString {
+        str = "flooo"
+      }
+    ), 1),
+    "flooo"
+  ));
+  assert(str_eq(
+    print_json(wrap_str(
+      new JsonString {
+        str = "walrus"
+      }
+    ), 1),
+    "walrus"
+  ));
+
+  return;
+}
+
+void test_number(){
+  assert(str_eq(
+    print_json(wrap_number(new JsonNumber {number = 0}), 0), "0"
+  ));
+  assert(str_eq(
+    print_json(wrap_number(new JsonNumber {number = 1}), 0), "1"
+  ));
+  assert(str_eq(
+    print_json(wrap_number(new JsonNumber {number = 2}), 0), "2"
+  ));
+  assert(str_eq(
+    print_json(wrap_number(new JsonNumber {number = 3}), 0), "3"
+  ));
+  assert(str_eq(
+    print_json(wrap_number(new JsonNumber {number = 4}), 0), "4"
+  ));
+  assert(str_eq(
+    print_json(wrap_number(new JsonNumber {number = 5}), 0), "5"
+  ));
+  assert(str_eq(
+    print_json(wrap_number(new JsonNumber {number = 6}), 0), "6"
+  ));
+  assert(str_eq(
+    print_json(wrap_number(new JsonNumber {number = 7}), 0), "7"
+  ));
+  assert(str_eq(
+    print_json(wrap_number(new JsonNumber {number = 8}), 0), "8"
+  ));
+  assert(str_eq(
+    print_json(wrap_number(new JsonNumber {number = 9}), 0), "9"
+  ));
+  return;
+}
+
+void test_boolean(){
+  assert(str_eq(
+    print_json(wrap_boolean(new JsonBoolean {boolean = true}), 0), "true"
+  ));
+   assert(str_eq(
+    print_json(wrap_boolean(new JsonBoolean {boolean = false}), 0), "false"
+  ));
+  return;
+}
+
+void test_null(){
+  assert(str_eq(
+    print_json(wrap_nil(new JsonNull {}), 0), "null"
+  ));
+  return;
+}
+
+void run_tests_printer() {
+  test_null();
+  test_boolean();
+  test_str();
+  test_arr();
+  return;
+}
+
 int program(int argc, string[] argv) {
-  run_tests();
+  run_tests_printer();
+  run_tests_parser();
   print_string("PASSED");
 
   var input = convert_quotes("
