@@ -78,6 +78,15 @@ global char_zero = 48;
 global char_upper_a = 65;
 global char_lower_a = 97;
 
+global empty_json = new Json {
+  obj = JsonObject null;
+  arr = JsonArray null;
+  str = JsonString null;
+  number = JsonNumber null;
+  boolean = JsonBoolean null;
+  nil = JsonNull null
+};
+
 /*********** BEGIN PARSER ***********/
 
 /* ParseResult is returned from every parser */
@@ -103,14 +112,37 @@ must_parse_str asserts that the given ParseResult contains a string
 and advances the ParseState. It returns the string from the ParseResult.
 */
 string must_parse_str(ParseResult res) {
-  if? (string str = res.str) {
-    assert(length_of_string(str) == res.count);
-    res.input.pos = res.input.pos + res.count;
-    return str;
-  } else {
+  /* TODO if? else if? is broken in our compiler */
+  if? (Json node = res.node) {
     assert(false);
     return "";
   }
+  if? (string str = res.str) {
+    assert(length_of_string(str) == res.count);
+    assert(res.count > 0);
+    res.input.pos = res.input.pos + res.count;
+    return str;
+  }
+  assert(false);
+  return "";
+}
+
+/*
+must_parse_node asserts that the given ParseResult contains a JSON node
+and advances the ParseState. It returns the Json struct from the ParseResult.
+*/
+Json must_parse_node(ParseResult res) {
+  if? (string str = res.str) {
+    assert(false);
+    return empty_json;
+  }
+  if? (Json node = res.node) {
+    assert(res.count > 0);
+    res.input.pos = res.input.pos + res.count;
+    return node;
+  }
+  assert(false);
+  return empty_json;
 }
 
 /************ END PARSER ************/
@@ -305,11 +337,12 @@ void test_null(){
   return;
 }
 
-void test_parse_helpers() {
+void test_parse_str() {
   var state = parse_state_of_string("walrus");
   assert(length(state.str) == 6);
   assert(state.pos == 0);
 
+  /* Case: Typical parse */
   var output = must_parse_str(new ParseResult {
     input = state;
     node = Json null;
@@ -319,6 +352,17 @@ void test_parse_helpers() {
   assert(str_eq(output, "wal"));
   assert(state.pos == 3);
 
+  /* Case: Continues from existing parse state */
+  output = must_parse_str(new ParseResult {
+    input = state;
+    node = Json null;
+    str = "r";
+    count = 1
+  });
+  assert(str_eq(output, "r"));
+  assert(state.pos == 4);
+
+  /* Case: Count does not match string */
   await_assert();
   state = parse_state_of_string("walrus");
   output = must_parse_str(new ParseResult {
@@ -329,16 +373,19 @@ void test_parse_helpers() {
   });
   assert(did_assert());
 
+  /* Case: Null string */
   await_assert();
   state = parse_state_of_string("walrus");
   output = must_parse_str(new ParseResult {
     input = state;
     node = Json null;
     str = string null;
-    count = 0
+    count = 2
   });
   assert(did_assert());
 
+  /* Case: Empty string */
+  await_assert();
   state = parse_state_of_string("walrus");
   output = must_parse_str(new ParseResult {
     input = state;
@@ -346,15 +393,70 @@ void test_parse_helpers() {
     str = "";
     count = 0
   });
-  assert(str_eq(output, ""));
-  assert(state.pos == 0);
+  assert(did_assert());
+
+  /* Case: Also contains JSON node */
+  await_assert();
+  output = must_parse_str(new ParseResult {
+    input = state;
+    node = wrap_nil(new JsonNull {});
+    str = "wal";
+    count = 3
+  });
+  assert(did_assert());
+
+  return;
+}
+
+void test_parse_node() {
+  /* Case: Typical */
+  var state = parse_state_of_string("walrus");
+  var output = must_parse_node(new ParseResult {
+    input = state;
+    node = wrap_nil(new JsonNull {});
+    str = string null;
+    count = 3
+  });
+  assert(state.pos == 3);
+
+  /* Case: Continues from existing parse state */
+  output = must_parse_node(new ParseResult {
+    input = state;
+    node = wrap_nil(new JsonNull {});
+    str = string null;
+    count = 1
+  });
+  assert(state.pos == 4);
+
+  /* Case: Null node */
+  await_assert();
+  state = parse_state_of_string("walrus");
+  output = must_parse_node(new ParseResult {
+    input = state;
+    node = Json null;
+    str = string null;
+    count = 2
+  });
+  assert(did_assert());
+
+  /* Case: Also contains string */
+  await_assert();
+  state = parse_state_of_string("walrus");
+  output = must_parse_node(new ParseResult {
+    input = state;
+    node = wrap_nil(new JsonNull {});
+    str = "wa";
+    count = 2
+  });
+  assert(did_assert());
 
   return;
 }
 
 void run_tests() {
   test_null();
-  test_parse_helpers();
+  test_parse_str();
+  test_parse_node();
 
   if (assert_disabled_for_test) {
     /* await_assert() without matching did_assert() */
