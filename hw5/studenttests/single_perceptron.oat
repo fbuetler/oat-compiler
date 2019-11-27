@@ -1,0 +1,103 @@
+/* 17-913-542, Silas Walker     */
+/* 17-916-131, Silvan Bitterli  */
+
+struct Perceptron {
+  int bias;
+  int w1;
+  int w2;
+  (int,int,int,int,int) -> bool activation_function
+}
+
+struct Lbl_Data {
+  int i1;
+  int i2;
+  bool lbl
+}
+
+Perceptron? build_perceptron_from_array(int[]? array, (int,int,int,int,int) -> bool? f) {
+  if? ((int,int,int,int,int) -> bool act_f = f) {
+    if? (int[] arr = array) {
+      if (length(arr) == 3) {
+        return new Perceptron{bias = arr[0]; w1 = arr[1]; w2 = arr[2]; activation_function = act_f};
+      }
+    }
+  }
+  return Perceptron null;
+}
+
+bool activation_function (int i1, int i2, int bias, int w1, int w2) {
+  var sum = i1 * w1 + i2 * w2;
+  return sum >= bias;
+}
+
+bool correct_classification (Lbl_Data[]? data_list, Perceptron? perceptron) {
+  if? (Lbl_Data[] data = data_list) {
+    if? (Perceptron p = perceptron) {
+      var activation_function = p.activation_function;
+      var ret = true;
+      for (var i = 0; i < length(data); i = i + 1;) {
+        var data_point = data[i];
+
+        var classification = activation_function(data_point.i1, data_point.i2, p.bias, p.w1, p.w2);
+ 
+        var correct_data_point = (classification & data_point.lbl) | (!classification & !(data_point.lbl));
+        ret = ret & correct_data_point;
+      }
+      return ret;
+    }
+  }
+  return false;
+}
+
+void perceptron_learning (Lbl_Data[]? data_list, Perceptron? perceptron) {
+  if? (Perceptron p = perceptron) {
+    var activation_function = p.activation_function;
+    if? (Lbl_Data[] data = data_list) {
+      for (var j = 0; j < 100; j = j + 1;) {
+        for (var i = 0; i < length(data); i = i + 1;) {
+          var data_point = data[i];
+
+          var classification = activation_function(data_point.i1, data_point.i2, p.bias, p.w1, p.w2);
+
+          if (data_point.lbl & !classification) {
+            var new_w1 = p.w1 + data_point.i1;
+            var new_w2 = p.w2 + data_point.i2;
+
+            p.w1 = new_w1;
+            p.w2 = new_w2;
+          }
+
+          if (!(data_point.lbl) & classification) {
+            var new_w1 = p.w1 - data_point.i1;
+            var new_w2 = p.w2 - data_point.i2;
+
+            p.w1 = new_w1;
+            p.w2 = new_w2;
+          }
+        }
+      }
+    }
+  }
+  return;
+}
+
+int program (int arg, string[] argv) {
+  var arr = new int[]{1, -1, 1};
+
+  var perceptron = build_perceptron_from_array(arr, activation_function);
+
+  var data = new Lbl_Data[]{ new Lbl_Data{i1=0; i2=0; lbl=false}
+                               , new Lbl_Data{i1=0; i2=1; lbl=true}
+                               , new Lbl_Data{i1=1; i2=0; lbl=true}
+                               , new Lbl_Data{i1=1; i2=1; lbl=true}};
+
+  perceptron_learning(data, perceptron);
+
+  if (correct_classification(data, perceptron)) {
+    print_string("correctly classified");
+    return 1;
+  } else {
+    print_string("falsely classified");
+    return 0;
+  }
+}

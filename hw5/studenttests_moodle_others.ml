@@ -438,5 +438,6 @@ let provided_tests : suite = [
   Test("Others: Binary tree with insertion and deletion", executed_oat_file [("studenttests/binary_tree_structs.oat", "", "-5 -4 -3 -2 -1 1 2 3 4 5 | -5 -4 -2 -1 2 3 5 | return: 1")]); (* TODO discuss: if? for int[] *)
   Test("Others: Palindrome", executed_oat_file [("studenttests/palindrome.oat", "","42")]);
   Test("Others: Binary Tree", executed_oat_file [("studenttests/BinaryTree.oat", "", "0")]);
+  Test("Others: Perceptron Test", executed_oat_file [("studenttests/single_perceptron.oat", "", "correctly classified1")]);
 
 ] 
