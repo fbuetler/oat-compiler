@@ -78,6 +78,43 @@ global char_zero = 48;
 global char_upper_a = 65;
 global char_lower_a = 97;
 
+/*********** BEGIN PARSER ***********/
+
+/* ParseResult is returned from every parser */
+struct ParseResult {
+  ParseState input;
+  Json? node;
+  string? str;
+  int count
+}
+
+/* ParseState is the input to every parser */
+struct ParseState {
+  int[] str;
+  int pos
+}
+
+ParseState parse_state_of_string(string s) {
+  return new ParseState { str = array_of_string(s); pos = 0 };
+}
+
+/*
+must_parse_str asserts that the given ParseResult contains a string 
+and advances the ParseState. It returns the string from the ParseResult.
+*/
+string must_parse_str(ParseResult res) {
+  if? (string str = res.str) {
+    assert(length_of_string(str) == res.count);
+    res.input.pos = res.input.pos + res.count;
+    return str;
+  } else {
+    assert(false);
+    return "";
+  }
+}
+
+/************ END PARSER ************/
+
 string convert_quotes(string s) {
   var len = length_of_string(s);
   var chars = array_of_string(s);
@@ -87,11 +124,6 @@ string convert_quotes(string s) {
     }
   }
   return string_of_array(chars);
-}
-
-void parse(){
-  /* TODO */
-  return;
 }
 
 void print_obj(JsonObject tmp){
@@ -144,7 +176,36 @@ string print_json(Json? tmp){
   return "TODO"; 
 }
 
+global assert_disabled_for_test = false;
+global would_fail_assert = false;
+
+void await_assert() {
+  if (assert_disabled_for_test) {
+    print_string("already waiting for assert\n");
+    assert_disabled_for_test = false;
+    assert(false);
+    return;
+  }
+  assert_disabled_for_test = true;
+  would_fail_assert = false;
+  return;
+}
+
+bool did_assert() {
+  if (!assert_disabled_for_test) {
+    print_string("not waiting for assert\n");
+    assert(false);
+    return false;
+  }
+  assert_disabled_for_test = false;
+  return would_fail_assert;
+}
+
 void assert(bool condition) {
+  if (assert_disabled_for_test) {
+    would_fail_assert = would_fail_assert | !condition;
+    return;
+  }
   if (condition) {
     return;
   }
@@ -244,8 +305,62 @@ void test_null(){
   return;
 }
 
+void test_parse_helpers() {
+  var state = parse_state_of_string("walrus");
+  assert(length(state.str) == 6);
+  assert(state.pos == 0);
+
+  var output = must_parse_str(new ParseResult {
+    input = state;
+    node = Json null;
+    str = "wal";
+    count = 3
+  });
+  assert(str_eq(output, "wal"));
+  assert(state.pos == 3);
+
+  await_assert();
+  state = parse_state_of_string("walrus");
+  output = must_parse_str(new ParseResult {
+    input = state;
+    node = Json null;
+    str = "wal";
+    count = 2
+  });
+  assert(did_assert());
+
+  await_assert();
+  state = parse_state_of_string("walrus");
+  output = must_parse_str(new ParseResult {
+    input = state;
+    node = Json null;
+    str = string null;
+    count = 0
+  });
+  assert(did_assert());
+
+  state = parse_state_of_string("walrus");
+  output = must_parse_str(new ParseResult {
+    input = state;
+    node = Json null;
+    str = "";
+    count = 0
+  });
+  assert(str_eq(output, ""));
+  assert(state.pos == 0);
+
+  return;
+}
+
 void run_tests() {
   test_null();
+  test_parse_helpers();
+
+  if (assert_disabled_for_test) {
+    /* await_assert() without matching did_assert() */
+    assert_disabled_for_test = false;
+    assert(false);
+  }
   return;
 }
 
