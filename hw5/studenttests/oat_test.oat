@@ -1,0 +1,172 @@
+/* 15-705-189, Nicolas Wicki */
+
+struct List {
+	Node? head;
+	Node? tail;
+	int len
+}
+
+struct Node {
+	Node? prev;
+	Node? next;
+	int value
+}
+
+void append(List list,int n)
+{
+	if?(List nlist = list)
+	{
+		if?(Node ntail = list.tail)
+		{
+			var node = new Node { prev = ntail; next = Node null; value = n };
+			ntail.next = node;
+			nlist.tail = node;
+			nlist.len = nlist.len + 1;
+		}
+		else
+		{
+			var node = new Node { prev = Node null; next = Node null; value = n };
+			nlist.head = node;
+			nlist.tail = node;
+			nlist.len = 1;
+		}
+	}
+	return;
+}
+
+void prepend(List list, int n)
+{
+	if?(List nlist = list)
+	{
+		if?(Node nhead = nlist.head)
+		{
+			var node = new Node { prev = Node null; next = nhead; value = n };
+			nhead.prev = node;
+			nlist.head = node;
+			nlist.len = nlist.len + 1;
+		}
+		else
+		{
+			var node = new Node { prev = Node null; next = Node null; value = n };
+			nlist.head = node;
+			nlist.tail = node;
+			nlist.len = 1;
+		}
+	}
+	return;
+}
+
+void remove(List list, int n)
+{
+	if?(List nlist = list)
+	{
+		if?(Node head = nlist.head)
+		{
+			var current = head;
+			while(current.value != n)
+			{
+				if?(Node test = current.next)
+				{
+					current = test;
+				}
+				else
+				{
+					return;
+				}
+			}
+			if?(Node prev = current.prev)
+			{
+				if?(Node prevnext = prev.next)
+				{
+					if?(Node next = current.next)
+					{
+						prevnext = next;
+					}
+					else
+					{
+						prev.next = Node null;
+					}
+				}
+			}
+			if?(Node next = current.next)
+			{
+				if?(Node nextprev = next.prev)
+				{
+					if?(Node prev = current.prev)
+					{
+						nextprev = prev;
+					}
+					else
+					{
+						next.prev = Node null;
+					}
+				}
+			}
+			if(head.value == current.value)
+			{
+				if?(Node test = current.next)
+				{
+					nlist.head = test;
+				}
+				else
+				{
+					nlist.head = Node null;
+				}
+			}
+			if?(Node tail = nlist.tail)
+			{
+				if(tail.value == current.value)
+				{
+					if?(Node test = current.prev)
+					{
+						nlist.tail = test;
+					}
+					else
+					{
+						nlist.tail = Node null;
+					}
+				}
+			}
+			nlist.len = nlist.len - 1;
+		}
+	}
+	return;
+}
+
+int sum(List list)
+{
+	var acc = 0;
+	if?(Node current = list.head)
+	{
+		for(var i = 0; i < list.len; i = i + 1;)
+		{
+			acc = acc + current.value;
+			if?(Node test = current.next)
+			{
+				current = test;
+			}
+			else
+			{
+				return acc;
+			}
+		}
+	}
+	return acc;
+}
+
+int program(int argc, string[] argv)
+{
+	var list = new List { head = Node null; tail = Node null; len = 0 };
+	prepend(list, 0);
+	prepend(list, 1);
+	prepend(list, 2);
+	append(list, 3);
+	append(list, 4);
+	append(list, 5);
+	remove(list, 5);
+	remove(list, 4);
+	remove(list, 3);
+	remove(list, 2);
+	remove(list, 0);
+	return (sum(list) + list.len);
+}

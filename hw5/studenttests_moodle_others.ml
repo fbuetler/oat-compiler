@@ -3,6 +3,8 @@ open Astlib
 open Ast
 open Driver
 open Gradedtests
+open Tctxt
+open Typechecker
 
 let struct_test_ctxt = {
   Tctxt.empty with structs = [
@@ -298,6 +300,40 @@ let unit_tests = [
     if Typechecker.subtype myctxt (TRef (RStruct "rectangle")) (TNullRef (RArray TInt)) then failwith "shall not succeed"
     else ());
   );
+  ("Positive Student Test",
+   (fun () -> let ctxt = add_struct (
+   																							add_struct (
+   																								add_struct Tctxt.empty "A" [{ fieldName = "x"; ftyp = TInt }]
+   																							) "B" [{ fieldName = "x"; ftyp = TInt }; 
+   																														{ fieldName = "y"; ftyp = TRef (RStruct "A") }]
+   																						) "C" [{ fieldName = "x"; ftyp = TInt };
+   																													{ fieldName = "y"; ftyp = TRef (RStruct "A") };
+   																													{ fieldName = "z"; ftyp = TRef (RStruct "B") }] in
+       if subtype ctxt (TRef (RStruct "B")) (TRef (RStruct "A")) &&
+       			subtype ctxt (TRef (RStruct "C")) (TRef (RStruct "B")) &&
+       			subtype ctxt (TRef (RStruct "C")) (TRef (RStruct "A")) &&
+       			(not (subtype ctxt (TRef (RStruct "A")) (TRef (RStruct "B")))) &&
+       			(not (subtype ctxt (TRef (RStruct "A")) (TRef (RStruct "C")))) &&
+       			(not (subtype ctxt (TRef (RStruct "B")) (TRef (RStruct "C")))) then ()
+       else failwith "should not fail")
+  ); 
+  ("Negative Student Test",
+   (fun () -> let ctxt = add_struct (
+   																							add_struct (
+   																								add_struct Tctxt.empty "A" [{ fieldName = "x"; ftyp = TInt }]
+   																							) "B" [{ fieldName = "x"; ftyp = TInt }; 
+   																														{ fieldName = "y"; ftyp = TRef (RStruct "A") }]
+   																						) "C" [{ fieldName = "x"; ftyp = TInt };
+   																													{ fieldName = "y"; ftyp = TRef (RStruct "A") };
+   																													{ fieldName = "z"; ftyp = TRef (RStruct "B") }] in
+       if subtype ctxt (TRef (RStruct "A")) (TRef (RStruct "B")) ||
+       			subtype ctxt (TRef (RStruct "A")) (TRef (RStruct "C")) ||
+       			subtype ctxt (TRef (RStruct "B")) (TRef (RStruct "C")) ||
+       			(not (subtype ctxt (TRef (RStruct "C")) (TRef (RStruct "A")))) ||
+       			(not (subtype ctxt (TRef (RStruct "C")) (TRef (RStruct "B")))) ||
+       			(not (subtype ctxt (TRef (RStruct "B")) (TRef (RStruct "A")))) then failwith "should not succeed"
+       else ())
+  );
 ]
 
 let brainfuck_tests = [
@@ -461,4 +497,5 @@ let provided_tests : suite = [
   Test("Others: Binary Tree", executed_oat_file [("studenttests/BinaryTree.oat", "", "0")]);
   Test("Others: Perceptron Test", executed_oat_file [("studenttests/single_perceptron.oat", "", "correctly classified1")]);
   Test("Others: complex numbers", executed_oat_file [("studenttests/complexnumbers.oat", "", "5")]);
+  Test("Others: Moodle Oat Test", executed_oat_file [("studenttests/oat_test.oat", "", "2")]);
 ] 
