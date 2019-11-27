@@ -308,29 +308,10 @@ void test_can_parse_some() {
   return;
 }
 
-void test_vector() {
-  var vec = int_vector_new();
-  assert(vec.len == 0);
-  vec = int_vector_append(vec, 1);
-  vec = int_vector_append(vec, 8);
-  vec = int_vector_append(vec, 3);
-  assert(vec.len == 3);
-  assert(vec.data[0] == 1);
-  assert(vec.data[1] == 8);
-  assert(vec.data[2] == 3);
-  for (var i = 0; i < 100; i = i + 1;) {
-    vec = int_vector_append(vec, 7);
-  }
-  assert(vec.len == 103);
-  assert(vec.data[102] == 7);
-  return;
-}
-
-void run_tests_parser(){
+void test_parser(){
   test_parse_str();
   test_parse_node();
   test_can_parse_some();
-  test_vector();
 
   if (assert_disabled_for_test) {
     /* await_assert() without matching did_assert() */
@@ -379,6 +360,24 @@ IntVector int_vector_append(IntVector inVector, int value) {
   outVector.data[outVector.len] = value;
   outVector.len = outVector.len + 1;
   return outVector;
+}
+
+void test_vector() {
+  var vec = int_vector_new();
+  assert(vec.len == 0);
+  vec = int_vector_append(vec, 1);
+  vec = int_vector_append(vec, 8);
+  vec = int_vector_append(vec, 3);
+  assert(vec.len == 3);
+  assert(vec.data[0] == 1);
+  assert(vec.data[1] == 8);
+  assert(vec.data[2] == 3);
+  for (var i = 0; i < 100; i = i + 1;) {
+    vec = int_vector_append(vec, 7);
+  }
+  assert(vec.len == 103);
+  assert(vec.data[102] == 7);
+  return;
 }
 
 /************ END VECTOR ************/
@@ -739,7 +738,7 @@ void test_null(){
   return;
 }
 
-void run_tests_printer() {
+void test_printer() {
   test_null();
   test_boolean();
   test_str();
@@ -748,8 +747,9 @@ void run_tests_printer() {
 }
 
 int program(int argc, string[] argv) {
-  run_tests_printer();
-  run_tests_parser();
+  test_printer();
+  test_parser();
+  test_vector();
   print_string("PASSED");
 
   var input = convert_quotes("
