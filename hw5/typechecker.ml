@@ -220,7 +220,10 @@ let rec typecheck_exp (c : Tctxt.t) (e : Ast.exp node) : Ast.ty =
       then type_error e @@
         Printf.sprintf "struct %s: expected %d fields, but got %d" struct_name (List.length field_defs) (List.length field_vals);
       let groups = List.map2
-          (fun { ftyp } (n, v) -> (n, ftyp, v))
+          (fun { fieldName; ftyp } (n, v) -> 
+             if fieldName <> n then type_error e @@ Printf.sprintf "struct %s: unknown field %s" struct_name n;
+             (n, ftyp, v)
+          )
           (sort_by_str (fun e -> e.fieldName) field_defs)
           (sort_by_str fst field_vals) in
       List.iter (fun (n, ftyp, v) -> 
