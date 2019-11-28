@@ -111,6 +111,43 @@ let en_array : Ast.exp Ast.node = no_loc (CArr (TBool, [no_loc (CBool true); no_
 let ctxt : Tctxt.t = {Tctxt.empty with structs=["S1", [{fieldName="f1"; ftyp=TBool};
                                                        {fieldName="f2"; ftyp=TInt}]; "S2", [{fieldName="f1"; ftyp=TBool}]]}
 
+let test_context = {
+  Tctxt.empty with structs = [
+    ("One", [
+        {fieldName="bool"; ftyp=TBool};
+        {fieldName="String"; ftyp=TNullRef (RString)};
+      ]);
+    ("Two", [
+        {fieldName="bool"; ftyp=TBool};
+      ]);
+    ("Three", [
+        {fieldName="bool"; ftyp=TBool};
+        {fieldName="String"; ftyp=TRef (RString)};
+      ]);
+  ]; 
+}
+
+let struct_test_ctxt = {
+  Tctxt.empty with structs = [
+    ("A", [
+        {fieldName="f1"; ftyp=TInt};
+        {fieldName="f2"; ftyp=TNullRef (RStruct "B")};
+      ]);
+    ("B", [
+        {fieldName="f1"; ftyp=TInt};
+      ]);
+    ("C", [
+        {fieldName="f1"; ftyp=TInt};
+        {fieldName="f2"; ftyp=TNullRef (RStruct "A")};
+      ]);
+  ]
+}
+
+let tctxt : Tctxt.t = {
+  Tctxt.empty with structs = [
+    "A", [{fieldName="x"; ftyp=TInt}; {fieldName="y"; ftyp=TInt}; {fieldName="z"; ftyp=TInt}; {fieldName="visible"; ftyp=TBool}]; 
+    "B", [{fieldName="x"; ftyp=TInt}; {fieldName="y"; ftyp=TInt}]
+  ]}
 
 let unit_tests = [
   ("subtype_string_array_nullable_string_array",
@@ -527,6 +564,61 @@ let unit_tests = [
         ()
      )
   );
+  ("Typechecker: Struct with more fields",
+   (fun () ->
+      if Typechecker.subtype test_context (TRef (RFun ([TInt; TRef (RStruct "Two")], RetVal (TRef (RStruct "Three"))))) 
+          (TRef (RFun ([TInt; TRef (RStruct "One")], RetVal (TRef (RStruct "Two"))))) then ()
+      else failwith "should not fail")
+  ); 
+  ("Typechecker: Struct with different ftyp",
+   (fun () ->
+      if  Typechecker.subtype test_context (TRef (RFun ([TInt; TRef (RStruct "Three")], RetVal (TRef (RStruct "Three"))))) 
+          (TRef (RFun ([TInt; TRef (RStruct "One")], RetVal (TRef (RStruct "Two")))))
+          ||
+          Typechecker.subtype test_context (TRef (RFun ([TInt; TRef (RStruct "Two")], RetVal (TRef (RStruct "Two"))))) 
+            (TRef (RFun ([TInt; TRef (RStruct "One")], RetVal (TRef (RStruct "One")))))
+      then 
+        failwith "should not succeed" else ())
+  );
+  ("subtype_TRef_Rfun_TNullref_Rfun",
+   (fun () ->
+      if Typechecker.subtype Tctxt.empty (TRef (RFun ([TNullRef RString], RetVal (TRef (RArray TInt))))) (TNullRef (RFun ([TRef RString], RetVal (TNullRef (RArray TInt))))) then ()
+      else failwith "should not fail")                                                                                     
+  ); 
+  ("no_subtype_TRef_Rfun_TNullref_Rfun",
+   (fun () ->
+      if Typechecker.subtype Tctxt.empty (TRef (RFun ([TRef RString], RetVal (TRef (RArray TInt))))) (TNullRef (RFun ([TNullRef RString], RetVal (TNullRef (RArray TInt))))) then
+        failwith "should not succeed" else ())
+  );
+  (* ("typecheck_exp_NewArr",
+     (fun () ->
+       if Typechecker.typecheck_exp (Tctxt.add_local Tctxt.empty "ididid" TInt) (Ast.no_loc (Ast.NewArr (TInt, (Ast.no_loc (Ast.CInt 1L)), "ididid", (Ast.no_loc (Ast.Id "ididid"))))) = TRef (RArray TInt) then ()
+       else failwith "should not fail")                                                                                     
+     ); TODO: prohibited variable redelclaration *)
+  ("Typechecker: Struct with more fields",
+   (fun () ->
+      if Typechecker.subtype struct_test_ctxt (TRef (RStruct "A")) (TRef (RStruct "B")) then ()
+      else failwith "should not fail")
+  ); 
+  ("Typechecker: Struct with different ftyp",
+   (fun () ->
+      if Typechecker.subtype struct_test_ctxt (TRef (RStruct "A")) (TRef (RStruct "C")) then
+        failwith "should not succeed" else ())
+  );
+  ("sub_subrstruct", (fun () -> 
+       begin if Typechecker.subtype_ref tctxt (RStruct "A") (RStruct "B") then 
+           () 
+         else 
+           failwith "should not fail"
+       end)
+  );
+  ("no_sub_subrstruct", (fun () -> 
+       begin if Typechecker.subtype_ref tctxt (RStruct "B") (RStruct "A") then 
+           failwith "should fail" 
+         else 
+           ()
+       end)
+  );
 ]
 
 let brainfuck_tests = [
@@ -534,6 +626,19 @@ let brainfuck_tests = [
   ("studenttests/brainfuck.oat", "ppppppppppsrppppppprpppppppppprppprpllllmerpporpopppppppooppporppollppppppppppppppporopppommmmmmommmmmmmmorpo", "Hello World!0");
   ("studenttests/brainfuck.oat", "ririririririspplerorororororo Abc123", "Cde3450");
 ]
+
+let rucksackTest = 
+  [
+    ("studenttests/rucksack.oat", "0 20 5 2 2 3 10 10 5 100 3 5 1 100", "20");
+    ("studenttests/rucksack.oat", "0 15 5 2 2 3 10 10 5 100 3 5 1 100", "110");
+    ("studenttests/rucksack.oat", "1 20 5 2 2 3 10 10 5 100 3 5 1 100", "215");
+    ("studenttests/rucksack.oat", "1 15 5 2 2 3 10 10 5 100 3 5 1 100", "208");
+    ("studenttests/rucksack.oat", "2 20 5 2 2 3 10 10 5 100 3 5 1 100", "215");
+    ("studenttests/rucksack.oat", "2 15 5 2 2 3 10 10 5 100 3 5 1 100", "208");
+    ("studenttests/rucksack.oat", "0 20 5 2 3 4 1 10 12 40 10 30 9 30", "46");
+    ("studenttests/rucksack.oat", "1 20 5 2 3 4 1 10 12 40 10 30 9 30", "54");
+    ("studenttests/rucksack.oat", "2 20 5 2 3 4 1 10 12 40 10 30 9 30", "70");
+  ]
 
 let prepend list = List.map (fun (path, input, output) -> 
     ("studenttests/" ^ path, input, output)
@@ -667,12 +772,11 @@ let sl_tests = prepend [
 let provided_tests : suite = [
   Test("Others subtype", unit_tests);
   Test("Others: another_su.oat", executed_oat_file [("studenttests/another_sum.oat", "", "200")]); 
-  (* Test ("Others: Performance Comparison", [("studenttests/manually", assert_eq true false)]);  *) (* TODO the fuck ? *)
   Test("Others: Moodle Fraction Test", executed_oat_file [("studenttests/fraction.oat", "", "42")]);
-  Test("Others: linked list tests", executed_oat_file [("studenttests/linkedlist.oat", "", "0")]); (* TODO discuss: wrong result ? https://gitlab.ethz.ch/flbuetle/compiler-design/commit/c42a0129556f6172dc48b993471a4c3eb18bf537 *)
+  Test("Others: linked list tests", executed_oat_file [("studenttests/linkedlist.oat", "", "0")]); (* Note: modified *)
   Test("Others: SP: brainfuck tests", executed_oat_file brainfuck_tests);
   Test("Others: Struct Student Test", executed_oat_file [("studenttests/structs.oat", "", "4000")]);
-  Test("Others: Fulkerson Test", executed_oat_file [("studenttests/fulkerson.oat", "", "37")]); (* TODO discuss: variable redeclaration https://gitlab.ethz.ch/flbuetle/compiler-design/commit/6cbeed4da92d08339f0b7e2d56c71dc87174b614 *)
+  Test("Others: Fulkerson Test", executed_oat_file [("studenttests/fulkerson.oat", "", "37")]); (* Note: modified *)
   Test("Others: hard test", executed_oat_file [("studenttests/game.oat", "", "120")]);
   Test("Others: Inverted-Index-Boolean-Query",executed_oat_file [("studenttests/inv_index.oat", "","12354")]);
   Test("Others: Directed DFS Test", executed_oat_file [("studenttests/directed_dfs.oat", "", "79")]);
@@ -685,12 +789,12 @@ let provided_tests : suite = [
   Test("Others: tc struct tests", typecheck_file_correct ["studenttests/tc_correct_struct.oat"]);
   Test("Others: tc struct tests", typecheck_file_error [ "studenttests/tc_error_struct.oat"; "studenttests/tc_error_struct_recursion.oat";]);
   Test("Others: Generators", executed_oat_file [("studenttests/gen.oat", "", "810111214161718201420263238445056620")]);
-  Test("Others: Binary tree with insertion and deletion", executed_oat_file [("studenttests/binary_tree_structs.oat", "", "-5 -4 -3 -2 -1 1 2 3 4 5 | -5 -4 -2 -1 2 3 5 | return: 1")]); (* TODO discuss: if? for int[] *)
+  Test("Others: Binary tree with insertion and deletion", executed_oat_file [("studenttests/binary_tree_structs.oat", "", "-5 -4 -3 -2 -1 1 2 3 4 5 | -5 -4 -2 -1 2 3 5 | return: 1")]); (* Note: modified *)
   Test("Others: Palindrome", executed_oat_file [("studenttests/palindrome.oat", "","42")]);
   Test("Others: Binary Tree", executed_oat_file [("studenttests/BinaryTree.oat", "", "0")]);
   Test("Others: Perceptron Test", executed_oat_file [("studenttests/single_perceptron.oat", "", "correctly classified1")]);
   Test("Others: complex numbers", executed_oat_file [("studenttests/complexnumbers.oat", "", "5")]);
-  Test("Others: Moodle Oat Test", executed_oat_file [("studenttests/oat_test.oat", "", "2")]); (* TODO discuss *)
+  Test("Others: Moodle Oat Test", executed_oat_file [("studenttests/oat_test.oat", "", "2")]); (* Note: modified *)
   Test("Others: moodle tests", executed_oat_file [("studenttests/treap.oat", "", "[[[[(-5, 1668674806)], (2, 1000676753)], (8, 908095735)], (16, 71666532), [[(27, 1250496027)], (42, 1116302264)]]0")]);
   Test("Others: Areas Test", executed_oat_file [("studenttests/areas.oat", "", "45")]);
   Test("Others: flist test", executed_oat_file [("studenttests/flist.oat", "", "8")]);
@@ -706,4 +810,25 @@ let provided_tests : suite = [
   Test("Others: Kronecker Student Test", executed_oat_file [("studenttests/struct_kron.oat", "", "896532362420566342351347412162872128492883832321214565621125148204714357161812102427181524271815268143912213912214161666242496242492410236153361530")]);
   Test("Others: function pointers", executed_oat_file["studenttests/fptrs.oat", "", "1"]);
   Test("Others: scope_struct_stress", executed_oat_file [("studenttests/testitest.oat", "", "111222\nfalse, true, 22, true, 22, 222\n20, 20, 10, 10, 10, 990\n990, 10, 7770, 7770, 7770")]); (* Note: Modified a few things *)
+  Test("Others: Rucksack Tests", executed_oat_file rucksackTest);
+  (* Test("Others: IsTree ok 1", executed_oat_file [("studenttests/is_tree.oat", "1", "1");
+                                                 ("studenttests/is_tree.oat", "0", "1");
+                                                 ("studenttests/is_tree.oat", "2 0 1", "1");
+                                                 ("studenttests/is_tree.oat", "3 0 1 1 2", "1");
+                                                 ("studenttests/is_tree.oat", "4 0 1 0 2 0 3", "1");
+                                                 ("studenttests/is_tree.oat", "5 0 1 0 2 0 3 3 4", "1");
+                                                 ("studenttests/is_tree.oat", "6 0 1 1 2 2 3 2 4 2 5", "1"); ]);
+     Test("Others: IsTree err 1", executed_oat_file[("studenttests/is_tree.oat", "2", "0");
+                                                 ("studenttests/is_tree.oat", "3 0 1", "0");
+                                                 ("studenttests/is_tree.oat", "3 0 1 0 1", "0");
+                                                 ("studenttests/is_tree.oat", "4 0 1 1 2 2 0", "0");
+                                                 ("studenttests/is_tree.oat", "5 0 1 0 2 0 3 1 0", "0");
+                                                 ("studenttests/is_tree.oat", "6 1 2 2 3 3 4 4 5 5 1", "0");
+                                                 ("studenttests/is_tree.oat", "5", "0"); ]);
+     Test("Others: IsTree input err 1", executed_oat_file [("studenttests/is_tree.oat", "finthechat", "254");
+                                                        ("studenttests/is_tree.oat", "0 1 2", "254");
+                                                        ("studenttests/is_tree.oat", "", "254");
+                                                        ("studenttests/is_tree.oat", "2 1 2 1", "254"); ]); TODO: prohibited variable redelclaration*)
+  Test("Others: student tests", executed_oat_file [("studenttests/s_min_dist.oat", "0", "03250")]);
+  Test("Others: determinants", Gradedtests.executed_oat_file ["studenttests/determinant.oat", "", "2_25_-132_-30696_0"]);
 ] 
