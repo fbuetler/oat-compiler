@@ -59,6 +59,5 @@ int program(int argc, string[] argv) {
   t  = shift(t,3,0);
   t = rotate_90(t);
   t = apply_function(square,t);
-  print_int(t.a.x);
   return t.a.x;
 }
