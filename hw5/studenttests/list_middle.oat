@@ -1,0 +1,113 @@
+/* Jonathan Lehner */
+/* Xingong Xu */
+
+struct Node {
+  int data;
+  Node? next
+}
+
+/*
+
+New structures of hw05:
+
+This case must exercise some of the new features of this version of Oat: 
+structs, function pointers, non-null vs. null references, or, ideally, 
+some combination of these. Oat is now quite a fully-fledged language, 
+so this can be pretty fun. Ideas include: linked-list algorithms 
+(will definitely need null), object-encodings like the color example above, 
+trees, etc. How handy is it to have notation for array initialization? 
+How intrusive do you think the not-null pointer requirement is?
+
+*/
+
+/* we say head cannot be null */
+int printMiddle(Node head) {
+  var condition = true;
+  var slow = head;
+  var fast = head;
+  while (condition) {
+    /* check if we are at the end of the list */
+    if? (Node not_null_fast_next = fast.next) {
+      if? (Node not_null_fast_next_next = not_null_fast_next.next) {
+        /* fast pointer goes two steps */
+        fast = not_null_fast_next_next;
+        /* slow pointer goes one step */
+        if? (Node not_null_slow_next = slow.next) {
+          slow = not_null_slow_next;
+        }
+      }
+    } else {
+      /* we are at the end of the list */
+      condition = false;
+    }
+  }
+  /* slow points to the middle of the list */
+  return slow.data;
+}
+
+/* go through the list to calculate its length */
+int getlength(Node head){
+  var counter = 1;
+  var current = head;
+  var condition = true;
+  while (condition) {
+    var next = current.next;
+    if? (Node not_null_next = next) {
+      current = not_null_next;
+      counter = counter + 1;
+    }
+    else {
+      condition = false;
+    }
+  }
+  return counter;
+}
+
+/* node0 is the start of the linked list */
+global node0 = new Node {data = 0; next = Node null};
+
+struct LinkedList {
+  /* must have a head and last */
+	Node head;
+	Node last
+}
+
+int program(int argc, string[] argv) {
+  /* the program finds the value of the middle element in a linked list,
+  the linked list has to have odd length in order to have a middle element */
+
+  var list = new LinkedList {
+		head = node0;
+		last = node0
+	};
+
+  /* so we have 0, 0, 1, 2, ... 50, 51 ... 101 */
+  /* which means total is 103 elements and 
+  the middle is element # 104/2 = 52 (with 1 indexing) which is 
+   0 ->1, 0 ->2, 1 ->3, 2 ->4, ... 50 ->52 -->  is 50 */
+  for (var i = 0; i < 102; i = i + 1; ) {
+    /* create new node, point the list end to it, and set it to be the new list end */
+    var x = new Node {data = i; next = Node null};
+    list.last.next = x;
+    list.last = x;
+  }
+
+  /* check if list length is odd */
+  /* which is redundant since we make the list ourselves, 
+  but could be useful if the list is given by a user */
+  /* calling the variable length give a parse error? is this intended? */
+  var len = getlength(list.head);
+  var bin = (len [&] 1);
+  var isdivby2 = (bin == 0);
+
+  var middle_value = 0;
+  if(!isdivby2){
+    var head = list.head;
+    middle_value = printMiddle(head);
+  }
+  else { 
+    /* there is no middle value */
+  }
+
+  return middle_value;
+}

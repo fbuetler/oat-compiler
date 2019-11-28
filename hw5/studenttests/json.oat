@@ -1542,7 +1542,7 @@ string print_null(JsonNull tmp){
 }
 
 string print_json(Json? tmp, int depth){
-  var s = "TODO print_json";
+  var s = "this string should be overwritten\n";
   if? (Json j = tmp){
     if? (JsonObject obj = j.obj){
       s = print_obj(obj, depth);
@@ -1819,7 +1819,7 @@ void test_printer() {
 /************ END PRINTER ************/
 
 int program(int argc, string[] argv) {
-  /* test_printer(); */ /* TODO uncomment */
+  test_printer(); 
   test_parser();
   test_vector();
   print_string("PASSED");

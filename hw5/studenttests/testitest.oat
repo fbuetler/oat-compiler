@@ -1,0 +1,187 @@
+/* Robert Balas */
+/* Stefan Mach  */
+
+/* Some structs that have fields of different types but the same names, orders also different
+ * -> this is to check whether the compiler is consistent wrt to types and assignments
+ * (e.g. by sorting the fields or otherwise)
+ */
+struct First {
+  bool first;
+  bool third;
+  int  second;
+  int  zero
+}
+
+struct Second {
+  int   third;
+  First first;
+  int   second
+}
+
+struct Third {
+  Second[]?  first;
+  Second?    second;
+  Second[]   third;
+  Second?[]? fourth
+}
+
+/* Global declarations using these struct types. Globals cannot refer to other globals.
+ * Unfortunately the (reference) compiler / Oat spec is not really usable with array
+ * refs generally since the Oat-style arrays (LLVM structs of length and pointer to
+ * dynamic array) can't be use to point at static arrays (where the length must be known
+ * at compile time for LLVM typechecking to succeed). Hence, we must use null refs
+ * instead of refs to the global arrays when initializing Third
+ */
+global first = new First {second = 11;
+                          third = true;
+                          first = false;
+                          zero = 10};
+global second = new Second {third = 222;
+                            second = 22;
+                            first = new First {first = true;
+                                               second = 22;
+                                               zero = 20;
+                                               third = false}};
+global third = new Third {second = Second null;
+                          third = new Second[]{}; /* The given frontend produces wrong code for length != 0 */
+                          first = Second[] null;
+                          fourth = new Second?[] {}}; /* dito */
+
+/* To check shadowing of the the array init id */
+global id = 99;
+
+/* Reuses a local array name as the non-null ifq identifier, returns:
+ * 111, if called with a Null reference
+ * x[0] (whatever is at index 0 in its argument), otherwise
+ */
+int test_ifq_alias (int[]? x) {
+  /* This is the local y which should be only seen by the Null case */
+  var y = new int[77]{id -> 111};
+  /* Here a new y is created for the non-null case */
+  if? (int[] y = x) {
+    return y[0];
+  } else {
+    return y[0];
+  }
+}
+
+/* Function returning third.second.first.zero, or second.first.zero if third.second not set.
+ * .. you see how confusing that can get depending on the scope..
+ */
+int get_3210(Third third) {
+  if?(Second second = third.second) {
+    return second.first.zero;
+  } else {
+    return second.first.zero;
+  }
+}
+
+/* Some functions printing (or returning) commas and newlines */
+string c() {
+  print_string(", ");
+  return "";
+}
+
+string nl() {
+  return "\n";
+}
+
+/* Print using function pointers */
+void p(() -> string str) {
+  print_string(str());
+  return;
+}
+
+
+/* Program that calls the various functions trying to confuse the compiler :D */
+int program(int argc, string[] argv) {
+
+  /* Fun with Ifq */
+  var x = int[] null;
+  var y = int[] null;
+  y = new int[3]{id -> 222};
+  var ifq1 = test_ifq_alias(x); /* 111 */
+  var ifq2 = test_ifq_alias(y); /* 222 */
+  var res = 1000 * ifq1 + ifq2; /* 111222 */
+  print_int(res); p(nl);
+
+  /* Fun with structs I */
+  var s11  = first.first; /* false */
+  var s13  = first.third; /* true */
+  var s22  = second.second; /* 22 */
+  var s211 = second.first.first; /* true */
+  var s212 = second.first.second; /* 22 */
+  var s23  = second.third; /* 222 */
+
+  print_bool(s11); p(c); print_bool(s13); p(c); print_int(s22); p(c); print_bool(s211); p(c); print_int(s212); p(c); print_int(s23); p(nl);
+
+  /* Fun with structs II */
+  var s3210 = get_3210(third); /* 20 from second(G).first.zero */
+  print_int(s3210); p(c);
+
+  third.second = second; /* now third.second points to second(G) */
+  s3210 = get_3210(third); /* 20 from third(G).second(=second(G)).first.zero */
+  print_int(s3210); p(c);
+
+  second.first = first; /* now second.first points to first(G) */
+  s3210 = get_3210(third); /* 10 from third(G).second(=second(G)).first(=first(G)).zero */
+  print_int(s3210); p(c);
+
+  /* Now first(L) shadows first(G) (and has different type) */
+  var first = new Second {first = new First {zero = 990;
+                                              first = true;
+                                              second = 992;
+                                              third = false};
+                           second = 922;
+                           third = 9222};
+  s3210 = get_3210(third); /* 10 from third(G).second(=second(G)).first(=first(G)).zero, get_3210() doesn't see first(L) */
+  print_int(s3210); p(c);
+
+  /* now first(G) is no longer visible here, but third.second is still set */
+  third.second = Second null; /* now third.second is Null again, get_3210() doesn't see first(L) */
+  s3210 = get_3210(third); /* 10 from third(G).second(=second(G)).first(=first(G)).zero */
+  print_int(s3210); p(c);
+
+  third.second = first; /* now third(G).second is first(L) */
+  s3210 = get_3210(third); /* 990 from third(G).second(=first(L)).first.zero */
+  print_int(s3210); p(nl);
+
+  /* Do some subtype and array fun */
+  var s_arr = new Second[]{first, second}; /* first(L) and second(G) */
+
+  third.third = s_arr;  /* lhs has type Second[] (same as s_arr) */
+  third.first = third.third;  /* lhs has type Second[]? (third.third is subtype) */
+  third.fourth = new Second?[] {third.third[0], s_arr[1]}; /* lhs has type Second?[]? (s_arr is subtype and elements are subtypes) */
+
+  var a0 = s_arr[0].first.zero; /* 990 from first(L).first.zero */
+  var a1 = s_arr[1].first.zero; /* 10 from second(G).first(=first(G)).zero */
+  print_int(a0); p(c); print_int(a1); p(c);
+
+  third.third[0].first.zero = 7770; /* essentially sets s_arr[0].first.zero */
+  if? (Second?[] x = third.fourth) {
+    if? (Second x = x[0]) {
+      a0 = x.first.zero; /* 7770 from aliased s_arr[0].first.zero */
+    } else {
+      a0 = 8888888;
+    }
+  } else {
+    a0 = 9999999;
+  }
+
+  if? (Second[] x = third.first) {
+    a1 = x[0].first.zero; /* 7770 from aliased s_arr[0].first.zero */
+  } else {
+    a1 = 5555555;
+  }
+  print_int(a0); p(c); print_int(a1); p(c);
+
+  a0 = s_arr[0].first.zero; /* 7770 */
+  print_int(a0); p(nl);
+
+  return 0;
+}
+
+/* Torwalds
+ * would kill me
+ * for this comment style
+ */
