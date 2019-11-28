@@ -809,7 +809,7 @@ let provided_tests : suite = [
   Test("Others: Heapsort", executed_oat_file [("studenttests/heapsort.oat", "", "fhkmopsy{0")]);
   Test("Others: Kronecker Student Test", executed_oat_file [("studenttests/struct_kron.oat", "", "896532362420566342351347412162872128492883832321214565621125148204714357161812102427181524271815268143912213912214161666242496242492410236153361530")]);
   Test("Others: function pointers", executed_oat_file["studenttests/fptrs.oat", "", "1"]);
-  Test("Others: scope_struct_stress", executed_oat_file [("studenttests/testitest.oat", "", "111222\nfalse, true, 22, true, 22, 222\n20, 20, 10, 10, 10, 990\n990, 10, 7770, 7770, 7770")]); (* Note: Modified a few things *)
+  Test("Others: scope_struct_stress", executed_oat_file [("studenttests/testitest.oat", "", "111222\nfalse, true, 22, true, 22, 222\n20, 20, 10, 10, 10, 990\n990, 10, 7770, 7770, 77700")]); (* Note: Modified a few things *)
   Test("Others: Rucksack Tests", executed_oat_file rucksackTest);
   (* Test("Others: IsTree ok 1", executed_oat_file [("studenttests/is_tree.oat", "1", "1");
                                                  ("studenttests/is_tree.oat", "0", "1");
