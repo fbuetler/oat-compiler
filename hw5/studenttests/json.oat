@@ -580,7 +580,33 @@ ParseResult parse_json_number(ParseState input) {
     ignore_str(must_parse_str(res));
   }
 
+  /* TODO convert to json node */
   return parse_result_of_difference(input, state);
+}
+
+/* parse_json_boolean reads a JSON boolean literal. */
+ParseResult parse_json_boolean(ParseState input) {
+  var res = parse_this(input, "true");
+  if (can_parse(res)) {
+    return new ParseResult {
+      input = input;
+      node = wrap_boolean(new JsonBoolean { boolean = true });
+      str = string null;
+      count = 4
+    };
+  }
+
+  res = parse_this(input, "false");
+  if (can_parse(res)) {
+    return new ParseResult {
+      input = input;
+      node = wrap_boolean(new JsonBoolean { boolean = false });
+      str = string null;
+      count = 5
+    };
+  }
+
+  return fail_parse(input);
 }
 
 void test_must_parse_str() {
@@ -891,6 +917,29 @@ void test_parse_json_number() {
   return;
 }
 
+void test_parse_json_boolean() {
+  var output = must_parse_node(parse_json_boolean(parse_state_of_string("true")));
+  if? (JsonBoolean boolean = output.boolean) {
+    assert(boolean.boolean);
+  } else {
+    assert(false);
+  }
+
+  output = must_parse_node(parse_json_boolean(parse_state_of_string("false")));
+  if? (JsonBoolean boolean = output.boolean) {
+    assert(!(boolean.boolean));
+  } else {
+    assert(false);
+  }
+
+  assert(!can_parse(parse_json_boolean(parse_state_of_string("True"))));
+  assert(!can_parse(parse_json_boolean(parse_state_of_string("False"))));
+  assert(!can_parse(parse_json_boolean(parse_state_of_string(" true"))));
+  assert(!can_parse(parse_json_boolean(parse_state_of_string(" false"))));
+
+  return;
+}
+
 void test_parser(){
   test_must_parse_str();
   test_must_parse_node();
@@ -903,6 +952,7 @@ void test_parser(){
   test_parse_json_fraction();
   test_parse_json_exponent();
   test_parse_json_number();
+  test_parse_json_boolean();
 
   if (assert_disabled_for_test) {
     /* await_assert() without matching did_assert() */
