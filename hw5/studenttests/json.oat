@@ -78,6 +78,7 @@ global char_zero = 48;
 global char_upper_a = 65;
 global char_lower_a = 97;
 
+global char_quote_arr = new int[]{34};
 
 global empty_json = new Json {
   obj = JsonObject null;
@@ -154,6 +155,14 @@ bool can_parse(ParseResult res) {
   return res.count > 0;
 }
 
+void ignore_str(string s) {
+  return;
+}
+
+void ignore_node(Json node) {
+  return;
+}
+
 ParseState copy_parse_state(ParseState state) {
   return new ParseState {
     str = new int[length(state.str)]{i -> state.str[i]};
@@ -202,6 +211,10 @@ ParseResult parse_this(ParseState input, string s) {
     }
   }
   return fail_parse(input);
+}
+
+ParseResult parse_quote(ParseState input) {
+  return parse_this(input, string_of_array(char_quote_arr));
 }
 
 void test_must_parse_str() {
@@ -367,6 +380,8 @@ void test_parse_this() {
   var state = parse_state_of_string("say walrus please");
   var output = must_parse_str(parse_this(state, "say w"));
   assert(str_eq(output, "say w"));
+  assert(can_parse(parse_this(state, "alrus")));
+  assert(!can_parse(parse_this(state, "walrus")));
 
   state = parse_state_of_string("say walrus please");
   assert_parse_string(parse_this(state, "say walrus please"), "say walrus please");
@@ -379,11 +394,26 @@ void test_parse_this() {
   return;
 }
 
+void test_parse_quote() {
+  var state = parse_state_of_string(convert_quotes("Such '''testing''', right?"));
+  assert(!can_parse(parse_quote(state)));
+  ignore_str(must_parse_str(parse_this(state, "Such")));
+  assert(!can_parse(parse_quote(state)));
+  ignore_str(must_parse_str(parse_this(state, " ")));
+  assert_parse_string(parse_quote(state), convert_quotes("'"));
+  ignore_str(must_parse_str(parse_quote(state)));
+  ignore_str(must_parse_str(parse_quote(state)));
+  ignore_str(must_parse_str(parse_quote(state)));
+  assert(!can_parse(parse_quote(state)));
+  return;
+}
+
 void test_parser(){
   test_must_parse_str();
   test_must_parse_node();
   test_can_parse();
   test_parse_this();
+  test_parse_quote();
 
   if (assert_disabled_for_test) {
     /* await_assert() without matching did_assert() */
