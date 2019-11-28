@@ -381,6 +381,15 @@ ParseResult parse_whitespace(ParseState input) {
   return parse_matching_chars(input, is_whitespace_char);
 }
 
+/* try_parse applies a parsing function is possible */
+void try_parse(ParseState input, (ParseState) -> ParseResult f) {
+  var res = f(input);
+  if (can_parse(res)) {
+    input.pos = input.pos + res.count;
+  }
+  return;
+}
+
 bool is_valid_unescaped_string_char(int c) {
   return c >= 32 & c <= 1114111 & c != char_double_quote;
 }
@@ -645,6 +654,108 @@ ParseResult parse_json_null(ParseState input) {
   };
 }
 
+/* parse_json_array parses a JSON array. */
+ParseResult parse_json_array(ParseState input) {
+  var state = copy_parse_state(input);
+
+  var res = parse_this(state, "[");
+  if (!can_parse(res)) {
+    return fail_parse(input);
+  }
+  ignore_str(must_parse_str(res));
+
+  try_parse(state, parse_whitespace);
+
+  var pre_elem_state = copy_parse_state(state);
+  var elem_count = 0;
+  var done = false;
+  var should_finish = false;
+  while (!done) {
+    res = parse_whitespace_surrounded(state, parse_json_value);
+
+    if (elem_count > 0) {
+      if ((can_parse(res) & should_finish) | (!can_parse(res) & !should_finish)) {
+        return fail_parse(input);
+      }
+    }
+    if (can_parse(res)) {
+      ignore_node(must_parse_node(res));
+      elem_count = elem_count + 1;
+
+      res = parse_this(state, ",");
+      if (can_parse(res)) {
+        ignore_str(must_parse_str(res));
+      }
+      should_finish = !can_parse(res);
+    } else {
+      done = true;
+    }
+  }
+
+  state = pre_elem_state;
+  var elems = new Json[elem_count]{i -> empty_json};
+  for (var i = 0; i < elem_count; i = i + 1;) {
+    if (i != 0) {
+      ignore_str(must_parse_str(parse_this(state, ",")));
+    }
+    elems[i] = must_parse_node(parse_whitespace_surrounded(state, parse_json_value));
+  }
+
+  res = parse_this(state, "]");
+  if (!can_parse(res)) {
+    return fail_parse(input);
+  }
+  ignore_str(must_parse_str(res));
+
+  var output = parse_result_of_difference(input, state);
+  output.str = string null;
+  output.node = wrap_arr(new JsonArray { arr = elems });
+  return output;
+}
+
+/* parse_json_value parses any JSON value, but does not accept whitespace around it. */
+ParseResult parse_json_value(ParseState input) {
+  var results = new ParseResult[]{
+    /* TODO object */
+    parse_json_array(input),
+    parse_json_string(input),
+    parse_json_number(input),
+    parse_json_boolean(input),
+    parse_json_null(input)
+  };
+  for (var i = 0; i < length(results); i = i + 1;) {
+    var res = results[i];
+    if (can_parse(res)) {
+      return res;
+    }
+  }
+  return fail_parse(input);
+}
+
+/* parse_whitespace_surrounded runs a parser, and consumes leading and trailing whitespace. */
+ParseResult parse_whitespace_surrounded(ParseState input, (ParseState) -> ParseResult f) {
+  var state = copy_parse_state(input);
+
+  try_parse(state, parse_whitespace);
+
+  var res = f(state);
+  if (!can_parse(res)) {
+    return fail_parse(input);
+  }
+  state.pos = state.pos + res.count;
+
+  try_parse(state, parse_whitespace);
+
+  res.input = input;
+  res.count = state.pos - input.pos;
+  return res;
+}
+
+void assert_parse_string(ParseResult result, string expected) {
+  assert(str_eq(must_parse_str(copy_parse_result(result)), expected));
+  return;
+}
+
 void test_must_parse_str() {
   var state = parse_state_of_string("walrus");
   assert(length(state.str) == 6);
@@ -796,11 +907,6 @@ void test_can_parse() {
     count = 0
   }));
 
-  return;
-}
-
-void assert_parse_string(ParseResult result, string expected) {
-  assert(str_eq(must_parse_str(copy_parse_result(result)), expected));
   return;
 }
 
@@ -1002,6 +1108,109 @@ void test_parse_json_null() {
   return;
 }
 
+void test_parse_json_array() {
+  var input = convert_quotes("['test', 123.45, true, [123, null], []]");
+  var output = must_parse_node(parse_json_array(parse_state_of_string(input)));
+  if? (JsonArray arr = output.arr) {
+    assert(length(arr.arr) == 5);
+    if? (JsonString str = arr.arr[0].str) {
+      assert(str_eq(str.str, "test"));
+    } else {
+      assert(false);
+    }
+    if? (JsonArray inner_arr = arr.arr[3].arr) {
+      assert(length(inner_arr.arr) == 2);
+    } else {
+      assert(false);
+    }
+    if? (JsonArray inner_arr = arr.arr[4].arr) {
+      assert(length(inner_arr.arr) == 0);
+    } else {
+      assert(false);
+    }
+  } else {
+    assert(false);
+  }
+
+  assert(can_parse(parse_json_array(parse_state_of_string("[]"))));
+  assert(can_parse(parse_json_array(parse_state_of_string("[123]"))));
+  assert(!can_parse(parse_json_array(parse_state_of_string("[123,]"))));
+  assert(!can_parse(parse_json_array(parse_state_of_string("[,]"))));
+
+  return;
+}
+
+void test_parse_json_value() {
+  var good_inputs = new string[]{
+    "123",
+    "123.456e+12",
+    "true",
+    "false",
+    "null",
+    "'test'",
+    "''",
+    "[]",
+    "[123, 45,    'test']",
+    "[123,45,'test']"
+  };
+  for (var i = 0; i < length(good_inputs); i = i + 1;) {
+    var res = parse_json_value(parse_state_of_string(convert_quotes(good_inputs[i])));
+    ignore_node(must_parse_node(res));
+    assert(length_of_string(good_inputs[i]) == res.count);
+  }
+
+  var bad_inputs = new string[]{
+    " 123",
+    "123 ",
+    "123ee5",
+    "true ",
+    " null",
+    "'test''test'",
+    "'test''",
+    " []",
+    " [123,45,'test']",
+    "[123,45,'test'] "
+  };
+  for (var i = 0; i < length(bad_inputs); i = i + 1;) {
+    var res = parse_json_value(parse_state_of_string(convert_quotes(bad_inputs[i])));
+    assert(length_of_string(bad_inputs[i]) != res.count);
+  }
+
+  return;
+}
+
+void test_parse_whitespace_surrounded() {
+  var good_inputs = new string[]{
+    "true",
+    "    true    ",
+    "    false    ",
+    "true ",
+    " true"
+  };
+
+  for (var i = 0; i < length(good_inputs); i = i + 1;) {
+    var res = parse_whitespace_surrounded(parse_state_of_string(good_inputs[i]), parse_json_boolean);
+    ignore_node(must_parse_node(res));
+    assert(length_of_string(good_inputs[i]) == res.count);
+  }
+
+  var bad_inputs = new string[]{
+    "rue",
+    "    rue    ",
+    "    alse    ",
+    "    falsefalse    ",
+    "    falsefalse    ",
+    "tr  ",
+    " rue"
+  };
+  for (var i = 0; i < length(bad_inputs); i = i + 1;) {
+    var res = parse_whitespace_surrounded(parse_state_of_string(bad_inputs[i]), parse_json_boolean);
+    assert(length_of_string(bad_inputs[i]) != res.count);
+  }
+
+  return;
+}
+
 void test_parser(){
   test_must_parse_str();
   test_must_parse_node();
@@ -1016,6 +1225,9 @@ void test_parser(){
   test_parse_json_number();
   test_parse_json_boolean();
   test_parse_json_null();
+  test_parse_json_array();
+  test_parse_json_value();
+  test_parse_whitespace_surrounded();
 
   if (assert_disabled_for_test) {
     /* await_assert() without matching did_assert() */
