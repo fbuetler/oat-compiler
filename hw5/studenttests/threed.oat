@@ -1,0 +1,69 @@
+/*André Rösti*/
+/*Olivier Goerens*/
+
+struct Neighbor{
+		int dis_to_nghb;
+		Point? nghb
+}
+
+struct Point { 
+		int id;	
+		int x;
+		int y;
+		int z;
+		Neighbor n
+}
+
+int sq (int x) {
+	return (x*x);
+}
+
+void nghb_update(Point p1, Point p2){
+	p1.n.nghb= p2;
+	p1.n.dis_to_nghb= sqdistance (p1,p2); 
+	return;
+}
+
+void nghb_check (Point p1, Point p2){
+	if (p1.id==p2.id){
+		 return;
+	}
+	if (p1.n.dis_to_nghb==-1){
+		nghb_update(p1,p2);
+	}
+	else {
+		var dis= sqdistance(p1,p2);
+		if (p1.n.dis_to_nghb> dis){
+			nghb_update(p1,p2);
+		}
+	} 
+	return;
+}
+
+int sqdistance (Point p1, Point p2 ){
+	var xdis= p1.x-p2.x;
+	var zdis= p1.z-p2.z;
+	var ydis= p1.y-p2.y;
+	return (sq (xdis)+sq (ydis)+sq (zdis));
+}
+
+
+void find_nghb (Point p, Point[] p_arr){
+	for (var i=0; i<length(p_arr); i=i+1;){
+		nghb_check(p,p_arr[i]);	
+	}
+	return;
+}
+
+int program (int args, string[] argv){
+	var p1= new Point {id=1; x=0; y=0; z=0; n= new Neighbor {dis_to_nghb=-1; nghb= Point null}};
+	var p2= new Point {id=2; x=1; y=2; z=3; n= new Neighbor {dis_to_nghb=-1; nghb= Point null}};
+	var p3= new Point {id=3; x=2; y=2; z=2; n= new Neighbor {dis_to_nghb=-1; nghb= Point null}};
+	var p4= new Point {id=4; x=-1; y=5; z=2; n=new Neighbor {dis_to_nghb=-1; nghb= Point null}};
+	var p5= new Point {id=5; x=0; y=0; z=-10; n=new Neighbor{dis_to_nghb=-1; nghb= Point null}};
+	var arr = new Point[] {p1,p2,p3,p4,p5};
+	find_nghb (p1,arr);
+	find_nghb (p3,arr);
+	find_nghb (p5,arr);
+	return (p1.n.dis_to_nghb-p3.n.dis_to_nghb+p5.n.dis_to_nghb);
+} 
