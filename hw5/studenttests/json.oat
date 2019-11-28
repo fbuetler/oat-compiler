@@ -57,7 +57,7 @@ struct JsonString{
 }
 
 struct JsonNumber{
-  int number
+  string number
 }
 
 struct JsonBoolean{
@@ -580,8 +580,14 @@ ParseResult parse_json_number(ParseState input) {
     ignore_str(must_parse_str(res));
   }
 
-  /* TODO convert to json node */
-  return parse_result_of_difference(input, state);
+  var output = parse_result_of_difference(input, state);
+  if? (string str = output.str) {
+    output.node = wrap_number(new JsonNumber { number = str });
+  } else {
+    assert(false);
+  }
+  output.str = string null;
+  return output;
 }
 
 /* parse_json_boolean reads a JSON boolean literal. */
@@ -906,14 +912,24 @@ void test_parse_json_exponent() {
   return;
 }
 
+void assert_parse_json_number(string input, string expected) {
+  var actual = must_parse_node(parse_json_number(parse_state_of_string(input)));
+  if? (JsonNumber number = actual.number) {
+    assert(str_eq(number.number, expected));
+  } else {
+    assert(false);
+  }
+  return;
+}
+
 void test_parse_json_number() {
-  assert_parse_string(parse_json_number(parse_state_of_string("123")), "123");
-  assert_parse_string(parse_json_number(parse_state_of_string("123.456")), "123.456");
-  assert_parse_string(parse_json_number(parse_state_of_string("-123.456e+78")), "-123.456e+78");
+  assert_parse_json_number("123", "123");
+  assert_parse_json_number("123.456", "123.456");
+  assert_parse_json_number("-123.456e+78", "-123.456e+78");
   assert(!can_parse(parse_json_number(parse_state_of_string(" 123"))));
-  assert_parse_string(parse_json_number(parse_state_of_string("-123:456e+78")), "-123");
-  assert_parse_string(parse_json_number(parse_state_of_string("-123.456q+78")), "-123.456");
-  assert_parse_string(parse_json_number(parse_state_of_string("-123.456e+")), "-123.456");
+  assert_parse_json_number("-123:456e+78", "-123");
+  assert_parse_json_number("-123.456q+78", "-123.456");
+  assert_parse_json_number("-123.456e+", "-123.456");
   return;
 }
 
@@ -1105,7 +1121,7 @@ string print_str(JsonString tmp){
 }
 
 string print_number(JsonNumber tmp){
-  if (tmp.number == 0) {
+  /* if (tmp.number == 0) {
     return "0";
   }
   if (tmp.number == 1) {
@@ -1134,7 +1150,7 @@ string print_number(JsonNumber tmp){
   }
   if (tmp.number == 9) {
     return "9";
-  }
+  } */
   return "TODO print_number";
 }
 
@@ -1243,7 +1259,7 @@ void test_obj(){
   var test1 = print_json(wrap_obj(
       new JsonObject{
         members = new JsonMember[]{
-          new JsonMember{str = "hallo"; element = wrap_number(new JsonNumber {number = 3})}
+          new JsonMember{str = "hallo"; element = wrap_number(new JsonNumber {number = "3"})}
         }
       }
     ), 1);
@@ -1311,9 +1327,9 @@ void test_arr(){
     print_json(wrap_arr(
       new JsonArray {
         arr = new Json[]{
-          wrap_number(new JsonNumber {number = 0}),
-          wrap_number(new JsonNumber {number = 0}),
-          wrap_number(new JsonNumber {number = 0})
+          wrap_number(new JsonNumber {number = "0"}),
+          wrap_number(new JsonNumber {number = "0"}),
+          wrap_number(new JsonNumber {number = "0"})
          }
       }
     ), 1), 
@@ -1328,7 +1344,7 @@ void test_arr(){
     print_json(wrap_arr(
       new JsonArray {
         arr = new Json[]{
-          wrap_number(new JsonNumber {number = 0}),
+          wrap_number(new JsonNumber {number = "0"}),
           wrap_boolean(new JsonBoolean {boolean = true}),
           wrap_boolean(new JsonBoolean {boolean = false}),
           wrap_nil(new JsonNull {})
@@ -1370,34 +1386,10 @@ void test_str(){
 
 void test_number(){
   assert(str_eq(
-    print_json(wrap_number(new JsonNumber {number = 0}), 0), "0"
+    print_json(wrap_number(new JsonNumber {number = "0"}), 0), "0"
   ));
   assert(str_eq(
-    print_json(wrap_number(new JsonNumber {number = 1}), 0), "1"
-  ));
-  assert(str_eq(
-    print_json(wrap_number(new JsonNumber {number = 2}), 0), "2"
-  ));
-  assert(str_eq(
-    print_json(wrap_number(new JsonNumber {number = 3}), 0), "3"
-  ));
-  assert(str_eq(
-    print_json(wrap_number(new JsonNumber {number = 4}), 0), "4"
-  ));
-  assert(str_eq(
-    print_json(wrap_number(new JsonNumber {number = 5}), 0), "5"
-  ));
-  assert(str_eq(
-    print_json(wrap_number(new JsonNumber {number = 6}), 0), "6"
-  ));
-  assert(str_eq(
-    print_json(wrap_number(new JsonNumber {number = 7}), 0), "7"
-  ));
-  assert(str_eq(
-    print_json(wrap_number(new JsonNumber {number = 8}), 0), "8"
-  ));
-  assert(str_eq(
-    print_json(wrap_number(new JsonNumber {number = 9}), 0), "9"
+    print_json(wrap_number(new JsonNumber {number = "9"}), 0), "9"
   ));
   return;
 }
