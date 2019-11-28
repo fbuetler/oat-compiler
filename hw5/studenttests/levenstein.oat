@@ -1,0 +1,59 @@
+
+/* Fabian Schuiki */
+/* Florian Zaruba */
+
+/* This program computes the Levenshtein distance between two words and emits
+ * the result, followed by the number of recursive calls into `levenshtein`. */
+
+global calls = 0;
+
+int program(int argc, string[] argv) {
+	if (argc != 3) {
+		print_string("usage: ");
+		print_string(argv[0]);
+		print_string(" WORD1 WORD2\n");
+		return 1;
+	}
+
+	var a = array_of_string(argv[1]);
+	var b = array_of_string(argv[2]);
+
+	var out = levenshtein(a, length(a), b, length(b));
+
+	print_int(out);
+	print_string(" ");
+	print_int(calls);
+	print_string(" ");
+	return 0;
+}
+
+int levenshtein(int[] a, int la, int[] b, int lb) {
+	calls = calls + 1;
+
+	/* Handle the unequal string length case. */
+	if (la <= 0) {
+		return lb;
+	}
+	if (lb <= 0) {
+		return la;
+	}
+
+	/* Handle the case where the last letter is identical. */
+	if (a[la - 1] == b[lb - 1]) {
+		return levenshtein(a, la - 1, b, lb - 1);
+	}
+
+	/* Otherwise try the substitution or character dropping approach. */
+	var x = levenshtein(a, la - 1, b, lb - 1);
+	var y = levenshtein(a, la,     b, lb - 1);
+	var z = levenshtein(a, la - 1, b, lb    );
+
+	/* Peak the best of the above options. */
+	if (x > y) {
+		x = y;
+	}
+	if (x > z) {
+		x = z;
+	}
+	return x + 1;
+}

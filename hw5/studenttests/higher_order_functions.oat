@@ -1,0 +1,95 @@
+
+/* Matthias Brun, 16-914-871 */
+/* Roberto Starc, 16-940-181 */
+
+/* Takes a list of predicates and a list of ints, returns an array with only
+   the ints for which all predicates evaluate to true */
+int[] filter(((int) -> bool)[] predicates, int[] values) {
+  var size      = length(values);
+  var num_preds = length(predicates);
+  var prune     = new bool[size]{i -> false};
+
+  for (var i = 0; i < size; i = i + 1;) {
+    for (var j = 0; j < num_preds; j = j + 1;) {
+      if (!predicates[j](values[i])) {
+        prune[i] = true;
+      }
+    }
+  }
+
+  var new_size = 0;
+  for (var i = 0; i < size; i = i + 1;) {
+    if (!(prune[i])) {
+      new_size = new_size + 1;
+    }
+  }
+
+  var new_values = new int[new_size]{i -> 0};
+  var i2 = 0;
+  for (var i = 0; i < new_size; i = i + 1;) {
+
+    /* Find next elem that should be included */
+    while (prune[i2]) {
+      i2 = i2 + 1;
+    }
+
+    new_values[i] = values[i2];
+
+    i2 = i2 + 1;
+  }
+
+  return new_values;
+
+}
+
+int mod(int x, int y) {
+  while (x >= 0) {
+    if (x < y) {
+      return x;
+    } else {
+      x = x - y;
+    }
+  }
+  return x;
+}
+
+bool is_in(int x, int a, int b) {
+  return a <= x & x <= b;
+}
+
+/* As close to partial application, as we can get */
+bool is_in_57to7771(int x) {
+  return is_in(x, 57, 7771);
+}
+
+bool is_odd(int x) {
+  return (x [&] 1) == 1;
+}
+
+bool is_div_by(int x, int y) {
+  return mod(x,y) == 0;
+}
+
+bool is_div_by37(int x) {
+  return is_div_by(x, 37);
+}
+
+bool is_div_by2(int x) {
+  return is_div_by(x, 2);
+}
+
+bool is_div_by23(int x) {
+  return is_div_by(x, 23);
+}
+
+int program (int argc, string[] argv) {
+
+  var predicates = new ((int) -> bool)[]{is_in_57to7771,is_odd,is_div_by37,is_div_by23};
+  var values = new int[10000]{i -> i + 1};
+
+  /* Find numbers between 1 and 10000, which satisfy all the predicates */
+  /* The result should be: [851,2553,4255,5957,7659] */
+  var result = filter(predicates, values);
+
+  return length(result);
+}
