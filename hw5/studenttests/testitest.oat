@@ -50,6 +50,7 @@ global third = new Third {second = Second null;
 /* To check shadowing of the the array init id */
 global id = 99;
 
+/* Note: We modified this function to remove the aliasing, since it's not allowed */
 /* Reuses a local array name as the non-null ifq identifier, returns:
  * 111, if called with a Null reference
  * x[0] (whatever is at index 0 in its argument), otherwise
@@ -58,8 +59,8 @@ int test_ifq_alias (int[]? x) {
   /* This is the local y which should be only seen by the Null case */
   var y = new int[77]{id -> 111};
   /* Here a new y is created for the non-null case */
-  if? (int[] y = x) {
-    return y[0];
+  if? (int[] y_from_x = x) {
+    return y_from_x[0];
   } else {
     return y[0];
   }
@@ -158,9 +159,10 @@ int program(int argc, string[] argv) {
   print_int(a0); p(c); print_int(a1); p(c);
 
   third.third[0].first.zero = 7770; /* essentially sets s_arr[0].first.zero */
-  if? (Second?[] x = third.fourth) {
-    if? (Second x = x[0]) {
-      a0 = x.first.zero; /* 7770 from aliased s_arr[0].first.zero */
+  /* Note: Modified these variable names to remove aliasing */
+  if? (Second?[] inner_x = third.fourth) {
+    if? (Second inner_inner_x = inner_x[0]) {
+      a0 = inner_inner_x.first.zero; /* 7770 from aliased s_arr[0].first.zero */
     } else {
       a0 = 8888888;
     }
@@ -168,8 +170,8 @@ int program(int argc, string[] argv) {
     a0 = 9999999;
   }
 
-  if? (Second[] x = third.first) {
-    a1 = x[0].first.zero; /* 7770 from aliased s_arr[0].first.zero */
+  if? (Second[] x_inner = third.first) {
+    a1 = x_inner[0].first.zero; /* 7770 from aliased s_arr[0].first.zero */
   } else {
     a1 = 5555555;
   }
