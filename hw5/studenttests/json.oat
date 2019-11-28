@@ -483,6 +483,7 @@ ParseResult parse_json_string(ParseState input) {
   };
 }
 
+/* parse_json_integer is a helper for parse_json_number */
 ParseResult parse_json_integer(ParseState input) { 
   var state = copy_parse_state(input);
 
@@ -502,6 +503,25 @@ ParseResult parse_json_integer(ParseState input) {
 
   state.pos = state.pos - 1;
   ignore_str(must_parse_str(parse_matching_chars(state, is_valid_digit_char)));
+
+  return parse_result_of_difference(input, state);
+}
+
+/* parse_json_integer is a helper for parse_json_number */
+ParseResult parse_json_fraction(ParseState input) { 
+  var state = copy_parse_state(input);
+
+  var res = parse_this(state, ".");
+  if (!can_parse(res)) {
+    return fail_parse(input);
+  }
+  ignore_str(must_parse_str(res));
+
+  res = parse_matching_chars(state, is_valid_digit_char);
+  if (!can_parse(res)) {
+    return fail_parse(input);
+  }
+  ignore_str(must_parse_str(res));
 
   return parse_result_of_difference(input, state);
 }
@@ -783,6 +803,20 @@ void test_parse_json_integer() {
   assert_parse_string(parse_json_integer(parse_state_of_string("-0123")), "-0");
   assert_parse_string(parse_json_integer(parse_state_of_string("0")), "0");
   assert_parse_string(parse_json_integer(parse_state_of_string("9")), "9");
+  assert(!can_parse(parse_json_integer(parse_state_of_string(" 9"))));
+  assert(!can_parse(parse_json_integer(parse_state_of_string("a9"))));
+  assert(!can_parse(parse_json_integer(parse_state_of_string(".9"))));
+  return;
+}
+
+void test_parse_json_fraction() {
+  assert_parse_string(parse_json_fraction(parse_state_of_string(".123")), ".123");
+  assert_parse_string(parse_json_fraction(parse_state_of_string(".000")), ".000");
+  assert_parse_string(parse_json_fraction(parse_state_of_string(".0")), ".0");
+  assert_parse_string(parse_json_fraction(parse_state_of_string(".9")), ".9");
+  assert(!can_parse(parse_json_integer(parse_state_of_string("."))));
+  assert(!can_parse(parse_json_integer(parse_state_of_string("..123"))));
+  assert_parse_string(parse_json_fraction(parse_state_of_string(".1.2.3")), ".1");
   return;
 }
 
@@ -795,6 +829,7 @@ void test_parser(){
   test_parse_whitespace();
   test_parse_json_string();
   test_parse_json_integer();
+  test_parse_json_fraction();
 
   if (assert_disabled_for_test) {
     /* await_assert() without matching did_assert() */
