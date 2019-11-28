@@ -562,7 +562,25 @@ exactly the same characters as the JSON file did. The number is not evaluated
 to an Oat int.
 */
 ParseResult parse_json_number(ParseState input) {
-  return fail_parse(input);
+  var state = copy_parse_state(input);
+
+  var res = parse_json_integer(state);
+  if (!can_parse(res)) {
+    return fail_parse(input);
+  }
+  ignore_str(must_parse_str(res));
+
+  res = parse_json_fraction(state);
+  if (can_parse(res)) {
+    ignore_str(must_parse_str(res));
+  }
+
+  res = parse_json_exponent(state);
+  if (can_parse(res)) {
+    ignore_str(must_parse_str(res));
+  }
+
+  return parse_result_of_difference(input, state);
 }
 
 void test_must_parse_str() {
@@ -862,6 +880,17 @@ void test_parse_json_exponent() {
   return;
 }
 
+void test_parse_json_number() {
+  assert_parse_string(parse_json_number(parse_state_of_string("123")), "123");
+  assert_parse_string(parse_json_number(parse_state_of_string("123.456")), "123.456");
+  assert_parse_string(parse_json_number(parse_state_of_string("-123.456e+78")), "-123.456e+78");
+  assert(!can_parse(parse_json_number(parse_state_of_string(" 123"))));
+  assert_parse_string(parse_json_number(parse_state_of_string("-123:456e+78")), "-123");
+  assert_parse_string(parse_json_number(parse_state_of_string("-123.456q+78")), "-123.456");
+  assert_parse_string(parse_json_number(parse_state_of_string("-123.456e+")), "-123.456");
+  return;
+}
+
 void test_parser(){
   test_must_parse_str();
   test_must_parse_node();
@@ -873,6 +902,7 @@ void test_parser(){
   test_parse_json_integer();
   test_parse_json_fraction();
   test_parse_json_exponent();
+  test_parse_json_number();
 
   if (assert_disabled_for_test) {
     /* await_assert() without matching did_assert() */
@@ -1351,7 +1381,7 @@ void test_printer() {
 /************ END PRINTER ************/
 
 int program(int argc, string[] argv) {
-  test_printer();
+  /* test_printer(); */ /* TODO uncomment */
   test_parser();
   test_vector();
   print_string("PASSED");
