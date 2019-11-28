@@ -964,7 +964,7 @@ let provided_tests : suite = [
      Test("Others: IsTree input err 1", executed_oat_file [("studenttests/is_tree.oat", "finthechat", "254");
                                                         ("studenttests/is_tree.oat", "0 1 2", "254");
                                                         ("studenttests/is_tree.oat", "", "254");
-                                                        ("studenttests/is_tree.oat", "2 1 2 1", "254"); ]); (* TODO: prohibited variable redelclaration *)
+                                                        ("studenttests/is_tree.oat", "2 1 2 1", "254"); ]); 
   Test("Others: student tests", executed_oat_file [("studenttests/s_min_dist.oat", "0", "03250")]);
   Test("Others: determinants", Gradedtests.executed_oat_file ["studenttests/determinant.oat", "", "2_25_-132_-30696_0"]);
   Test("Others: student tests", executed_oat_file [("studenttests/s_min_dist.oat", "0", "03250")]);
