@@ -217,6 +217,28 @@ ParseResult parse_quote(ParseState input) {
   return parse_this(input, string_of_array(char_quote_arr));
 }
 
+
+ParseResult parse_whitespace(ParseState input) {
+  var i = 0;
+  var done = false;
+  var output = int_vector_new();
+  while (!done & (i + input.pos < length(input.str))) {
+    var c = input.str[i + input.pos];
+    if (c != char_tab & c != char_lf & c != char_cr & c != char_space) {
+      done = true;
+    } else {
+      i = i + 1;
+      output = int_vector_append(output, c);
+    }
+  }
+  return new ParseResult {
+    input = input;
+    node = Json null;
+    str = string_of_array(array_of_int_vector(output));
+    count = output.len
+  };
+}
+
 void test_must_parse_str() {
   var state = parse_state_of_string("walrus");
   assert(length(state.str) == 6);
@@ -408,12 +430,32 @@ void test_parse_quote() {
   return;
 }
 
+void test_parse_whitespace() {
+  var state = parse_state_of_string("   say
+  
+  
+   walrus
+please
+
+");
+  assert(str_eq(must_parse_str(parse_whitespace(state)), "   "));
+  ignore_str(must_parse_str(parse_this(state, "say")));
+  ignore_str(must_parse_str(parse_whitespace(state)));
+  ignore_str(must_parse_str(parse_this(state, "walrus")));
+  ignore_str(must_parse_str(parse_whitespace(state)));
+  ignore_str(must_parse_str(parse_this(state, "please")));
+  ignore_str(must_parse_str(parse_whitespace(state)));
+  assert(!can_parse(parse_whitespace(state)));
+  return;
+}
+
 void test_parser(){
   test_must_parse_str();
   test_must_parse_node();
   test_can_parse();
   test_parse_this();
   test_parse_quote();
+  test_parse_whitespace();
 
   if (assert_disabled_for_test) {
     /* await_assert() without matching did_assert() */
@@ -462,6 +504,10 @@ IntVector int_vector_append(IntVector inVector, int value) {
   outVector.data[outVector.len] = value;
   outVector.len = outVector.len + 1;
   return outVector;
+}
+
+int[] array_of_int_vector(IntVector vector) {
+  return new int[vector.len]{i -> vector.data[i]};
 }
 
 void test_vector() {
