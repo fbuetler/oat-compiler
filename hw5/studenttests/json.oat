@@ -615,6 +615,20 @@ ParseResult parse_json_boolean(ParseState input) {
   return fail_parse(input);
 }
 
+/* parse_json_null reads a JSON null literal. */
+ParseResult parse_json_null(ParseState input) {
+  var res = parse_this(input, "null");
+  if (!can_parse(res)) {
+    return fail_parse(input);
+  }
+  return new ParseResult {
+    input = input;
+    node = wrap_nil(new JsonNull {});
+    str = string null;
+    count = 4
+  };
+}
+
 void test_must_parse_str() {
   var state = parse_state_of_string("walrus");
   assert(length(state.str) == 6);
@@ -956,6 +970,22 @@ void test_parse_json_boolean() {
   return;
 }
 
+void test_parse_json_null() {
+  var output = must_parse_node(parse_json_null(parse_state_of_string("null")));
+  if? (JsonNull nil = output.nil) {
+    /* intentionally empty */
+  } else {
+    assert(false);
+  }
+
+  assert(!can_parse(parse_json_null(parse_state_of_string("Null"))));
+  assert(!can_parse(parse_json_null(parse_state_of_string(" null"))));
+  assert(!can_parse(parse_json_null(parse_state_of_string("nil"))));
+  assert(!can_parse(parse_json_null(parse_state_of_string("undefined"))));
+
+  return;
+}
+
 void test_parser(){
   test_must_parse_str();
   test_must_parse_node();
@@ -969,6 +999,7 @@ void test_parser(){
   test_parse_json_exponent();
   test_parse_json_number();
   test_parse_json_boolean();
+  test_parse_json_null();
 
   if (assert_disabled_for_test) {
     /* await_assert() without matching did_assert() */
