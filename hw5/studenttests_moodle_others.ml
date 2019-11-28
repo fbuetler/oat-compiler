@@ -268,15 +268,23 @@ let test_for_subtype c t1 t2 cond =
 let to_node a : Ast.exp node = no_loc (Uop (Neg, no_loc a))
 
 let tctxt1 = { Tctxt.locals = []; Tctxt.globals = []; Tctxt.structs = 
-                                                [
-                                                  ("s1", [{fieldName = "x"; ftyp = TInt}; {fieldName = "arr"; ftyp = TRef (RArray TInt)}])
-                                                ; ("s2", [{fieldName = "x"; ftyp = TInt}; {fieldName = "arr"; ftyp = TRef (RArray TInt)}])
-                                                ]}
+                                                        [
+                                                          ("s1", [{fieldName = "x"; ftyp = TInt}; {fieldName = "arr"; ftyp = TRef (RArray TInt)}])
+                                                        ; ("s2", [{fieldName = "x"; ftyp = TInt}; {fieldName = "arr"; ftyp = TRef (RArray TInt)}])
+                                                        ]}
 let tctxt1_err = { Tctxt.locals = []; Tctxt.globals = []; Tctxt.structs = 
-                                                    [
-                                                      ("s1", [{fieldName = "x"; ftyp = TInt}; {fieldName = "arr"; ftyp = TRef (RArray TInt)}])
-                                                    ; ("s2", [{fieldName = "x"; ftyp = TInt}; {fieldName = "ints"; ftyp = TRef (RArray TInt)}])
-                                                    ]}
+                                                            [
+                                                              ("s1", [{fieldName = "x"; ftyp = TInt}; {fieldName = "arr"; ftyp = TRef (RArray TInt)}])
+                                                            ; ("s2", [{fieldName = "x"; ftyp = TInt}; {fieldName = "ints"; ftyp = TRef (RArray TInt)}])
+                                                            ]}
+
+let struct_one = "struct_one", [{fieldName="int1";ftyp=TInt};{fieldName="int2";ftyp=TInt};{fieldName="bool1";ftyp=TBool};{fieldName="bool2";ftyp=TBool};{fieldName="str";ftyp=TRef(RString)}]
+let struct_two = "struct_two", [{fieldName="int1";ftyp=TInt};{fieldName="int2";ftyp=TInt};{fieldName="bool1";ftyp=TBool}]
+let struct_three = "struct_three", [{fieldName="int1";ftyp=TInt};{fieldName="bool1";ftyp=TBool}]
+
+let ourcontext : Tctxt.t = {
+  locals = [];  globals = [];  structs = [struct_one;struct_two;struct_three];
+}
 
 let unit_tests = [
   ("subtype_Struct_Int__Array_Int__Struct_Int__Array_Int",
@@ -819,8 +827,32 @@ let unit_tests = [
        if res = TInt then () else failwith "" with _ -> failwith "should not fail")
   );
   ("typecheck_exp_uop_neg_cbool",
-   (fun () -> let succed = try let res = Typechecker.typecheck_exp Tctxt.empty (to_node (CBool true)) in true with _ -> false in
+   (fun () -> let succed = try let _ = Typechecker.typecheck_exp Tctxt.empty (to_node (CBool true)) in true with _ -> false in
        if succed then failwith "should not succeed" else ())
+  );
+  ("partial struct",
+   (fun () ->
+      if Typechecker.subtype ourcontext (TRef (RStruct "struct_one")) (TRef (RStruct "struct_two"))
+      then () else failwith "should not fail")
+  );
+  ("missing field in struct subtype",
+   (fun () ->
+      if Typechecker.subtype ourcontext (TRef (RStruct "struct_one")) (TRef (RStruct "struct_three"))
+      then failwith "should not succeed" else ())
+  );
+  ("(string?, int[]) -> int <: (string, int[]) -> int", 
+   (fun () ->
+      let st = Typechecker.subtype Tctxt.empty
+          (TRef (RFun ([TNullRef RString; TRef (RArray TInt)], RetVal (TInt))))
+          (TRef (RFun ([TRef RString; TRef (RArray TInt)], RetVal (TInt)))) in
+      if st then () else failwith "should not fail")
+  );
+  ("(int) -> string? <: (int) -> string", 
+   (fun () ->
+      let st = Typechecker.subtype Tctxt.empty
+          (TRef (RFun ([TInt], RetVal (TNullRef RString))))
+          (TRef (RFun ([TInt], RetVal (TRef RString)))) in
+      if not st then () else failwith "should fail")
   );
 ]
 
@@ -972,6 +1004,22 @@ let sl_tests = prepend [
     ("sl.oat", "\'P11\n" ^ prog5 ^ "\'", "1 1 2 3 5 8 13 21 34 55 89 0");
   ]
 
+let stacktests = 
+  [ 
+    ("studenttests/stack.oat", "push a finish", "top-> a <-bottom 1");
+    ("studenttests/stack.oat", "push a push b finish", "top-> b a <-bottom 2");
+    ("studenttests/stack.oat", "push a push b pop finish", "top-> a <-bottom 1");
+    ("studenttests/stack.oat", "push a push b pop push c finish", "top-> c a <-bottom 2");
+    ("studenttests/stack.oat", "push a push b push c push d push e finish", "top-> e d c b a <-bottom 5");
+    ("studenttests/stack.oat", "push a push b pop push c push d pop push e push f pop finish", "top-> e c a <-bottom 3");
+    ("studenttests/stack.oat", "push a push b pop push c push d pop push e push f push g push h push i push j push k finish", "top-> k j i h g f e c a <-bottom 9");
+    ("studenttests/stack.oat", "push a pop pop pop pop pop pop pop push b finish", "top-> b <-bottom 1");
+    ("studenttests/stack.oat", "puth a", "0");  (* "puth" command not recognized, push misspelled*)
+    ("studenttests/stack.oat", "pip a", "0");  (* "pip" command not recognized, pop misspelled*)
+    ("studenttests/stack.oat", "finiss a", "0"); (* "finiss" command not recognized, finish misspelled*)
+    ("studenttests/stack.oat", "", "0"); (*no arguments*)
+  ]
+
 let provided_tests : suite = [
   Test("Others subtype", unit_tests);
   Test("Others: another_su.oat", executed_oat_file [("studenttests/another_sum.oat", "", "200")]); 
@@ -1044,5 +1092,6 @@ let provided_tests : suite = [
   Test("Others: Moodle triangle test:", executed_oat_file [("studenttests/triangle.oat","","2")]);
   Test("Others: Levenshtein Test", executed_oat_file [("studenttests/editing_distance.oat", "", "1")]);
   Test("Others: Posted Moodle Test Case", executed_oat_file [("studenttests/squared.oat","","9")]);
-
+  Test("Others: stack test", executed_oat_file stacktests);
+  Test("Others: Moodle Test Dijkstra", executed_oat_file [("studenttests/dijkstra.oat", "", "6")]);
 ] 

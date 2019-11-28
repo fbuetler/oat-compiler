@@ -1,0 +1,134 @@
+/* Implements a dynamic stack that grows by 4 in size when necessary.
+  The stack is controlled by arguments as seen in the test cases.
+  The stack stores strings.
+  commands:
+  "push" + some string value pushes the string to the top of the stack.
+  "pop" pops the top of the stack. If the stack is empty, the pop function does nothing.
+  "finish" ends the input sequence and prints out the contents of the stack.
+  Any unrecognized commands result in the termination with an error.
+  Printing of the stack is composed of:
+  	"top-> " + (contents of the stack separated by a space) + "<-bottom" + number of elements in the stack
+  
+  
+  Example:
+  Input:	"push a push b pop push c finish"
+  Output:	"top-> a c <-bottom 2"
+
+
+*/
+
+
+global index=1; 
+global continue = true;
+global error= false;
+
+struct Stack {
+int top;
+int capacity;
+string[] vals;
+(Stack, string) -> void push;
+(Stack) -> void pop
+}
+
+
+void increasecapacity(Stack st){
+
+	st.capacity= st.capacity + 4;
+	var vals2 = new string[st.capacity]{i->" "};
+	for( var i = 0; i < (st.capacity-4); i= i+1;){
+		vals2[i]= st.vals[i];
+	}
+	st.vals = vals2;
+	return;
+}
+
+void add(Stack st, string word){
+	if ((st.top +1)>= st.capacity){
+		increasecapacity(st);
+		}
+	st.top = st.top +1;
+		st.vals [st.top] = word;
+		
+return;	
+}
+
+void remove(Stack st){
+	if (st.top >=0){
+		st.vals[st.top]="";
+		st.top = st.top - 1;	
+		}
+return;
+}
+
+int input_decide(string input){
+	var len = length_of_string(input);
+	var arr = array_of_string(input);
+	if (len == 4){
+	 	if(arr[0]==112 & arr[1]==117 & arr[2]==115 & arr[3]==104){
+		return 1;
+		}
+		error= true;
+		return 0;
+	}
+	else if(len ==3){
+	if(arr[0]==112 & arr[1]==111 & arr[2]==112){
+		return 2;
+		}
+		error = true;
+		return 0;
+	}
+	else if(len ==6){
+	 	if(arr[0]==102 & arr[1]==105 & arr[2]==110 & arr[3]==105 & arr[4]==115 & arr[5]==104){
+		return 3;
+		}
+	}
+	error = true;
+	return 0;
+}
+
+
+void updatestack(string[] argv, Stack s){
+
+var command = input_decide (argv[index]);
+
+if (command == 1){
+		s.push(s, argv[index+1]);
+		index= index+2;
+		}
+else if (command == 2){
+		s.pop(s);
+		index= index+1;
+		}
+else if (command == 3){
+		continue = false;
+		index= index+1;
+		}		
+		return ;
+}
+
+int program(int argc, string[] argv) {
+
+var s = new Stack { top = -1; capacity = 4; vals = new string[4]{i -> ""}; push = add; pop = remove};
+if (argc > 1){
+	
+	while (continue & (!error)){
+	updatestack( argv, s);
+		}
+
+	if(error){
+	return 0;
+	}
+		print_string("top-> ");
+		for( var i = s.top; i>=0; i= i-1;){
+			print_string(s.vals[i]);
+			print_string(" ");
+			}
+		print_string("<-bottom ");
+ 	 	return (s.top+1);
+ 	 	
+  }
+  else{
+  	return 0;
+  }  
+  
+}
