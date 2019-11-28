@@ -129,7 +129,7 @@ end
 *)
 
 let rec cmp_ty (ct : TypeCtxt.t) : Ast.ty -> Ll.ty = function
-  | Ast.TBool  -> I64
+  | Ast.TBool  -> I1
   | Ast.TInt   -> I64
   | Ast.TRef r -> Ptr (cmp_rty ct r)
   | Ast.TNullRef r -> Ptr (cmp_rty ct r)
@@ -205,18 +205,9 @@ let str_arr_ty s = Array(1 + String.length s, I8)
 let i1_op_of_bool b   = Ll.Const (if b then 1L else 0L)
 let i64_op_of_int i   = Ll.Const (Int64.of_int i)
 
-let cmp_binop t ans_id (b : Ast.binop) : Ll.operand -> Ll.operand -> stream  =
-  let ib b op1 op2 = lift [(ans_id, Ll.Binop (b, t, op1, op2))] in
-  let ic c op1 op2 = 
-    let temp_1_id, temp_2_id, temp_3_id = gensym "temp", gensym "temp", gensym "temp" in
-    lift [
-      (temp_1_id, Ll.Icmp (c, t, op1, op2));
-      (temp_2_id, Ll.Alloca I64);
-      (temp_3_id, Ll.Bitcast (Ptr I64, Id temp_2_id, Ptr I1));
-      ("", Ll.Store (I1, Id temp_1_id, Id temp_3_id));
-      (ans_id, Ll.Load (Ptr I64, Id temp_2_id))
-    ]
-  in
+let cmp_binop t (b : Ast.binop) : Ll.operand -> Ll.operand -> Ll.insn  =
+  let ib b op1 op2 = Ll.Binop (b, t, op1, op2) in
+  let ic c op1 op2 = Ll.Icmp (c, t, op1, op2) in
   match b with
   | Ast.Add  -> ib Ll.Add
   | Ast.Mul  -> ib Ll.Mul
@@ -236,20 +227,6 @@ let cmp_binop t ans_id (b : Ast.binop) : Ll.operand -> Ll.operand -> stream  =
   | Ast.Gt   -> ic Ll.Sgt
   | Ast.Gte  -> ic Ll.Sge
 
-let cmp_uop ans_id op uop =
-  let temp_1_id, temp_2_id, temp_3_id = gensym "temp", gensym "temp", gensym "temp" in
-  begin match uop with
-    | Ast.Neg    -> lift [(ans_id, Binop (Sub, I64, i64_op_of_int 0, op))]
-    | Ast.Lognot -> lift [
-        (temp_1_id, Icmp  (Eq, I64, op, i1_op_of_bool false));
-        (temp_2_id, Ll.Alloca I64);
-        (temp_3_id, Ll.Bitcast (Ptr I64, Id temp_2_id, Ptr I1));
-        ("", Ll.Store (I1, Id temp_1_id, Id temp_3_id));
-        (ans_id, Ll.Load (Ptr I64, Id temp_2_id))
-      ]
-    | Ast.Bitnot -> lift [(ans_id, Binop (Xor, I64, op, i64_op_of_int (-1)))]
-  end
-
 (* Compiles an expression exp in context c, outputting the Ll operand that will
    recieve the value of the expression, and the stream of instructions
    implementing the expression. 
@@ -258,7 +235,7 @@ let rec cmp_exp (tc : TypeCtxt.t) (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.ope
   match exp.elt with
   | Ast.CInt i  -> I64, Const i, []
   | Ast.CNull r -> cmp_ty tc (TNullRef r), Null, []
-  | Ast.CBool b -> I64, i1_op_of_bool b, []
+  | Ast.CBool b -> I1, i1_op_of_bool b, []
 
   | Ast.CStr s ->
     let gid = gensym "str_arr" in
@@ -274,13 +251,17 @@ let rec cmp_exp (tc : TypeCtxt.t) (c:Ctxt.t) (exp:Ast.exp node) : Ll.ty * Ll.ope
     let op1, code1 = cmp_exp_as tc c e1 ll_t in
     let op2, code2 = cmp_exp_as tc c e2 ll_t in
     let ans_id = gensym "bop" in 
-    cmp_ty tc ret_ty, Id ans_id, code1 >@ code2 >@ cmp_binop ll_t ans_id bop op1 op2
+    cmp_ty tc ret_ty, Id ans_id, code1 >@ code2 >:: I(ans_id, cmp_binop ll_t bop op1 op2)
 
   | Ast.Uop (uop, e) ->
     let t, ret_ty = typ_of_unop uop in
     let op, code = cmp_exp_as tc c e (cmp_ty tc t) in
     let ans_id = gensym "unop" in
-    cmp_ty tc ret_ty, Id ans_id, code >@ cmp_uop ans_id op uop
+    let cmp_uop op = function
+      | Ast.Neg    -> Binop (Sub, I64, i64_op_of_int 0, op)
+      | Ast.Lognot -> Icmp  (Eq, I1, op, i1_op_of_bool false)
+      | Ast.Bitnot -> Binop (Xor, I64, op, i64_op_of_int (-1)) in
+    cmp_ty tc ret_ty, Id ans_id, code >:: I (ans_id, cmp_uop op uop)
 
   | Ast.Id id ->
     let t, op = Ctxt.lookup id c in
@@ -434,17 +415,6 @@ and cmp_exp_as (tc : TypeCtxt.t) (c:Ctxt.t) (e:Ast.exp node) (t:Ll.ty) : Ll.oper
   else let res_id = gensym "cast" in
     Id res_id, code >:: I(res_id, Bitcast(from_t, op, t))
 
-and cmp_exp_as_bool (tc : TypeCtxt.t) (c:Ctxt.t) (e:Ast.exp node) : Ll.operand * stream =
-  let _, op, code = cmp_exp tc c e in
-  let temp_1_id, temp_2_id, temp_3_id = gensym "temp", gensym "temp", gensym "temp" in
-  let ans_id = gensym "cast" in
-  Id ans_id, code >@ lift [
-      (temp_2_id, Ll.Alloca I64);
-      (temp_3_id, Ll.Bitcast (Ptr I64, Id temp_2_id, Ptr I1));
-      ("", Ll.Store (I64, op, Id temp_2_id));
-      (ans_id, Ll.Load (Ptr I1, Id temp_3_id))
-    ]
-
 (* Compile a statement in context c with return typ rt. Return a new context, 
    possibly extended with new local bindings, and the instruction stream
    implementing the statement.
@@ -474,7 +444,7 @@ and cmp_stmt (tc : TypeCtxt.t) (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt
       ]
 
   | Ast.If (guard, st1, st2) -> 
-    let guard_op, guard_code = cmp_exp_as_bool tc c guard in
+    let guard_ty, guard_op, guard_code = cmp_exp tc c guard in
     let then_code = cmp_block tc c rt st1 in
     let else_code = cmp_block tc c rt st2 in
     let lt, le, lm = gensym "then", gensym "else", gensym "merge" in
@@ -498,7 +468,7 @@ and cmp_stmt (tc : TypeCtxt.t) (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt
        >:: L lm
 
   | Ast.While (guard, body) ->
-    let guard_op, guard_code = cmp_exp_as_bool tc c guard in
+    let guard_ty, guard_op, guard_code = cmp_exp tc c guard in
     let lcond, lbody, lpost = gensym "cond", gensym "body", gensym "post" in
     let body_code = cmp_block tc c rt body  in
     c, [] 
@@ -572,7 +542,7 @@ let cmp_global_ctxt (tc : TypeCtxt.t) (c:Ctxt.t) (p:Ast.prog) : Ctxt.t =
     | Id id -> fst (Ctxt.lookup id c)
     | CStruct (t, cs) -> Ptr (Namedt t)
     | CNull r -> cmp_ty tc (TNullRef r)
-    | CBool b -> I64
+    | CBool b -> I1
     | CInt i  -> I64
     | CStr s  -> Ptr (str_arr_ty s)
     | CArr (u, cs) -> Ptr (Struct [I64; Array(List.length cs, cmp_ty tc u)])
@@ -617,7 +587,7 @@ let cmp_fdecl (tc : TypeCtxt.t) (c:Ctxt.t) (f:Ast.fdecl node) : Ll.fdecl * (Ll.g
 let rec cmp_gexp c (tc : TypeCtxt.t) (e:Ast.exp node) : Ll.gdecl * (Ll.gid * Ll.gdecl) list =
   match e.elt with
   | CNull r -> (cmp_ty tc (TNullRef r), GNull), []
-  | CBool b -> (I64, (if b then GInt 1L else GInt 0L)), []
+  | CBool b -> (I1, (if b then GInt 1L else GInt 0L)), []
   | CInt i  -> (I64, GInt i), []
   | Id id   -> ((fst @@ Ctxt.lookup id c), GGid id), [] 
 
