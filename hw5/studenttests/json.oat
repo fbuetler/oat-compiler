@@ -1039,20 +1039,8 @@ void test_parse_json_string() {
     assert(false);
   }
 
-  /*
-  TODO Possible compiler bug: The folowing commented section does not work, but the
-  uncommented one below it does. I think both piecs of code should behave the same way.
-  */
-  /* state = parse_state_of_string(convert_slashes(convert_quotes("'/n/n///txyz/''abc")));
-  if? (string str = must_parse_node(parse_json_string(state)).str) {
-    assert(str_eq(str.str, convert_slashes(convert_quotes("/n/n///txyz/'"))));
-  } else {
-    assert(false);
-  } */
-
   state = parse_state_of_string(convert_slashes(convert_quotes("'/n/n///txyz/''abc")));
-  output = must_parse_node(parse_json_string(state));
-  if? (JsonString str = output.str) {
+  if? (JsonString str = must_parse_node(parse_json_string(state)).str) {
     assert(str_eq(str.str, convert_slashes(convert_quotes("/n/n///txyz/'"))));
   } else {
     assert(false);
