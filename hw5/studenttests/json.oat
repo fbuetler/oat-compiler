@@ -382,8 +382,8 @@ bool is_valid_escaped_string_char(int c) {
   return false;
 }
 
-bool is_valid_hex_char(int c) {
-  var l = array_of_string("abcdefABCDEF0123456789");
+bool is_char_in_string(string s, int c) {
+  var l = array_of_string(s);
   for (var i = 0; i < length(l); i = i + 1;) {
     if (c == l[i]) {
       return true;
@@ -392,14 +392,20 @@ bool is_valid_hex_char(int c) {
   return false;
 }
 
+bool is_valid_hex_char(int c) {
+  return is_char_in_string("abcdefABCDEF0123456789", c);
+}
+
 bool is_valid_digit_char(int c) {
-  var l = array_of_string("0123456789");
-  for (var i = 0; i < length(l); i = i + 1;) {
-    if (c == l[i]) {
-      return true;
-    }
-  }
-  return false;
+  return is_char_in_string("0123456789", c);
+}
+
+bool is_valid_exponent_e_char(int c) {
+  return is_char_in_string("Ee", c);
+}
+
+bool is_valid_exponent_sign_char(int c) {
+  return is_char_in_string("+-", c);
 }
 
 ParseResult parse_four_hex_digits(ParseState input) { 
@@ -507,7 +513,7 @@ ParseResult parse_json_integer(ParseState input) {
   return parse_result_of_difference(input, state);
 }
 
-/* parse_json_integer is a helper for parse_json_number */
+/* parse_json_fraction is a helper for parse_json_number */
 ParseResult parse_json_fraction(ParseState input) { 
   var state = copy_parse_state(input);
 
@@ -516,6 +522,30 @@ ParseResult parse_json_fraction(ParseState input) {
     return fail_parse(input);
   }
   ignore_str(must_parse_str(res));
+
+  res = parse_matching_chars(state, is_valid_digit_char);
+  if (!can_parse(res)) {
+    return fail_parse(input);
+  }
+  ignore_str(must_parse_str(res));
+
+  return parse_result_of_difference(input, state);
+}
+
+/* parse_json_exponent is a helper for parse_json_number */
+ParseResult parse_json_exponent(ParseState input) { 
+  var state = copy_parse_state(input);
+
+  var res = parse_matching_char(state, is_valid_exponent_e_char);
+  if (!can_parse(res)) {
+    return fail_parse(input);
+  }
+  ignore_str(must_parse_str(res));
+
+  res = parse_matching_char(state, is_valid_exponent_sign_char);
+  if (can_parse(res)) {
+    ignore_str(must_parse_str(res));
+  }
 
   res = parse_matching_chars(state, is_valid_digit_char);
   if (!can_parse(res)) {
@@ -820,6 +850,18 @@ void test_parse_json_fraction() {
   return;
 }
 
+void test_parse_json_exponent() {
+  assert_parse_string(parse_json_exponent(parse_state_of_string("e12")), "e12");
+  assert_parse_string(parse_json_exponent(parse_state_of_string("e0000")), "e0000");
+  assert_parse_string(parse_json_exponent(parse_state_of_string("E1")), "E1");
+  assert_parse_string(parse_json_exponent(parse_state_of_string("E+12")), "E+12");
+  assert_parse_string(parse_json_exponent(parse_state_of_string("E-11")), "E-11");
+  assert(!can_parse(parse_json_exponent(parse_state_of_string("12"))));
+  assert(!can_parse(parse_json_exponent(parse_state_of_string("o12"))));
+  assert(!can_parse(parse_json_exponent(parse_state_of_string("-12"))));
+  return;
+}
+
 void test_parser(){
   test_must_parse_str();
   test_must_parse_node();
@@ -830,6 +872,7 @@ void test_parser(){
   test_parse_json_string();
   test_parse_json_integer();
   test_parse_json_fraction();
+  test_parse_json_exponent();
 
   if (assert_disabled_for_test) {
     /* await_assert() without matching did_assert() */
