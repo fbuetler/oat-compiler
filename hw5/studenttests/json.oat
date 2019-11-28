@@ -1,33 +1,6 @@
 /*
-json
-  element
-
-element
-  object
-  array
-  string
-  number
-  "true"
-  "false"
-  "null"
-
-object
-  '{' members '}'
-
-members
-  member
-  member ',' members
-
-member
-  string ':' element
-
-array
-  '[' elements ']'
-
-elements
-  element
-  element ',' elements
-
+17-913-534 Florian Bütler
+16-926-560 Philippe Voinov
 */
 
 struct Json {
