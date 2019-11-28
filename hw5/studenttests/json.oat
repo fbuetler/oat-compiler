@@ -274,7 +274,6 @@ ParseResult parse_this(ParseState input, string s) {
   var len = length_of_string(s);
   var chars = array_of_string(s);
 
-  /* TODO Something in the compiler crashes if you supply a value for a field which does not exist */
   var ok_result = new ParseResult {
     input = input;
     node = Json null;
