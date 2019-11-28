@@ -74,11 +74,11 @@ global char_space = 32;
 global char_double_quote = 34;
 global char_hash = 35;
 global char_single_quote = 39;
+global char_forward_slash = 47;
 global char_zero = 48;
 global char_upper_a = 65;
+global char_backslash = 92;
 global char_lower_a = 97;
-
-global char_quote_arr = new int[]{34};
 
 global empty_json = new Json {
   obj = JsonObject null;
@@ -188,6 +188,23 @@ ParseResult fail_parse(ParseState input) {
   };
 }
 
+ParseResult parse_result_of_difference(ParseState before, ParseState after) {
+  assert(before.pos <= after.pos);
+  var out = int_vector_new();
+  for (var i = before.pos; i < after.pos; i = i + 1;) {
+    var b = before.str[i];
+    var a = after.str[i];
+    assert(a == b);
+    out = int_vector_append(out, a);
+  }
+  return new ParseResult {
+    input = before;
+    node = Json null;
+    str = string_of_array(array_of_int_vector(out));
+    count = after.pos - before.pos
+  };
+}
+
 /*
 parse_this tries to read the supplied string from the input, and fails
 if the string is not present exactly at the current position. Trailing
@@ -220,7 +237,12 @@ ParseResult parse_this(ParseState input, string s) {
 
 /* parse_quote reads exactly one literal " character */
 ParseResult parse_quote(ParseState input) {
-  return parse_this(input, string_of_array(char_quote_arr));
+  return parse_this(input, string_of_array(new int[]{char_double_quote}));
+}
+
+/* parse_backslash reads exactly one literal \ character */
+ParseResult parse_backslash(ParseState input) {
+  return parse_this(input, string_of_array(new int[]{char_backslash}));
 }
 
 /*
@@ -248,6 +270,23 @@ ParseResult parse_matching_chars(ParseState input, (int) -> bool check_match) {
   };
 }
 
+/* parse_matching_char reads exactly one character if it matches the callback. */
+ParseResult parse_matching_char(ParseState input, (int) -> bool check_match) {
+  if (input.pos >= length(input.str)) {
+    return fail_parse(input);
+  }
+  var c = input.str[input.pos];
+  if (!check_match(c)) {
+    return fail_parse(input);
+  }
+  return new ParseResult {
+    input = input;
+    node = Json null;
+    str = string_of_array(new int[]{c});
+    count = 1
+  };
+}
+
 bool is_whitespace_char(int c) {
   return c == char_tab | c == char_lf | c == char_cr | c == char_space;
 }
@@ -255,6 +294,114 @@ bool is_whitespace_char(int c) {
 /* parse_whitespace reads as many whitespace characters as possible. */
 ParseResult parse_whitespace(ParseState input) {
   return parse_matching_chars(input, is_whitespace_char);
+}
+
+bool is_valid_unescaped_string_char(int c) {
+  return c >= 32 & c <= 1114111 & c != char_double_quote;
+}
+
+bool is_valid_escaped_string_char(int c) {
+  if (c == char_backslash) {
+    return true;
+  }
+  var l = array_of_string(convert_quotes("'/bfnrtu"));
+  for (var i = 0; i < length(l); i = i + 1;) {
+    if (c == l[i]) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool is_valid_hex_char(int c) {
+  var l = array_of_string("abcdefABCDEF0123456789");
+  for (var i = 0; i < length(l); i = i + 1;) {
+    if (c == l[i]) {
+      return true;
+    }
+  }
+  return false;
+}
+
+ParseResult parse_four_hex_digits(ParseState input) { 
+  var state = copy_parse_state(input);
+  for (var i = 0; i < 4; i = i + 1;) {
+    var res = parse_matching_char(state, is_valid_hex_char);
+    if (!can_parse(res)) {
+      return fail_parse(input);
+    }
+    ignore_str(must_parse_str(res));
+  }
+  return parse_result_of_difference(input, state);
+}
+
+ParseResult parse_json_string_char(ParseState input) {
+  var state = copy_parse_state(input);
+
+  var res = parse_backslash(state);
+  if (!can_parse(res)) {
+    return parse_matching_char(input, is_valid_unescaped_string_char);
+  }
+  ignore_str(must_parse_str(res));
+
+  res = parse_matching_char(state, is_valid_escaped_string_char);
+  if (!can_parse(res)) {
+    return fail_parse(input);
+  }
+  var escaped_char = must_parse_str(res);
+
+  if (str_eq(escaped_char, "u")) {
+    res = parse_four_hex_digits(state);
+    if (!can_parse(res)) {
+      return fail_parse(input);
+    }
+    ignore_str(must_parse_str(res));
+  }
+
+  return parse_result_of_difference(input, state);
+}
+
+/*
+parse_json_string reads a JSON string. The output does not include the
+surrounding quotes. All espace sequences are included in the output without
+conversion (so \\ remains two slashes, and does not become one \).
+*/
+ParseResult parse_json_string(ParseState input) {
+  var state = copy_parse_state(input);
+
+  var res = parse_quote(state);
+  if (!can_parse(res)) {
+    return fail_parse(input);
+  }
+  ignore_str(must_parse_str(res));
+
+  var done = false;
+  while (!done) {
+    if (can_parse(parse_quote(state))) {
+      done = true;
+    } else {
+      res = parse_json_string_char(state);
+      if (!can_parse(res)) {
+        return fail_parse(input);
+      }
+      ignore_str(must_parse_str(res));
+    }
+  }
+
+  ignore_str(must_parse_str(parse_quote(state)));
+
+  var out = int_vector_new();
+  for (var i = input.pos + 1; i < state.pos - 1; i = i + 1;) {
+    out = int_vector_append(out, input.str[i]);
+  }
+  return new ParseResult {
+    input = input;
+    node = wrap_str(new JsonString {
+      str = string_of_array(array_of_int_vector(out))
+    });
+    str = string null;
+    count = state.pos - input.pos
+  };
 }
 
 void test_must_parse_str() {
@@ -467,6 +614,56 @@ please
   return;
 }
 
+void test_parse_json_string() {
+  var state = parse_state_of_string(convert_quotes("'walrus'"));
+  var output = must_parse_node(parse_json_string(state));
+  if? (string str = output.str) {
+    assert(str_eq(str.str, "walrus"));
+  } else {
+    assert(false);
+  }
+
+  /*
+  TODO Possible compiler bug: The folowing commented section does not work, but the
+  uncommented one below it does. I think both piecs of code should behave the same way.
+  */
+  /* state = parse_state_of_string(convert_slashes(convert_quotes("'/n/n///txyz/''abc")));
+  if? (string str = must_parse_node(parse_json_string(state)).str) {
+    assert(str_eq(str.str, convert_slashes(convert_quotes("/n/n///txyz/'"))));
+  } else {
+    assert(false);
+  } */
+
+  state = parse_state_of_string(convert_slashes(convert_quotes("'/n/n///txyz/''abc")));
+  output = must_parse_node(parse_json_string(state));
+  if? (string str = output.str) {
+    assert(str_eq(str.str, convert_slashes(convert_quotes("/n/n///txyz/'"))));
+  } else {
+    assert(false);
+  }
+
+  state = parse_state_of_string(convert_slashes(convert_quotes("'/u1234/uABCD/uefAB/u0000'")));
+  output = must_parse_node(parse_json_string(state));
+  if? (string str = output.str) {
+    assert(str_eq(str.str, convert_slashes("/u1234/uABCD/uefAB/u0000")));
+  } else {
+    assert(false);
+  }
+
+  state = parse_state_of_string(convert_slashes(convert_quotes("'/u1234/uABCG/uefAB/u0000'")));
+  assert(!can_parse(parse_json_string(state)));
+
+  state = parse_state_of_string(convert_quotes("''"));
+  output = must_parse_node(parse_json_string(state));
+  if? (string str = output.str) {
+    assert(str_eq(str.str, ""));
+  } else {
+    assert(false);
+  }
+
+  return;
+}
+
 void test_parser(){
   test_must_parse_str();
   test_must_parse_node();
@@ -474,6 +671,7 @@ void test_parser(){
   test_parse_this();
   test_parse_quote();
   test_parse_whitespace();
+  test_parse_json_string();
 
   if (assert_disabled_for_test) {
     /* await_assert() without matching did_assert() */
@@ -556,6 +754,17 @@ string convert_quotes(string s) {
   for (var i = 0; i < len; i = i + 1;) {
     if (chars[i] == char_single_quote) {
       chars[i] = char_double_quote;
+    }
+  }
+  return string_of_array(chars);
+}
+
+string convert_slashes(string s) {
+  var len = length_of_string(s);
+  var chars = array_of_string(s);
+  for (var i = 0; i < len; i = i + 1;) {
+    if (chars[i] == char_forward_slash) {
+      chars[i] = char_backslash;
     }
   }
   return string_of_array(chars);
