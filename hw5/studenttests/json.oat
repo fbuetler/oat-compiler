@@ -188,6 +188,11 @@ ParseResult fail_parse(ParseState input) {
   };
 }
 
+/*
+parse_this tries to read the supplied string from the input, and fails
+if the string is not present exactly at the current position. Trailing
+characters are not read.
+*/
 ParseResult parse_this(ParseState input, string s) {
   var len = length_of_string(s);
   var chars = array_of_string(s);
@@ -213,22 +218,26 @@ ParseResult parse_this(ParseState input, string s) {
   return fail_parse(input);
 }
 
+/* parse_quote reads exactly one literal " character */
 ParseResult parse_quote(ParseState input) {
   return parse_this(input, string_of_array(char_quote_arr));
 }
 
-
-ParseResult parse_whitespace(ParseState input) {
+/*
+parse_matching_chars reads a sequence of characters for which the 
+callback returns true.
+*/
+ParseResult parse_matching_chars(ParseState input, (int) -> bool check_match) {
   var i = 0;
   var done = false;
   var output = int_vector_new();
   while (!done & (i + input.pos < length(input.str))) {
     var c = input.str[i + input.pos];
-    if (c != char_tab & c != char_lf & c != char_cr & c != char_space) {
-      done = true;
-    } else {
+    if (check_match(c)) {
       i = i + 1;
       output = int_vector_append(output, c);
+    } else {
+      done = true;
     }
   }
   return new ParseResult {
@@ -237,6 +246,15 @@ ParseResult parse_whitespace(ParseState input) {
     str = string_of_array(array_of_int_vector(output));
     count = output.len
   };
+}
+
+bool is_whitespace_char(int c) {
+  return c == char_tab | c == char_lf | c == char_cr | c == char_space;
+}
+
+/* parse_whitespace reads as many whitespace characters as possible. */
+ParseResult parse_whitespace(ParseState input) {
+  return parse_matching_chars(input, is_whitespace_char);
 }
 
 void test_must_parse_str() {
