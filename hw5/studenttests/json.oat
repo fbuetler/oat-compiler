@@ -851,7 +851,7 @@ string print_indent(int depth){
 string print_member(JsonMember tmp, int depth){
   var s = "'";
   s = string_cat(s, tmp.str);
-  s = string_cat(s, "' : ");
+  s = string_cat(s, "':");
   s = string_cat(s, print_json(tmp.element, depth));
   return convert_quotes(s);
 }
