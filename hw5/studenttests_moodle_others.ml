@@ -109,7 +109,7 @@ let en_bool : Ast.exp Ast.node = no_loc (CBool true)
 let en_array : Ast.exp Ast.node = no_loc (CArr (TBool, [no_loc (CBool true); no_loc (CBool false)]))
 
 let ctxt : Tctxt.t = {Tctxt.empty with structs=["S1", [{fieldName="f1"; ftyp=TBool};
-    {fieldName="f2"; ftyp=TInt}]; "S2", [{fieldName="f1"; ftyp=TBool}]]}
+                                                       {fieldName="f2"; ftyp=TInt}]; "S2", [{fieldName="f1"; ftyp=TBool}]]}
 
 
 let unit_tests = [
@@ -705,6 +705,5 @@ let provided_tests : suite = [
   Test("Others: Heapsort", executed_oat_file [("studenttests/heapsort.oat", "", "fhkmopsy{0")]);
   Test("Others: Kronecker Student Test", executed_oat_file [("studenttests/struct_kron.oat", "", "896532362420566342351347412162872128492883832321214565621125148204714357161812102427181524271815268143912213912214161666242496242492410236153361530")]);
   Test("Others: function pointers", executed_oat_file["studenttests/fptrs.oat", "", "1"]);
-  (* Test("Others: scope_struct_stress", executed_oat_file [("studenttests/testitest.oat", "", "111222\nfalse, true, 22, true, 22, 222\n20, 20, 10, 10, 10, 990\n990, 10, 7770, 7770, 7770")]); TODO: prohibited variable redelclaration *)
-
+  Test("Others: scope_struct_stress", executed_oat_file [("studenttests/testitest.oat", "", "111222\nfalse, true, 22, true, 22, 222\n20, 20, 10, 10, 10, 990\n990, 10, 7770, 7770, 7770")]); (* Note: Modified a few things *)
 ] 

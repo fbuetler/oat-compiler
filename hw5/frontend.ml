@@ -370,7 +370,7 @@ and cmp_exp_lhs (tc : TypeCtxt.t) (c:Ctxt.t) (e:exp node) : Ll.ty * Ll.operand *
       | _ -> failwith "not a struct"
     end in
     let index = TypeCtxt.index_of_field struct_id i tc in
-    let ptr_id, tmp1, tmp2 = gensym "index_ptr", gensym "tmp1", gensym "tmp2" in
+    let ptr_id, tmp1, tmp2 = gensym "index_ptr", gensym "tmp", gensym "tmp" in
     let ret_ty = cmp_ty tc @@ TypeCtxt.lookup_field struct_id i tc in
     Ptr ret_ty, Id ptr_id,
     rec_stream >@ lift
@@ -610,10 +610,15 @@ let rec cmp_gexp c (tc : TypeCtxt.t) (e:Ast.exp node) : Ll.gdecl * (Ll.gid * Ll.
     (Ptr arr_t, GGid gid), (gid, (arr_t, arr_i))::gs
 
   | CStruct (id, cs) ->
+    let i_of_field f_name = TypeCtxt.index_of_field id f_name tc in
+    let sorted_cs = List.sort
+        (fun (a_id, _) (b_id, _) -> (i_of_field a_id) - (i_of_field b_id))
+        cs
+    in
     let elts, gs = List.fold_right
         (fun (id, cst) (elts, gs) ->
            let gd, gs' = cmp_gexp c tc cst in
-           (id, gd)::elts, gs' @ gs) cs ([], [])
+           (id, gd)::elts, gs' @ gs) sorted_cs ([], [])
     in
     let gid = gensym "global_arr" in
     let arr_t = cmp_rty tc @@ RStruct id in
