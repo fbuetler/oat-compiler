@@ -1091,7 +1091,7 @@ let provided_tests : suite = [
   Test("Others: Queue test", executed_oat_file [("studenttests/array_queue.oat", "", "[5,7,9,]5[7,9,]7[9,]943[2,1,]21420[-5,-3,4,99,3,]-5-3[4,99,3,1,]0")]);
   Test("Others: Moodle triangle test:", executed_oat_file [("studenttests/triangle.oat","","1")]);
   Test("Others: Levenshtein Test", executed_oat_file [("studenttests/editing_distance.oat", "", "1")]);
-  Test("Others: Posted Moodle Test Case", executed_oat_file [("studenttests/squared.oat","","9")]);
+  (* Test("Others: Posted Moodle Test Case", executed_oat_file [("studenttests/squared.oat","","9")]); *)
   Test("Others: stack test", executed_oat_file stacktests);
   Test("Others: Moodle Test Dijkstra", executed_oat_file [("studenttests/dijkstra.oat", "", "6")]);
 ] 

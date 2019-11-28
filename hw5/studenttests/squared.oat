@@ -30,24 +30,31 @@ int absVal(int v)
 void square_noMult(Nums[] tosquare)
 {
     for(var i = 0; i < length(tosquare); i=i+1;){
+        print_int(i);
+        print_string("\n");
         if?(int[] s = tosquare[i].input){
-        
-        var max = 0;
-        for(var j = 0; j < length(s); j=j+1;)
-        {
-            s[j] = absVal(s[j]);
-            if(s[j] > max)
+            print_string("got s\n");
+            print_int(length(s));
+            print_string("\n");
+            var max = 0;
+            for(var j = 0; j < length(s); j=j+1;)
             {
-                max = s[j];
+                s[j] = absVal(s[j]);
+                if(s[j] > max)
+                {
+                    max = s[j];
+                }
             }
-        }
-        var squares = new int[][max+1]{k -> new int[2]{l -> 0}};
-        genSquares(squares, max);
-        for(var j = 0; j < length(s); j=j+1;)
-        {
-            s[j] = squares[0][s[j]];
-        }
-        tosquare[i].output = s;
+            print_string("max");
+            print_int(max);
+            print_string("\n");
+            var squares = new int[][max+1]{k -> new int[2]{l -> 0}};
+            genSquares(squares, max);
+            for(var j = 0; j < length(s); j=j+1;)
+            {
+                s[j] = squares[0][s[j]];
+            }
+            tosquare[i].output = s;
         }
     }
 
