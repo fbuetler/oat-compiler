@@ -772,12 +772,11 @@ let sl_tests = prepend [
 let provided_tests : suite = [
   Test("Others subtype", unit_tests);
   Test("Others: another_su.oat", executed_oat_file [("studenttests/another_sum.oat", "", "200")]); 
-  (* Test ("Others: Performance Comparison", [("studenttests/manually", assert_eq true false)]);  *) (* TODO the fuck ? *)
   Test("Others: Moodle Fraction Test", executed_oat_file [("studenttests/fraction.oat", "", "42")]);
-  Test("Others: linked list tests", executed_oat_file [("studenttests/linkedlist.oat", "", "0")]); (* TODO discuss: wrong result ? https://gitlab.ethz.ch/flbuetle/compiler-design/commit/c42a0129556f6172dc48b993471a4c3eb18bf537 *)
+  Test("Others: linked list tests", executed_oat_file [("studenttests/linkedlist.oat", "", "0")]); (* Note: modified *)
   Test("Others: SP: brainfuck tests", executed_oat_file brainfuck_tests);
   Test("Others: Struct Student Test", executed_oat_file [("studenttests/structs.oat", "", "4000")]);
-  Test("Others: Fulkerson Test", executed_oat_file [("studenttests/fulkerson.oat", "", "37")]); (* TODO discuss: variable redeclaration https://gitlab.ethz.ch/flbuetle/compiler-design/commit/6cbeed4da92d08339f0b7e2d56c71dc87174b614 *)
+  Test("Others: Fulkerson Test", executed_oat_file [("studenttests/fulkerson.oat", "", "37")]); (* Note: modified *)
   Test("Others: hard test", executed_oat_file [("studenttests/game.oat", "", "120")]);
   Test("Others: Inverted-Index-Boolean-Query",executed_oat_file [("studenttests/inv_index.oat", "","12354")]);
   Test("Others: Directed DFS Test", executed_oat_file [("studenttests/directed_dfs.oat", "", "79")]);
@@ -790,12 +789,12 @@ let provided_tests : suite = [
   Test("Others: tc struct tests", typecheck_file_correct ["studenttests/tc_correct_struct.oat"]);
   Test("Others: tc struct tests", typecheck_file_error [ "studenttests/tc_error_struct.oat"; "studenttests/tc_error_struct_recursion.oat";]);
   Test("Others: Generators", executed_oat_file [("studenttests/gen.oat", "", "810111214161718201420263238445056620")]);
-  Test("Others: Binary tree with insertion and deletion", executed_oat_file [("studenttests/binary_tree_structs.oat", "", "-5 -4 -3 -2 -1 1 2 3 4 5 | -5 -4 -2 -1 2 3 5 | return: 1")]); (* TODO discuss: if? for int[] *)
+  Test("Others: Binary tree with insertion and deletion", executed_oat_file [("studenttests/binary_tree_structs.oat", "", "-5 -4 -3 -2 -1 1 2 3 4 5 | -5 -4 -2 -1 2 3 5 | return: 1")]); (* Note: modified *)
   Test("Others: Palindrome", executed_oat_file [("studenttests/palindrome.oat", "","42")]);
   Test("Others: Binary Tree", executed_oat_file [("studenttests/BinaryTree.oat", "", "0")]);
   Test("Others: Perceptron Test", executed_oat_file [("studenttests/single_perceptron.oat", "", "correctly classified1")]);
   Test("Others: complex numbers", executed_oat_file [("studenttests/complexnumbers.oat", "", "5")]);
-  Test("Others: Moodle Oat Test", executed_oat_file [("studenttests/oat_test.oat", "", "2")]); (* TODO discuss *)
+  Test("Others: Moodle Oat Test", executed_oat_file [("studenttests/oat_test.oat", "", "2")]); (* Note: modified *)
   Test("Others: moodle tests", executed_oat_file [("studenttests/treap.oat", "", "[[[[(-5, 1668674806)], (2, 1000676753)], (8, 908095735)], (16, 71666532), [[(27, 1250496027)], (42, 1116302264)]]0")]);
   Test("Others: Areas Test", executed_oat_file [("studenttests/areas.oat", "", "45")]);
   Test("Others: flist test", executed_oat_file [("studenttests/flist.oat", "", "8")]);
