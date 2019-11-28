@@ -834,6 +834,18 @@ ParseResult parse_whitespace_surrounded(ParseState input, (ParseState) -> ParseR
   return res;
 }
 
+/*
+parse_json converts a string to JSON AST. It allows surrounding whitespace,
+but fails on other leading or trailing characters. This function fails using assert().
+*/
+Json parse_json(string input) {
+  var state = parse_state_of_string(input);
+  var res = parse_whitespace_surrounded(state, parse_json_value);
+  var output = must_parse_node(res);
+  assert(state.pos == length_of_string(input));
+  return output;
+}
+
 void assert_parse_string(ParseResult result, string expected) {
   assert(str_eq(must_parse_str(copy_parse_result(result)), expected));
   return;
@@ -1324,6 +1336,26 @@ void test_parse_whitespace_surrounded() {
   return;
 }
 
+void test_parse_json() {
+  var good_inputs = new string[]{
+    "[123.456e-789]"
+  };
+  for (var i = 0; i < length(good_inputs); i = i + 1;) {
+    ignore_node(parse_json(good_inputs[i]));
+  }
+
+  var bad_inputs = new string[]{
+    convert_quotes("['x']]")
+  };
+  for (var i = 0; i < length(bad_inputs); i = i + 1;) {
+    await_assert();
+    ignore_node(parse_json(bad_inputs[i]));
+    assert(did_assert());
+  }
+
+  return;
+}
+
 void test_parser(){
   test_must_parse_str();
   test_must_parse_node();
@@ -1342,6 +1374,7 @@ void test_parser(){
   test_parse_json_object();
   test_parse_json_value();
   test_parse_whitespace_surrounded();
+  test_parse_json();
 
   if (assert_disabled_for_test) {
     /* await_assert() without matching did_assert() */
