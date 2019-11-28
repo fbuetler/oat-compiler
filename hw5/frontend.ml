@@ -453,12 +453,13 @@ and cmp_stmt (tc : TypeCtxt.t) (c:Ctxt.t) (rt:Ll.ty) (stmt:Ast.stmt node) : Ctxt
        >:: L lm
 
   | Ast.Cast (typ, id, exp, notnull, null) ->
-    let exp_ty, exp_op, exp_code = cmp_exp tc c exp in
-    let then_code = cmp_block tc c rt @@
-      (no_loc @@ Decl (id, exp)) :: notnull in
+    let prepare_c, prepare_stream = cmp_stmt tc c rt (no_loc @@ Decl (id, exp)) in
+    let exp_ty, exp_op, exp_code = cmp_exp tc prepare_c (no_loc (Id id)) in
+    let then_code = cmp_block tc prepare_c rt notnull in
     let else_code = cmp_block tc c rt null in
     let guard_id, lt, le, lm = gensym "guard", gensym "then", gensym "else", gensym "merge" in
-    c, exp_code
+    c,  prepare_stream 
+       >@ exp_code
        >:: I(guard_id, Icmp (Ne, exp_ty, exp_op, Null))
        >:: T(Cbr (Id guard_id, lt, le))
        >:: L lt >@ then_code >:: T(Br lm) 
