@@ -1895,10 +1895,49 @@ void test_printer() {
 
 /************ END PRINTER ************/
 
+void test_parser_printer(){
+  var input = convert_quotes("{'id':'file','value': 'File','popup': {'menuitem': [{'value': 'New', 'onclick': 'CreateNewDoc()' }, { 'value': 'Open', 'onclick': 'OpenDoc()' }, { 'value': 'Close', 'onclick': 'CloseDoc()' } ] }, 'amazing': true, 'rating': 10, 'fake': null }");
+  /* {\"id\":\"file\",\"value\": \"File\",\"popup\": {\"menuitem\": [{\"value\": \"New\", \"onclick\": \"CreateNewDoc()\" }, { \"value\": \"Open\", \"onclick\": \"OpenDoc()\" }, { \"value\": \"Close\", \"onclick\": \"CloseDoc()\" } ] }, \"amazing\": true, \"rating\": 10, \"fake\": null } */
+  var state = parse_state_of_string(input);
+  var res = parse_whitespace_surrounded(state, parse_json_value);
+  var output_parser = must_parse_node(res);
+
+  var output_printer = print_json(output_parser, 1);
+
+  var expected = convert_quotes( 
+"{
+  'id': 'file',
+  'value': 'File',
+  'popup': {
+    'menuitem': [
+      {
+        'value': 'New',
+        'onclick': 'CreateNewDoc()'
+      },
+      {
+        'value': 'Open',
+        'onclick': 'OpenDoc()'
+      },
+      {
+        'value': 'Close',
+        'onclick': 'CloseDoc()'
+      }
+    ]
+  },
+  'amazing': true,
+  'rating': 10,
+  'fake': null
+}");
+
+  assert(str_eq(output_printer, expected)); 
+  return;
+}
+
 int program(int argc, string[] argv) {
   test_printer(); 
   test_parser();
   test_vector();
+  test_parser_printer();
   print_string("PASSED");
 
   return 0;
