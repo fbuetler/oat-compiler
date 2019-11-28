@@ -398,14 +398,30 @@ bool is_valid_escaped_string_char(int c) {
   return false;
 }
 
-bool is_valid_hex_char(int c) {
-  var l = array_of_string("abcdefABCDEF0123456789");
+bool is_char_in_string(string s, int c) {
+  var l = array_of_string(s);
   for (var i = 0; i < length(l); i = i + 1;) {
     if (c == l[i]) {
       return true;
     }
   }
   return false;
+}
+
+bool is_valid_hex_char(int c) {
+  return is_char_in_string("abcdefABCDEF0123456789", c);
+}
+
+bool is_valid_digit_char(int c) {
+  return is_char_in_string("0123456789", c);
+}
+
+bool is_valid_exponent_e_char(int c) {
+  return is_char_in_string("Ee", c);
+}
+
+bool is_valid_exponent_sign_char(int c) {
+  return is_char_in_string("+-", c);
 }
 
 ParseResult parse_four_hex_digits(ParseState input) { 
@@ -486,6 +502,146 @@ ParseResult parse_json_string(ParseState input) {
     });
     str = string null;
     count = state.pos - input.pos
+  };
+}
+
+/* parse_json_integer is a helper for parse_json_number */
+ParseResult parse_json_integer(ParseState input) { 
+  var state = copy_parse_state(input);
+
+  var res = parse_this(state, "-");
+  var negative = can_parse(res);
+  if (can_parse(res)) {
+    ignore_str(must_parse_str(res));
+  }
+  
+  res = parse_matching_char(state, is_valid_digit_char);
+  if (!can_parse(res)) {
+    return fail_parse(input);
+  }
+  if (str_eq(must_parse_str(res), "0")) {
+    return parse_result_of_difference(input, state);
+  }
+
+  state.pos = state.pos - 1;
+  ignore_str(must_parse_str(parse_matching_chars(state, is_valid_digit_char)));
+
+  return parse_result_of_difference(input, state);
+}
+
+/* parse_json_fraction is a helper for parse_json_number */
+ParseResult parse_json_fraction(ParseState input) { 
+  var state = copy_parse_state(input);
+
+  var res = parse_this(state, ".");
+  if (!can_parse(res)) {
+    return fail_parse(input);
+  }
+  ignore_str(must_parse_str(res));
+
+  res = parse_matching_chars(state, is_valid_digit_char);
+  if (!can_parse(res)) {
+    return fail_parse(input);
+  }
+  ignore_str(must_parse_str(res));
+
+  return parse_result_of_difference(input, state);
+}
+
+/* parse_json_exponent is a helper for parse_json_number */
+ParseResult parse_json_exponent(ParseState input) { 
+  var state = copy_parse_state(input);
+
+  var res = parse_matching_char(state, is_valid_exponent_e_char);
+  if (!can_parse(res)) {
+    return fail_parse(input);
+  }
+  ignore_str(must_parse_str(res));
+
+  res = parse_matching_char(state, is_valid_exponent_sign_char);
+  if (can_parse(res)) {
+    ignore_str(must_parse_str(res));
+  }
+
+  res = parse_matching_chars(state, is_valid_digit_char);
+  if (!can_parse(res)) {
+    return fail_parse(input);
+  }
+  ignore_str(must_parse_str(res));
+
+  return parse_result_of_difference(input, state);
+}
+
+/*
+parse_json_number reads a JSON number. The output is a string which contains
+exactly the same characters as the JSON file did. The number is not evaluated
+to an Oat int.
+*/
+ParseResult parse_json_number(ParseState input) {
+  var state = copy_parse_state(input);
+
+  var res = parse_json_integer(state);
+  if (!can_parse(res)) {
+    return fail_parse(input);
+  }
+  ignore_str(must_parse_str(res));
+
+  res = parse_json_fraction(state);
+  if (can_parse(res)) {
+    ignore_str(must_parse_str(res));
+  }
+
+  res = parse_json_exponent(state);
+  if (can_parse(res)) {
+    ignore_str(must_parse_str(res));
+  }
+
+  var output = parse_result_of_difference(input, state);
+  if? (string str = output.str) {
+    output.node = wrap_number(new JsonNumber { number = str });
+  } else {
+    assert(false);
+  }
+  output.str = string null;
+  return output;
+}
+
+/* parse_json_boolean reads a JSON boolean literal. */
+ParseResult parse_json_boolean(ParseState input) {
+  var res = parse_this(input, "true");
+  if (can_parse(res)) {
+    return new ParseResult {
+      input = input;
+      node = wrap_boolean(new JsonBoolean { boolean = true });
+      str = string null;
+      count = 4
+    };
+  }
+
+  res = parse_this(input, "false");
+  if (can_parse(res)) {
+    return new ParseResult {
+      input = input;
+      node = wrap_boolean(new JsonBoolean { boolean = false });
+      str = string null;
+      count = 5
+    };
+  }
+
+  return fail_parse(input);
+}
+
+/* parse_json_null reads a JSON null literal. */
+ParseResult parse_json_null(ParseState input) {
+  var res = parse_this(input, "null");
+  if (!can_parse(res)) {
+    return fail_parse(input);
+  }
+  return new ParseResult {
+    input = input;
+    node = wrap_nil(new JsonNull {});
+    str = string null;
+    count = 4
   };
 }
 
@@ -749,6 +905,103 @@ void test_parse_json_string() {
   return;
 }
 
+void test_parse_json_integer() {
+  assert_parse_string(parse_json_integer(parse_state_of_string("123")), "123");
+  assert_parse_string(parse_json_integer(parse_state_of_string("-123")), "-123");
+  assert_parse_string(parse_json_integer(parse_state_of_string("0123")), "0");
+  assert_parse_string(parse_json_integer(parse_state_of_string("-0123")), "-0");
+  assert_parse_string(parse_json_integer(parse_state_of_string("-0123")), "-0");
+  assert_parse_string(parse_json_integer(parse_state_of_string("0")), "0");
+  assert_parse_string(parse_json_integer(parse_state_of_string("9")), "9");
+  assert(!can_parse(parse_json_integer(parse_state_of_string(" 9"))));
+  assert(!can_parse(parse_json_integer(parse_state_of_string("a9"))));
+  assert(!can_parse(parse_json_integer(parse_state_of_string(".9"))));
+  return;
+}
+
+void test_parse_json_fraction() {
+  assert_parse_string(parse_json_fraction(parse_state_of_string(".123")), ".123");
+  assert_parse_string(parse_json_fraction(parse_state_of_string(".000")), ".000");
+  assert_parse_string(parse_json_fraction(parse_state_of_string(".0")), ".0");
+  assert_parse_string(parse_json_fraction(parse_state_of_string(".9")), ".9");
+  assert(!can_parse(parse_json_integer(parse_state_of_string("."))));
+  assert(!can_parse(parse_json_integer(parse_state_of_string("..123"))));
+  assert_parse_string(parse_json_fraction(parse_state_of_string(".1.2.3")), ".1");
+  return;
+}
+
+void test_parse_json_exponent() {
+  assert_parse_string(parse_json_exponent(parse_state_of_string("e12")), "e12");
+  assert_parse_string(parse_json_exponent(parse_state_of_string("e0000")), "e0000");
+  assert_parse_string(parse_json_exponent(parse_state_of_string("E1")), "E1");
+  assert_parse_string(parse_json_exponent(parse_state_of_string("E+12")), "E+12");
+  assert_parse_string(parse_json_exponent(parse_state_of_string("E-11")), "E-11");
+  assert(!can_parse(parse_json_exponent(parse_state_of_string("12"))));
+  assert(!can_parse(parse_json_exponent(parse_state_of_string("o12"))));
+  assert(!can_parse(parse_json_exponent(parse_state_of_string("-12"))));
+  return;
+}
+
+void assert_parse_json_number(string input, string expected) {
+  var actual = must_parse_node(parse_json_number(parse_state_of_string(input)));
+  if? (JsonNumber number = actual.number) {
+    assert(str_eq(number.number, expected));
+  } else {
+    assert(false);
+  }
+  return;
+}
+
+void test_parse_json_number() {
+  assert_parse_json_number("123", "123");
+  assert_parse_json_number("123.456", "123.456");
+  assert_parse_json_number("-123.456e+78", "-123.456e+78");
+  assert(!can_parse(parse_json_number(parse_state_of_string(" 123"))));
+  assert_parse_json_number("-123:456e+78", "-123");
+  assert_parse_json_number("-123.456q+78", "-123.456");
+  assert_parse_json_number("-123.456e+", "-123.456");
+  return;
+}
+
+void test_parse_json_boolean() {
+  var output = must_parse_node(parse_json_boolean(parse_state_of_string("true")));
+  if? (JsonBoolean boolean = output.boolean) {
+    assert(boolean.boolean);
+  } else {
+    assert(false);
+  }
+
+  output = must_parse_node(parse_json_boolean(parse_state_of_string("false")));
+  if? (JsonBoolean boolean = output.boolean) {
+    assert(!(boolean.boolean));
+  } else {
+    assert(false);
+  }
+
+  assert(!can_parse(parse_json_boolean(parse_state_of_string("True"))));
+  assert(!can_parse(parse_json_boolean(parse_state_of_string("False"))));
+  assert(!can_parse(parse_json_boolean(parse_state_of_string(" true"))));
+  assert(!can_parse(parse_json_boolean(parse_state_of_string(" false"))));
+
+  return;
+}
+
+void test_parse_json_null() {
+  var output = must_parse_node(parse_json_null(parse_state_of_string("null")));
+  if? (JsonNull nil = output.nil) {
+    /* intentionally empty */
+  } else {
+    assert(false);
+  }
+
+  assert(!can_parse(parse_json_null(parse_state_of_string("Null"))));
+  assert(!can_parse(parse_json_null(parse_state_of_string(" null"))));
+  assert(!can_parse(parse_json_null(parse_state_of_string("nil"))));
+  assert(!can_parse(parse_json_null(parse_state_of_string("undefined"))));
+
+  return;
+}
+
 void test_parser(){
   test_must_parse_str();
   test_must_parse_node();
@@ -757,6 +1010,12 @@ void test_parser(){
   test_parse_quote();
   test_parse_whitespace();
   test_parse_json_string();
+  test_parse_json_integer();
+  test_parse_json_fraction();
+  test_parse_json_exponent();
+  test_parse_json_number();
+  test_parse_json_boolean();
+  test_parse_json_null();
 
   if (assert_disabled_for_test) {
     /* await_assert() without matching did_assert() */
@@ -1201,7 +1460,7 @@ void test_printer() {
 /************ END PRINTER ************/
 
 int program(int argc, string[] argv) {
-  test_printer();
+  /* test_printer(); */ /* TODO uncomment */
   test_parser();
   test_vector();
   print_string("PASSED");
