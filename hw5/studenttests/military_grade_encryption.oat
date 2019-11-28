@@ -1,0 +1,152 @@
+/* Jan Schär */
+/* Sandro Rüegge */
+
+struct Ops {
+    string op1;
+    string op2
+}
+
+struct OpInfo {
+    (string, string)->(string) operation;
+    Ops operands
+}
+
+string run_operation(OpInfo op_info){
+    var function = op_info.operation;
+    var op1 = op_info.operands.op1;
+    var ops = op_info.operands;
+    var result = function(op1, ops.op2);
+    return result;
+}
+
+int get_real_key(string key){
+    var raw_key = array_of_string(key);
+    var ikey = 0;
+    var len = length_of_string(key);
+    for(var i = 0; i < len; i = i + 1;){
+        ikey = raw_key[i];
+    }
+
+    while(ikey >= 62){
+        ikey = ikey - 62;
+    }
+
+    if(ikey == 0){
+        ikey = 1;
+    }
+
+    return ikey;
+}
+
+string encrypt(string plain, string key){
+    var k = get_real_key(key);
+    var p = normalize(array_of_string(plain));
+    var len = length(p);
+    for(var i = 0; i < len; i = i + 1;){
+        p[i] = p[i] + k;
+        while(p[i] >= 62){
+            p[i] = p[i] - 62;
+        }
+        if(k > 1){
+            k = k - 1;
+        }
+    }
+
+    return string_of_array(denormalize(p));
+}
+
+string decrypt(string plain, string key){
+    var k = get_real_key(key);
+    var p = normalize(array_of_string(plain));
+    var len = length(p);
+    for(var i = 0; i < len; i = i + 1;){
+        p[i] = p[i] - k;
+        while(p[i] < 0){
+            p[i] = p[i] + 62;
+        }
+        if(k > 1){
+            k = k - 1;
+        }
+    }
+
+    return string_of_array(denormalize(p));
+}
+
+bool string_cmp(string a, string b){
+    var len = length_of_string(a);
+
+    if(len != length_of_string(b)){
+        return false;
+    }
+    var aa = array_of_string(a);
+    var ba = array_of_string(b);
+
+    for(var i = 0; i < len; i = i + 1;){
+        if(aa[i] != ba[i]){
+            return false;
+        }
+    }
+
+    return true;
+}
+
+int[] normalize(int[] val){
+    var len = length(val);
+    for(var i = 0; i < len; i = i + 1;){
+        if (val[i] >= 48 & val[i] <= 57){
+            val[i] = val[i] - 48;
+        } else if (val[i] >= 65 & val[i] <= 90) {
+            val[i] = val[i] - 55;
+        } else if (val[i] >= 97 & val[i] <= 122) {
+            val[i] = val[i] - 61;
+        } else {
+            print_string("errror, invalid characters found");
+        }
+    }
+    return val;
+}
+
+int[] denormalize(int[] val){
+    var len = length(val);
+    for(var i = 0; i < len; i = i + 1;){
+        if (val[i] >= 0 & val[i] <= 9){
+            val[i] = val[i] + 48;
+        } else if (val[i] >= 10 & val[i] <= 35) {
+            val[i] = val[i] + 55;
+        } else if (val[i] >= 36 & val[i] <= 61) {
+            val[i] = val[i] + 61;
+        } else {
+            print_string("errror, invalid characters found");
+        }
+    }
+    return val;
+}
+
+int program (int argc, string[] argv) {
+    if(argc != 4){
+        print_string("Wrong agument count.");
+        print_string("arg 1: e|d, arg 2: plaint/cipher text, arg 3: key\n");
+        return 1;
+    }
+
+    var ops = new Ops {op1=argv[2]; op2=argv[3]};
+    var op_inf = OpInfo null;
+
+    if(string_cmp(argv[1], "e")){
+        op_inf = new OpInfo {operation=encrypt;operands=ops};
+    }else if(string_cmp(argv[1], "d")){
+        op_inf = new OpInfo {operation=decrypt;operands=ops};
+    }else {
+        print_string("second argument has to be one of e, d\n");
+        print_string("second argument was '");
+        print_string(argv[1]);
+        print_string("'\n");
+        return 1;
+    }
+
+    if?(OpInfo info = op_inf){
+        print_string(run_operation(info));
+    }
+
+    return 0;
+}

@@ -1,0 +1,206 @@
+/* David Enderlin */
+/* Pascal Wacker */
+
+global arr_default_size = 8;
+
+struct ArrayList {
+    int[] arr;
+    int len
+}
+
+/* Adds an element to the list, resizing the list if needed */
+void list_add(ArrayList l, int val) {
+    /* If array is already full, we have to resize it */
+    if (length(l.arr) == l.len) {
+        /* Create new array of double the size */
+        var newArr = new int[length(l.arr)*2]{i -> 0};
+
+        /* Copy content of old array */
+        for(var i = 0; i < length(l.arr); i = i + 1;) {
+            newArr[i] = l.arr[i];
+        }
+
+        l.arr = newArr;
+    }
+
+    l.arr[l.len] = val;
+    l.len = l.len + 1;
+    return;
+}
+
+/* Adds an element to the list at a given position, resizing the list if needed */
+void list_insert(ArrayList l, int index, int val) {
+    /* If array is already full, we have to resize it */
+    if (length(l.arr) == l.len) {
+        /* Create new array of double the size */
+        var newArr = new int[length(l.arr)*2]{i -> 0};
+
+        /* Copy content of old array */
+        for(var i = 0; i < length(l.arr); i = i + 1;) {
+            newArr[i] = l.arr[i];
+        }
+
+        l.arr = newArr;
+    }
+
+    /* Make space for new value */
+    for(var i = l.len - 1; i >= index; i = i - 1;) {
+        l.arr[i + 1] = l.arr[i];
+    }
+
+    l.arr[index] = val;
+    l.len = l.len + 1;
+    return;
+}
+
+/* Removes the element at the given position */
+void list_remove(ArrayList l, int index) {
+    for(var i = index; i < l.len - 1; i = i + 1;) {
+        l.arr[i] = l.arr[i+1];
+    }
+
+    l.arr[l.len] = 0;
+    l.len = l.len - 1;
+    return;
+}
+
+/* Adds all elements of l2 to l1 */
+void list_addAll(ArrayList l1, ArrayList l2) {
+    for(var i = 0; i < l2.len; i = i + 1;) {
+        list_add(l1, l2.arr[i]);
+    }
+
+    return;
+}
+
+/* Maps all elements of the list */
+void list_map(ArrayList l, (int) -> int f) {
+    for(var i = 0; i < l.len; i = i + 1;) {
+        l.arr[i] = f(l.arr[i]);
+    }
+
+    return;
+}
+
+/* Calls a given function for each element of the list */
+void list_for_each(ArrayList l, (int) -> void f) {
+    for(var i = 0; i < l.len; i = i + 1;) {
+        f(l.arr[i]);
+    }
+
+    return;
+}
+
+/* Gets the element at the given position */
+int list_get(ArrayList l, int index) {
+    return l.arr[index];
+}
+
+/* Just returns zero for every input */
+int zero(int i) {
+    return 0;
+}
+
+/* Clears a list, removing all elements */
+void list_clear(ArrayList l) {
+    list_map(l, zero);
+    l.len = 0;
+    return;
+}
+
+/* Checks if a list is empty */
+bool list_isEmpty(ArrayList l) {
+    return l.len == 0;
+}
+
+/* Reverses an array in place */
+void list_reverse(ArrayList l) {
+    if(l.len > 1) {
+        for(var i = 0; i < (l.len >> 1); i = i + 1;) {
+            var tmp = l.arr[i];
+            l.arr[i] = l.arr[l.len - 1 - i];
+            l.arr[l.len - 1 - i] = tmp;
+        }
+    }
+
+    return;
+}
+
+/* Prints a list element */
+void print_list_ele(int i) {
+    print_int(i);
+    print_string(" ");
+    return;
+}
+
+/* Prints a list */
+void list_print(ArrayList l) {
+    list_for_each(l, print_list_ele);
+    return;
+}
+
+/* Constructs a new array list from an array */
+ArrayList newArrayList(int[]? init) {
+    /* If init array is not null */
+    if? (int[] tmp = init) {
+        return new ArrayList {
+            arr = tmp; 
+            len = length(tmp)
+        };
+    } else {
+        return new ArrayList {
+            arr = new int[arr_default_size]{i -> 0}; 
+            len = 0
+        };
+    }
+}
+
+int plus1(int i) {
+    return i + 1;
+}
+
+int times2(int i) {
+    return i * 2;
+}
+
+int program(int argc, string[] argv) {
+    var list1 = newArrayList(new int[]{1,2,3,4,5,6});   /* list1: 1 2 3 4 5 6 C:6 */
+    var list2 = newArrayList(int[] null);               /* list2: C:8 */
+    var list3 = newArrayList(new int[]{9,8,7,6,5,4});   /* list3: 9 8 7 6 5 4 C:6 */
+
+    list_add(list2, 5); /* list2: 5 C:8 */
+    list_add(list2, 6); /* list2: 5 6 C:8 */
+
+    list_addAll(list1, list2);  /* list1: 1 2 3 4 5 6 5 6 C:12 */
+    list_map(list1, plus1);     /* list1: 2 3 4 5 6 7 6 7 C:12 */
+
+    list_add(list1, 7);         /* list1: 2 3 4 5 6 7 6 7 7 C:12 */
+    list_add(list1, 8);         /* list1: 2 3 4 5 6 7 6 7 7 8 C:12 */
+
+    list_map(list1, times2);                    /* list1: 4 6 8 10 12 14 12 14 14 16 C:12 */
+    list_insert(list1, 3, list_get(list3, 0));  /* list1: 4 6 8 9 10 12 14 12 14 14 16 C:12 */
+
+    list_add(list1, 42);        /* list1: 4 6 8 9 10 12 14 12 14 14 16 42 C:12 */
+    list_add(list1, 1337);      /* list1: 4 6 8 9 10 12 14 12 14 14 16 42 1337 C:12 */
+    list_add(list1, 69);        /* list1: 4 6 8 9 10 12 14 12 14 14 16 42 1337 69 C:24 */
+
+    list_clear(list2);          /* list2: C:8 */
+    if(list_isEmpty(list2)) {
+        list_remove(list1, 6);              /* list1: 4 6 8 9 10 12 12 14 14 16 42 1337 69 C:24 */
+        list_remove(list1, 6);              /* list1: 4 6 8 9 10 12 14 14 16 42 1337 69 C:24 */
+        list_remove(list1, 6);              /* list1: 4 6 8 9 10 12 14 16 42 1337 69 C:24 */
+        list_remove(list1, list1.len - 1);  /* list1: 4 6 8 9 10 12 14 16 42 1337 C:24 */
+        list_remove(list1, 0);              /* list1: 6 8 9 10 12 14 16 42 1337 C:24 */
+        list_insert(list1, 0, 3);           /* list1: 3 6 8 9 10 12 14 16 42 1337 C:24 */
+        list_insert(list1, 8, 24);          /* list1: 3 6 8 9 10 12 14 16 24 42 1337 C:24 */
+
+        list_reverse(list3);                /* list3: 4 5 6 7 8 9 C:6 */
+        list_addAll(list1, list3);          /* list1: 3 6 8 9 10 12 14 16 24 42 1337 4 5 6 7 8 9 C:24 */
+    }
+
+    list_print(list1);
+
+    /* Show capacity of list */
+    print_string("C:");
+    return length(list1.arr);
+}

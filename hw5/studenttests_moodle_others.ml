@@ -58,6 +58,35 @@ let myctxt : Tctxt.t = {
 
 }
 
+let testing_ctxt = 
+  let c' = Tctxt.add_struct Tctxt.empty "x" [] in
+  let c' = Tctxt.add_struct c' "y" [] in
+  let c' = Tctxt.add_struct c' "z" [{fieldName="f1";ftyp=(TRef (RStruct "x"))}] in
+  Tctxt.add_struct c' "k" [{fieldName="f2";ftyp=(TRef (RStruct "y"))}]
+
+
+let for_stmt_c = no_loc @@ For (["x", no_loc (CInt 0L)], None, None, [])
+
+(* Returning in update statement disallowed *)
+let for_stmt_f = no_loc @@ For (["x", no_loc (CInt 0L)], None, Some (no_loc @@ Ret None), [])
+
+let jan_sandro_struct_ctxt = {
+  Tctxt.empty with structs = [
+    ("S", [
+      {fieldName="a"; ftyp=TBool};
+      {fieldName="b"; ftyp=TInt};
+    ]);
+    ("S_sub", [
+      {fieldName="a"; ftyp=TBool};
+      {fieldName="b"; ftyp=TInt};
+      {fieldName="c"; ftyp=TRef(RString)}
+    ]);
+  ]
+}
+
+let exp_typ_carr_s = no_loc (CArr (TInt, [no_loc (CInt 0L); no_loc (CInt 1L); no_loc (CInt 2L)]))
+let exp_typ_carr_f = no_loc (CArr (TInt, [no_loc (CInt 0L); no_loc (CBool true); no_loc (CInt 2L)]))
+
 let unit_tests = [
   ("subtype_string_array_nullable_string_array",
    (fun () ->
@@ -334,6 +363,75 @@ let unit_tests = [
        			(not (subtype ctxt (TRef (RStruct "B")) (TRef (RStruct "A")))) then failwith "should not succeed"
        else ())
   );
+  ("student_subtye_struct", 
+    (fun () ->
+      if
+        Typechecker.subtype
+          testing_ctxt
+          (TRef (RStruct "z"))
+          (TRef (RStruct "k"))
+      then failwith "should not succeed"
+      else ())
+  ); 
+  ("student_CArr",
+    (fun () ->
+      try
+        let _ = Typechecker.typecheck_exp
+          testing_ctxt
+          {elt= CArr (TNullRef (RStruct "z"), [{elt = CNull (RStruct "z"); loc = Range.norange}]);
+          loc = Range.norange}
+        in
+        ()
+      with Typechecker.TypeError x -> failwith ("should succed, got: " ^ x))
+  );
+  ("positive_unit_test",
+   (fun () ->
+       if Typechecker.subtype Tctxt.empty 
+       (TRef (RArray (TRef (RFun ([TNullRef RString], RetVoid))))) 
+       (TRef (RArray (TRef (RFun ([TNullRef RString], RetVoid)))))
+       then ()
+       else failwith "should not fail")
+  ); 
+  ("negative_unit_test",
+   (fun () ->
+       if Typechecker.subtype Tctxt.empty 
+       (TRef (RArray (TRef (RFun ([TNullRef RString], RetVoid))))) 
+       (TRef (RArray (TRef (RFun ([TRef RString], RetVoid)))))  
+       then failwith "should not succeed" else ())
+  );
+  ("TYP_FOR_success",
+   (fun () ->
+     let c, r = Typechecker.typecheck_stmt Tctxt.empty for_stmt_c RetVoid in
+     if (c, r) = (Tctxt.empty, false) then ()
+     else failwith "should not fail")
+  );
+  ("TYP_FOR_fail",
+   (fun () ->
+     try
+       let _ = Typechecker.typecheck_stmt Tctxt.empty for_stmt_f RetVoid in
+       failwith "should not succeed"
+       with Typechecker.TypeError s -> ())
+  );
+  ("arr_subtype_neq", 
+  (fun () ->
+    if Typechecker.subtype jan_sandro_struct_ctxt (TRef (RArray (TRef(RStruct "S_sub")))) (TRef (RArray (TRef(RStruct "S")))) then
+    failwith "should not succee")
+  );
+  ("arr_subtype_eq",
+  (fun () ->
+    if not @@ Typechecker.subtype jan_sandro_struct_ctxt (TRef (RArray (TRef(RStruct "S")))) (TRef (RArray (TRef(RStruct "S")))) then
+    failwith "should succeed")
+  );
+  ("TYP_CARR_SUCCESS",
+   (fun () ->
+       ignore (try Typechecker.typecheck_exp Tctxt.empty exp_typ_carr_s
+       with TypeError s -> failwith "should succeed"))                                                                                  
+  ); 
+  ("TYP_CARR_FAIL",
+   (fun () ->
+       ignore (try ignore (Typechecker.typecheck_exp Tctxt.empty exp_typ_carr_f); failwith "should not succeed"
+       with TypeError s -> TBool))
+  );
 ]
 
 let brainfuck_tests = [
@@ -498,4 +596,13 @@ let provided_tests : suite = [
   Test("Others: Perceptron Test", executed_oat_file [("studenttests/single_perceptron.oat", "", "correctly classified1")]);
   Test("Others: complex numbers", executed_oat_file [("studenttests/complexnumbers.oat", "", "5")]);
   Test("Others: Moodle Oat Test", executed_oat_file [("studenttests/oat_test.oat", "", "2")]); (* TODO discuss *)
+  Test("Others: moodle tests", executed_oat_file [("studenttests/treap.oat", "", "[[[[(-5, 1668674806)], (2, 1000676753)], (8, 908095735)], (16, 71666532), [[(27, 1250496027)], (42, 1116302264)]]0")]);
+  Test("Others: Areas Test", executed_oat_file [("studenttests/areas.oat", "", "45")]);
+  Test("Others: flist test", executed_oat_file [("studenttests/flist.oat", "", "8")]);
+  Test("Others: oat test", executed_oat_file [
+        ("studenttests/military_grade_encryption.oat", "e HelloWorld securekey", "EagfhOfhaR0");
+        ("studenttests/military_grade_encryption.oat", "d EagfhOfhaR securekey", "HelloWorld0");
+  ]);
+  Test("Ohthers: ArrayList test", executed_oat_file [("studenttests/arraylist.oat", "", "3 6 8 9 10 12 14 16 24 42 1337 4 5 6 7 8 9 C:24")]);
+
 ] 

@@ -1,0 +1,53 @@
+/* 16934531, Fariborz Golshani */
+
+/* Test case initializes and traverses a singly linked list of functions, then
+   invokes the last function in the list and returns the obtained return value. */
+
+struct FNode {
+  (int, int) -> int f;
+  FNode? next
+}
+
+struct FList {
+  FNode? head
+}
+
+int add(int x, int y) { return x + y; }
+
+int sub(int x, int y) { return x - y; }
+
+int mul(int x, int y) { return x * y; }
+
+FList mkFList(((int, int) -> int)[] a) {
+  var fl = new FList {head = FNode null};
+  for(var i=length(a)-1; i >=0; i=i-1;){
+    var node = new FNode {f = a[i]; next = fl.head};
+    fl.head = node;
+  }
+  return fl;
+}
+
+FNode? get_last(FList l){
+  if?(FNode curr = l.head){
+    while(true){
+      if?(FNode next = curr.next){
+        curr = next;
+      }
+      else{
+        return curr;
+      }
+    }
+  }
+  return l.head;
+}
+
+int program(int argc, string[] argv) {
+  var fl = mkFList (new ((int, int) -> int)[] {add, sub, mul});
+  var fn = get_last(fl);
+  if?(FNode fn_not_null = fn){
+    return (fn_not_null.f)(1, 8);
+  }
+  else {
+    return 0;
+  }
+}

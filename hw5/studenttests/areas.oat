@@ -1,0 +1,41 @@
+/*Bogdan Gadzhylov*/
+/*Christopher Reinwardt*/
+
+struct Triangle {
+	int base;
+	int height;
+	(Triangle) -> int area
+}
+
+struct Rectangle {
+	int width;
+	int height;
+	(Rectangle) -> int area
+}
+
+struct Trapezium {
+	int a;
+	int b;
+	int height;
+	(Trapezium) -> int area
+}
+
+int tri_area(Triangle t){
+	return (t.base * t.height) >>> 1;
+}
+
+int rect_area(Rectangle r){
+	return (r.width * r.height);
+}
+
+int trap_area(Trapezium t){
+	return ((t.a + t.b) >>> 1) * t.height;
+}
+
+
+int program (int argc, string[] argv) {
+    var t = new Triangle{ base = 4; height = 5; area = tri_area };
+    var r = new Rectangle{ width = 4; height = 5; area = rect_area };
+    var trap = new Trapezium{ a = 6; b = 4; height = 3; area = trap_area };
+    return (t.area(t) + r.area(r) + trap.area(trap) );
+}

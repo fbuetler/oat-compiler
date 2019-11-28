@@ -1,0 +1,189 @@
+/* Tobias Birchler 17-913-914 */
+/* Michel Weber    17-917-782 */
+
+struct Treap {
+  int key;
+  int prio;
+  Treap? parent;
+  Treap? left;
+  Treap? right
+}
+
+global seed = 42;
+global max_int = 0x7fffffff;
+
+string string_of_node(Treap node){
+  var s = "";
+  s = string_cat(s, "(");
+  s = string_cat(s, string_of_int(node.key));
+  s = string_cat(s, ", ");
+  s = string_cat(s, string_of_int(node.prio));
+  s = string_cat(s, ")");
+  return s;
+}
+
+string string_of_treap(Treap? root){
+  var s = "";
+  
+  if?(Treap root_nn = root){
+    
+    var s_left = string_of_treap(root_nn.left);
+    if(length_of_string(s_left)>0){
+      s_left = string_cat(s_left, ", ");
+    }
+    s = string_cat(s, s_left);
+
+    s = string_cat(s, string_of_node(root_nn));
+    
+    var s_right = string_of_treap(root_nn.right);
+    if(length_of_string(s_right)>0){
+      s_right = string_cat(", ", s_right);
+    }
+    s = string_cat(s, s_right);
+
+    s = string_cat("[", s);
+    s = string_cat(s, "]");
+
+  }
+
+  return s;
+}
+
+int prng() {
+  seed = (1103515245 * seed + 12345) [&] max_int;
+  return seed;
+}
+
+bool equal(Treap? a, Treap? b){
+  if?(Treap a_nn = a){
+    if?(Treap b_nn = b){
+      return a_nn.key == b_nn.key & a_nn.prio == b_nn.prio;
+    }
+    return false;
+  } else {
+    if?(Treap b_nn = b){
+      return false;
+    }
+    return true;
+  }
+}
+
+Treap rotate_left(Treap root_nn) {
+  var child = root_nn.right;
+  if?(Treap child_nn = child){
+    root_nn.right = child_nn.left;
+    if?(Treap child_left_nn = child_nn.left){
+      child_left_nn.parent = root_nn;
+    }
+    child_nn.left = root_nn;
+    child_nn.parent = root_nn.parent;
+    if?(Treap parent_nn = root_nn.parent) {
+      if(equal(parent_nn.right, root_nn)){
+        parent_nn.right = child_nn;
+      } else {
+        parent_nn.left = child_nn;
+      }
+    }
+    root_nn.parent = child_nn;
+    return child_nn;
+  } else {
+    print_string("unable to rotate left if left subtree is empty\n");
+    return root_nn;
+  }
+}
+
+Treap rotate_right(Treap root_nn) {
+  var child = root_nn.left;
+  if?(Treap child_nn = child){
+    root_nn.left = child_nn.right;
+    if?(Treap child_right_nn = child_nn.right){
+      child_right_nn.parent = root_nn;
+    }
+    child_nn.right = root_nn;
+    child_nn.parent = root_nn.parent;
+    if?(Treap parent_nn = root_nn.parent) {
+      if(equal(parent_nn.right, root_nn)){
+        parent_nn.right = child_nn;
+      } else {
+        parent_nn.left = child_nn;
+      }
+    }
+    root_nn.parent = child_nn;
+    return child_nn;
+  } else {
+    print_string("unable to rotate right if right subtree is empty\n");
+    return root_nn;
+  }
+}
+
+Treap rotate_up(Treap root_nn, Treap node_nn) {
+  if?(Treap parent_nn = node_nn.parent){
+    if(node_nn.prio < parent_nn.prio){
+      if(equal(parent_nn.right, node_nn)){
+        node_nn = rotate_left(parent_nn);
+      } else {
+        node_nn = rotate_right(parent_nn);
+      }
+
+      if?(Treap new_parent_nn = node_nn.parent){
+        return rotate_up(root_nn, node_nn);
+      } else {
+        return node_nn;
+      }
+    }
+  }
+  return root_nn;
+}
+
+Treap insert(Treap? root, int key) {
+  var prev = Treap null;
+  var curr = root;
+  var found = false;
+  while(!found) {
+    if?(Treap curr_nn = curr) {
+      if(key < curr_nn.key) {
+        prev = curr;
+        curr = curr_nn.left;
+      } else {
+        prev = curr;
+        curr = curr_nn.right;
+      }
+    } else {
+      found = true;
+    }
+  }
+
+  if?(Treap prev_nn = prev) {
+    var node_nn = new Treap { key=key; prio=prng(); parent=prev; left=Treap null; right=Treap null };
+    
+    if(key < prev_nn.key) {
+      prev_nn.left = node_nn;
+    } else {
+      prev_nn.right = node_nn;
+    }
+    
+    if?(Treap root_nn = root){ 
+      return rotate_up(root_nn, node_nn);
+    }
+
+  } else {
+    return new Treap { key=key; prio=prng(); parent=Treap null; left=Treap null; right=Treap null };
+  }
+
+  return new Treap { key=key; prio=prng(); parent=Treap null; left=Treap null; right=Treap null };
+}
+
+Treap? insert_arr(Treap? root, int[] arr){
+  var size = length(arr);
+  for(var i = 0; i < size; i = i + 1;){
+    root = insert(root, arr[i]);
+  }
+  return root;
+}
+
+int program(int argc, string[] argv){
+  var arr = new int[]{27, 42, 2, -5, 8, 16};
+  var treap = insert_arr(Treap null, arr);  
+  print_string(string_of_treap(treap));
+  return 0;
+}
