@@ -380,10 +380,11 @@ let rec typecheck_stmt (tc : Tctxt.t) (s:Ast.stmt node) (to_ret:ret_ty) : Tctxt.
     | Cast (rty, id, exp, if_block, else_block) -> 
       let exp_ty = typecheck_exp tc exp in
       let checked_ty = begin match exp_ty with
-        | TNullRef ty -> TRef ty
+        | TNullRef ty -> ty
         | _ -> type_error exp @@ Printf.sprintf "CHECK: expected nullable ref rhs, but got %s" (string_of_ty exp_ty);
       end in
-      let if_c = add_new_local tc s id checked_ty in
+      if not @@ subtype_ref tc checked_ty rty then type_error s @@ Printf.sprintf "exptected type %s on lhs but got %s" (string_of_ty (TRef checked_ty)) (string_of_ty (TRef rty));
+      let if_c = add_new_local tc s id (TRef checked_ty) in
       let if_returns = typecheck_block if_c if_block to_ret in
       let else_returns = typecheck_block tc else_block to_ret in
       (tc, if_returns && else_returns)
