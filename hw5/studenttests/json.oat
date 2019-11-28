@@ -1676,7 +1676,10 @@ void test_mixed(){
               )}
             }
           }
-        )}
+        )},
+        new JsonMember{str = "amazing"; element = wrap_boolean(new JsonBoolean {boolean = true})},
+        new JsonMember{str = "rating"; element = wrap_number(new JsonNumber {number = "10"})},
+        new JsonMember{str = "fake"; element = wrap_nil(new JsonNull {})}
       }
     }
   ), 1);
@@ -1700,7 +1703,10 @@ void test_mixed(){
         'onclick': 'CloseDoc()'
       }
     ]
-  }
+  },
+  'amazing': true,
+  'rating': 10,
+  'fake': null
 }");
 
   assert(str_eq(test1, ref1)); 
