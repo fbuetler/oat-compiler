@@ -39,7 +39,7 @@ struct Json {
   JsonNull? nil
 }
 
-struct JsonObject{
+struct JsonObject {
   JsonMember[] members
 }
 
@@ -48,19 +48,19 @@ struct JsonMember {
   Json element
 }
 
-struct JsonArray{
+struct JsonArray {
   Json[] arr
 }
 
-struct JsonString{
+struct JsonString {
   string str
 }
 
-struct JsonNumber{
+struct JsonNumber {
   string number
 }
 
-struct JsonBoolean{
+struct JsonBoolean {
   bool boolean
 }
 
@@ -718,10 +718,93 @@ ParseResult parse_json_array(ParseState input) {
   return output;
 }
 
+/* parse_json_object parses a JSON object (without surrounding whitespace). */
+ParseResult parse_json_object(ParseState input) {
+  var state = copy_parse_state(input);
+
+  var res = parse_this(state, "{");
+  if (!can_parse(res)) {
+    return fail_parse(input);
+  }
+  ignore_str(must_parse_str(res));
+
+  try_parse(state, parse_whitespace);
+
+  var pre_elem_state = copy_parse_state(state);
+  var elem_count = 0;
+  var done = false;
+  var should_finish = false;
+  while (!done) {
+    res = parse_whitespace_surrounded(state, parse_json_string);
+
+    if (elem_count > 0) {
+      if ((can_parse(res) & should_finish) | (!can_parse(res) & !should_finish)) {
+        return fail_parse(input);
+      }
+    }
+    if (can_parse(res)) {
+      ignore_node(must_parse_node(res));
+      elem_count = elem_count + 1;
+
+      res = parse_this(state, ":");
+      if (!can_parse(res)) {
+        return fail_parse(input);
+      }
+      ignore_str(must_parse_str(res));
+
+      res = parse_whitespace_surrounded(state, parse_json_value);
+      if (!can_parse(res)) {
+        return fail_parse(input);
+      }
+      ignore_node(must_parse_node(res));
+
+      res = parse_this(state, ",");
+      if (can_parse(res)) {
+        ignore_str(must_parse_str(res));
+      }
+      should_finish = !can_parse(res);
+    } else {
+      done = true;
+    }
+  }
+
+  state = pre_elem_state;
+  var elems = new JsonMember[elem_count]{i -> new JsonMember { str = ""; element = empty_json }};
+  for (var i = 0; i < elem_count; i = i + 1;) {
+    if (i != 0) {
+      ignore_str(must_parse_str(parse_this(state, ",")));
+    }
+
+    var key_node = must_parse_node(parse_whitespace_surrounded(state, parse_json_string));
+    ignore_str(must_parse_str(parse_this(state, ":")));
+    var value_node = must_parse_node(parse_whitespace_surrounded(state, parse_json_value));
+
+    var key = "";
+    if? (JsonString str = key_node.str) {
+      key = str.str;
+    } else {
+      assert(false);
+    }
+
+    elems[i] = new JsonMember { str = key; element = value_node };
+  }
+
+  res = parse_this(state, "}");
+  if (!can_parse(res)) {
+    return fail_parse(input);
+  }
+  ignore_str(must_parse_str(res));
+
+  var output = parse_result_of_difference(input, state);
+  output.str = string null;
+  output.node = wrap_obj(new JsonObject { members = elems });
+  return output;
+}
+
 /* parse_json_value parses any JSON value, but does not accept whitespace around it. */
 ParseResult parse_json_value(ParseState input) {
   var results = new ParseResult[]{
-    /* TODO object */
+    parse_json_object(input),
     parse_json_array(input),
     parse_json_string(input),
     parse_json_number(input),
@@ -754,6 +837,18 @@ ParseResult parse_whitespace_surrounded(ParseState input, (ParseState) -> ParseR
   res.input = input;
   res.count = state.pos - input.pos;
   return res;
+}
+
+/*
+parse_json converts a string to JSON AST. It allows surrounding whitespace,
+but fails on other leading or trailing characters. This function fails using assert().
+*/
+Json parse_json(string input) {
+  var state = parse_state_of_string(input);
+  var res = parse_whitespace_surrounded(state, parse_json_value);
+  var output = must_parse_node(res);
+  assert(state.pos == length_of_string(input));
+  return output;
 }
 
 void assert_parse_string(ParseResult result, string expected) {
@@ -1145,6 +1240,34 @@ void test_parse_json_array() {
   return;
 }
 
+void test_parse_json_object() {
+  var input = convert_quotes("{'bestAnimal': {'type': 'walrus', 'weight_kg': 1500, 'features': ['tusks', 'moustache']}}");
+  var output = must_parse_node(parse_json_object(parse_state_of_string(input)));
+  if? (JsonObj obj = output.obj) {
+    assert(length(obj.members) == 1);
+    assert(str_eq(obj.members[0].str, "bestAnimal"));
+    if? (JsonObj inner_obj = obj.members[0].element.obj) {
+      assert(length(inner_obj.members) == 3);
+      assert(str_eq(inner_obj.members[0].str, "type"));
+      assert(str_eq(inner_obj.members[2].str, "features"));
+    } else {
+      assert(false);
+    }
+  } else {
+    assert(false);
+  }
+
+  assert(can_parse(parse_json_object(parse_state_of_string("{}"))));
+  assert(!can_parse(parse_json_object(parse_state_of_string(convert_quotes("{'test'}")))));
+  assert(!can_parse(parse_json_object(parse_state_of_string(convert_quotes("{'test': }")))));
+  assert(can_parse(parse_json_object(parse_state_of_string(convert_quotes("{'test': 123}")))));
+  assert(can_parse(parse_json_object(parse_state_of_string(convert_quotes("{'':123}")))));
+  assert(can_parse(parse_json_object(parse_state_of_string(convert_quotes("{  ''  :  123   }")))));
+  assert(!can_parse(parse_json_object(parse_state_of_string("{,}"))));
+
+  return;
+}
+
 void test_parse_json_value() {
   var good_inputs = new string[]{
     "123",
@@ -1156,7 +1279,8 @@ void test_parse_json_value() {
     "''",
     "[]",
     "[123, 45,    'test']",
-    "[123,45,'test']"
+    "[123,45,'test']",
+    "{}"
   };
   for (var i = 0; i < length(good_inputs); i = i + 1;) {
     var res = parse_json_value(parse_state_of_string(convert_quotes(good_inputs[i])));
@@ -1174,7 +1298,8 @@ void test_parse_json_value() {
     "'test''",
     " []",
     " [123,45,'test']",
-    "[123,45,'test'] "
+    "[123,45,'test'] ",
+    " {}"
   };
   for (var i = 0; i < length(bad_inputs); i = i + 1;) {
     var res = parse_json_value(parse_state_of_string(convert_quotes(bad_inputs[i])));
@@ -1216,6 +1341,26 @@ void test_parse_whitespace_surrounded() {
   return;
 }
 
+void test_parse_json() {
+  var good_inputs = new string[]{
+    "[123.456e-789]"
+  };
+  for (var i = 0; i < length(good_inputs); i = i + 1;) {
+    ignore_node(parse_json(good_inputs[i]));
+  }
+
+  var bad_inputs = new string[]{
+    convert_quotes("['x']]")
+  };
+  for (var i = 0; i < length(bad_inputs); i = i + 1;) {
+    await_assert();
+    ignore_node(parse_json(bad_inputs[i]));
+    assert(did_assert());
+  }
+
+  return;
+}
+
 void test_parser(){
   test_must_parse_str();
   test_must_parse_node();
@@ -1231,8 +1376,10 @@ void test_parser(){
   test_parse_json_boolean();
   test_parse_json_null();
   test_parse_json_array();
+  test_parse_json_object();
   test_parse_json_value();
   test_parse_whitespace_surrounded();
+  test_parse_json();
 
   if (assert_disabled_for_test) {
     /* await_assert() without matching did_assert() */
