@@ -89,6 +89,81 @@ global empty_json = new Json {
   nil = JsonNull null
 };
 
+/*********** BEGIN HELPER ***********/
+
+global assert_disabled_for_test = false;
+global would_fail_assert = false;
+
+void await_assert() {
+  if (assert_disabled_for_test) {
+    print_string("already waiting for assert\n");
+    assert_disabled_for_test = false;
+    assert(false);
+    return;
+  }
+  assert_disabled_for_test = true;
+  would_fail_assert = false;
+  return;
+}
+
+bool did_assert() {
+  if (!assert_disabled_for_test) {
+    print_string("not waiting for assert\n");
+    assert(false);
+    return false;
+  }
+  assert_disabled_for_test = false;
+  return would_fail_assert;
+}
+
+void assert(bool condition) {
+  if (assert_disabled_for_test) {
+    would_fail_assert = would_fail_assert | !condition;
+    return;
+  }
+  if (condition) {
+    return;
+  }
+  var a = new int[0]{i -> 0};
+  a[123456789] = 1;
+  return;
+}
+
+void print_int_array(int[] arr){
+  for(var i=0;i<length(arr);i=i+1;){
+    print_int(arr[i]);
+    print_string(" ");
+  }
+  print_string("\n");
+  return;
+}
+
+bool str_eq(string a, string b) {
+  var a_len = length_of_string(a);
+  var b_len = length_of_string(b);
+  /* print_int(a_len);
+  print_string("\n");
+  print_int(b_len);
+  print_string("\n"); */
+  if (a_len != b_len) {
+    return false;
+  }
+
+  var a_chars = array_of_string(a);
+  var b_chars = array_of_string(b);
+  /* print_int_array(a_chars);
+  print_int_array(b_chars); */
+
+  for (var i = 0; i < a_len; i = i + 1;) {
+    if (a_chars[i] != b_chars[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/*********** END HELPER ***********/
+
 /*********** BEGIN PARSER ***********/
 
 /* ParseResult is returned from every parser */
@@ -746,6 +821,7 @@ void test_vector() {
 
 /************ END VECTOR ************/
 
+/*********** BEGIN PRINTER ***********/
 global indent_size = "  ";
 
 string convert_quotes(string s) {
@@ -778,8 +854,27 @@ string print_indent(int depth){
   return indent;
 }
 
-string print_obj(JsonObject tmp){
-  return "";
+string print_member(JsonMember tmp, int depth){
+  var s = "'";
+  s = string_cat(s, tmp.str);
+  s = string_cat(s, "' : ");
+  s = string_cat(s, print_json(tmp.element, depth));
+  return convert_quotes(s);
+}
+
+string print_obj(JsonObject tmp, int depth){
+  var s = "{\n";
+  for(var i=0;i<length(tmp.members);i=i+1;){
+    s = string_cat(s, print_indent(depth));
+    s = string_cat(s, print_member(tmp.members[i], depth+1));
+    if (i<length(tmp.members)-1){
+      s = string_cat(s, ",");
+    }
+    s = string_cat(s, "\n");
+  } 
+  s = string_cat(s, print_indent(depth-1));
+  s = string_cat(s, "}");
+  return s;
 }
 
 string print_array(JsonArray tmp, int depth){
@@ -797,7 +892,10 @@ string print_array(JsonArray tmp, int depth){
 }
 
 string print_str(JsonString tmp){
-  return tmp.str;
+  var s = "'";
+  s = string_cat(s, tmp.str);
+  s = string_cat(s, "'");
+  return convert_quotes(s);
 }
 
 string print_number(JsonNumber tmp){
@@ -848,7 +946,7 @@ string print_null(JsonNull tmp){
 string print_json(Json? tmp, int depth){
   if? (Json j = tmp){
     if? (JsonObject obj = j.obj){
-      return print_obj(obj);
+      return print_obj(obj, depth);
     }
     if? (JsonArray arr = j.arr){
       return print_array(arr, depth);
@@ -867,71 +965,6 @@ string print_json(Json? tmp, int depth){
     }
   }
   return "TODO print_json"; 
-}
-
-global assert_disabled_for_test = false;
-global would_fail_assert = false;
-
-void await_assert() {
-  if (assert_disabled_for_test) {
-    print_string("already waiting for assert\n");
-    assert_disabled_for_test = false;
-    assert(false);
-    return;
-  }
-  assert_disabled_for_test = true;
-  would_fail_assert = false;
-  return;
-}
-
-bool did_assert() {
-  if (!assert_disabled_for_test) {
-    print_string("not waiting for assert\n");
-    assert(false);
-    return false;
-  }
-  assert_disabled_for_test = false;
-  return would_fail_assert;
-}
-
-void assert(bool condition) {
-  if (assert_disabled_for_test) {
-    would_fail_assert = would_fail_assert | !condition;
-    return;
-  }
-  if (condition) {
-    return;
-  }
-  var a = new int[0]{i -> 0};
-  a[123456789] = 1;
-  return;
-}
-
-void print_int_array(int[] arr){
-  for(var i=0;i<length(arr);i=i+1;){
-    print_int(arr[i]);
-    print_string(" ");
-  }
-  print_string("\n");
-  return;
-}
-
-bool str_eq(string a, string b) {
-  var a_len = length_of_string(a);
-  var b_len = length_of_string(b);
-  if (a_len != b_len) {
-    return false;
-  }
-
-  var a_chars = array_of_string(a);
-  var b_chars = array_of_string(b);
-
-  for (var i = 0; i < a_len; i = i + 1;) {
-    if (a_chars[i] != b_chars[i]) {
-      return false;
-    }
-  }
-  return true;
 }
 
 Json wrap_obj(JsonObject obj){
@@ -1000,6 +1033,73 @@ Json wrap_nil(JsonNull nil){
   };
 }
 
+void test_obj(){
+  var test1 = print_json(wrap_obj(
+      new JsonObject{
+        members = new JsonMember[]{
+          new JsonMember{str = "hallo"; element = wrap_number(new JsonNumber {number = 3})}
+        }
+      }
+    ), 1);
+
+  var ref1 = convert_quotes(
+"{
+  'hallo' : 3
+}");
+
+  /* print_string(test1);
+  print_string("\n");
+  print_string(ref1);
+  print_string("\n"); */
+
+  assert(str_eq(test1, ref1));
+
+  var test2 = print_json(wrap_obj(
+      new JsonObject {
+        members = new JsonMember[]{
+          new JsonMember{
+            str = "Team"; 
+            element = wrap_obj(new JsonObject{
+              members = new JsonMember[]{
+                new JsonMember{str = "#1"; element = wrap_str(new JsonString {str = "Flo"})},
+                new JsonMember{str = "#2"; element = wrap_str(new JsonString {str = "Philippe"})}
+              }
+            }) 
+          },
+          new JsonMember{
+            str = "Animals"; 
+            element = wrap_obj(new JsonObject{
+              members = new JsonMember[]{
+                new JsonMember{str = "#1"; element = wrap_str(new JsonString {str = "Panda"})},
+                new JsonMember{str = "#2"; element = wrap_str(new JsonString {str = "Walrus"})}
+              }
+            }) 
+          }
+        }
+      }
+    ), 1);
+
+  var ref2 = convert_quotes(
+"{
+  'Team' : {
+    '#1' : 'Flo',
+    '#2' : 'Philippe'
+  },
+  'Animals' : {
+    '#1' : 'Panda',
+    '#2' : 'Walrus'
+  }
+}");
+
+  /* print_string(test2);
+  print_string("\n");
+  print_string(ref2);
+  print_string("\n");
+  assert(str_eq(test2, ref2)); */
+
+  return;
+}
+
 void test_arr(){
   assert(str_eq(
     print_json(wrap_arr(
@@ -1048,7 +1148,7 @@ void test_str(){
         str = "flooo"
       }
     ), 1),
-    "flooo"
+    convert_quotes("'flooo'")
   ));
   assert(str_eq(
     print_json(wrap_str(
@@ -1056,7 +1156,7 @@ void test_str(){
         str = "walrus"
       }
     ), 1),
-    "walrus"
+    convert_quotes("'walrus'")
   ));
 
   return;
@@ -1118,8 +1218,11 @@ void test_printer() {
   test_boolean();
   test_str();
   test_arr();
+  test_obj();
   return;
 }
+
+/************ END PRINTER ************/
 
 int program(int argc, string[] argv) {
   test_printer();
