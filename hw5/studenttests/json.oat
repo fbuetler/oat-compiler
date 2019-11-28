@@ -141,18 +141,12 @@ void print_int_array(int[] arr){
 bool str_eq(string a, string b) {
   var a_len = length_of_string(a);
   var b_len = length_of_string(b);
-  /* print_int(a_len);
-  print_string("\n");
-  print_int(b_len);
-  print_string("\n"); */
   if (a_len != b_len) {
     return false;
   }
 
   var a_chars = array_of_string(a);
   var b_chars = array_of_string(b);
-  /* print_int_array(a_chars);
-  print_int_array(b_chars); */
 
   for (var i = 0; i < a_len; i = i + 1;) {
     if (a_chars[i] != b_chars[i]) {
