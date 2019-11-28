@@ -1907,11 +1907,23 @@ void test_parser_printer(){
 }
 
 int program(int argc, string[] argv) {
-  test_printer(); 
-  test_parser();
-  test_vector();
-  test_parser_printer();
-  print_string("PASSED");
+  var usage = "Usage:\ncommand <json_as_string> - pretty print JSON\ncommand test - run self-test";
 
+  if (argc != 2) {
+    print_string("wrong number of arguments");
+    print_string(usage);
+    return 1;
+  }
+
+  if (argc == 2 & str_eq(argv[1], "test")) {
+    test_printer(); 
+    test_parser();
+    test_vector();
+    test_parser_printer();
+    print_string("passed");
+    return 0;
+  } 
+
+  print_string(print_json(parse_json(argv[1]), 1));
   return 0;
 }

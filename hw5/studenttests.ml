@@ -1,5 +1,6 @@
 open Assert
 open Astlib
+open Gradedtests
 
 (* These tests are provided by you -- they will be graded manually *)
 
@@ -37,4 +38,5 @@ let subtype_tests = [
 
 let provided_tests : suite = [
   Test("Own subtypes", subtype_tests);
+  Test("Json self-test", executed_oat_file [("studenttests/json.oat", "test", "passed0")]); 
 ] 

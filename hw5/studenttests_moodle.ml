@@ -1,8 +1,9 @@
 open Assert
 open Astlib
+open Gradedtests
 
 (* 17-913-534 Florian Bütler
-16-926-560 Philippe Voinov *)
+   16-926-560 Philippe Voinov *)
 
 let subtype_test c t1 t2 expected =
   Printf.sprintf "subtype %s %s" (string_of_ty t1) (string_of_ty t2),
@@ -19,4 +20,5 @@ let subtype_tests = [
 
 let provided_tests : suite = [
   Test("Own subtypes moodle", subtype_tests);
+  Test("Json self-test", executed_oat_file [("studenttests/json.oat", "test", "passed0")]); 
 ] 
