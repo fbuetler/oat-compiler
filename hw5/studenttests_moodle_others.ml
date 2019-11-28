@@ -690,7 +690,7 @@ let unit_tests = [
      (fun () ->
        if Typechecker.typecheck_exp (Tctxt.add_local Tctxt.empty "ididid" TInt) (Ast.no_loc (Ast.NewArr (TInt, (Ast.no_loc (Ast.CInt 1L)), "ididid", (Ast.no_loc (Ast.Id "ididid"))))) = TRef (RArray TInt) then ()
        else failwith "should not fail")                                                                                     
-     ); TODO: prohibited variable redelclaration *)
+     ); note: prohibited variable redelclaration *)
   ("Typechecker: Struct with more fields",
    (fun () ->
       if Typechecker.subtype struct_test_ctxt (TRef (RStruct "A")) (TRef (RStruct "B")) then ()
@@ -740,9 +740,6 @@ let unit_tests = [
          Typechecker.subtype  c4 (TRef (RStruct "s1")) (TRef (RStruct "s4")) then
         failwith "should not succeed" else ())
   );
-  (* (unit_tests_binop "typeck_binop_int" [Add; Sub; Mul; IAnd; IOr; Shl; Shr; Sar] (CInt(0L)) (CBool(false)) TInt);
-     (unit_tests_binop "typeck_binop_cmp" [Lt; Lte; Gt; Gte] (CInt(0L)) (CBool(false)) TBool);
-     (unit_tests_binop "typeck_binop_bool" [And; Or] (CBool(false)) (CInt(0L)) TBool); *)
   ("TYP_STRUCTEX, reordering correct",
    Gradedtests.typecheck_correct (fun () ->
        let ctxt         = Tctxt.add_struct Tctxt.empty "Maybe" [{fieldName = "case"; ftyp = TInt}; {fieldName = "some_val"; ftyp = TInt}] in
@@ -920,7 +917,6 @@ let provided_tests : suite = [
   Test("Others: hard test", executed_oat_file [("studenttests/game.oat", "", "120")]);
   Test("Others: Inverted-Index-Boolean-Query",executed_oat_file [("studenttests/inv_index.oat", "","12354")]);
   Test("Others: Directed DFS Test", executed_oat_file [("studenttests/directed_dfs.oat", "", "79")]);
-  (* Test("Others: Tree", executed_oat_file [("studenttests/tree.oat", "", "13")]); *) (* TODO accroding to their post this will follow *)
   Test("Others: vector test", executed_oat_file [("studenttests/vector.oat", "hello oat test00000 test t", "5, 3, 9, 4, 10")]);
   Test("Others: search_tree", executed_oat_file [("studenttests/searchtree.oat", "", "29335566255")]);
   Test("Others: sl tests", executed_oat_file sl_tests);
@@ -951,7 +947,7 @@ let provided_tests : suite = [
   Test("Others: function pointers", executed_oat_file["studenttests/fptrs.oat", "", "1"]);
   Test("Others: scope_struct_stress", executed_oat_file [("studenttests/testitest.oat", "", "111222\nfalse, true, 22, true, 22, 222\n20, 20, 10, 10, 10, 990\n990, 10, 7770, 7770, 77700")]); (* Note: Modified a few things *)
   Test("Others: Rucksack Tests", executed_oat_file rucksackTest);
-  (* Test("Others: IsTree ok 1", executed_oat_file [("studenttests/is_tree.oat", "1", "1");
+  Test("Others: IsTree ok 1", executed_oat_file [("studenttests/is_tree.oat", "1", "1");
                                                  ("studenttests/is_tree.oat", "0", "1");
                                                  ("studenttests/is_tree.oat", "2 0 1", "1");
                                                  ("studenttests/is_tree.oat", "3 0 1 1 2", "1");
@@ -968,7 +964,7 @@ let provided_tests : suite = [
      Test("Others: IsTree input err 1", executed_oat_file [("studenttests/is_tree.oat", "finthechat", "254");
                                                         ("studenttests/is_tree.oat", "0 1 2", "254");
                                                         ("studenttests/is_tree.oat", "", "254");
-                                                        ("studenttests/is_tree.oat", "2 1 2 1", "254"); ]); TODO: prohibited variable redelclaration*)
+                                                        ("studenttests/is_tree.oat", "2 1 2 1", "254"); ]); (* TODO: prohibited variable redelclaration *)
   Test("Others: student tests", executed_oat_file [("studenttests/s_min_dist.oat", "0", "03250")]);
   Test("Others: determinants", Gradedtests.executed_oat_file ["studenttests/determinant.oat", "", "2_25_-132_-30696_0"]);
   Test("Others: student tests", executed_oat_file [("studenttests/s_min_dist.oat", "0", "03250")]);

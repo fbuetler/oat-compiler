@@ -163,9 +163,9 @@ Input parse_input(string[] argv) {
     if? (Edge[] a = edges_a){
         lene = length(a);
 
-        for(var i = 0; i < lene; i = i + 1;) {
-            a[i].first.neighbours = add_node_to_array(a[i].second, a[i].first.neighbours);
-            a[i].second.neighbours = add_node_to_array(a[i].first, a[i].second.neighbours);
+        for(var j = 0; j < lene; j = j + 1;) {
+            a[j].first.neighbours = add_node_to_array(a[j].second, a[j].first.neighbours);
+            a[j].second.neighbours = add_node_to_array(a[j].first, a[j].second.neighbours);
         }
 
         return new Input{len = 0; edges = a; nodes = nodes_a; parse_error = false};
