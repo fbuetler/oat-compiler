@@ -1,0 +1,154 @@
+
+/* Adrian Hirt */
+int program(int argc, string[] argv) {
+    var mat_1 = new int[][]{
+        new int[]{2}
+    };
+
+    var mat_2 = new int[][]{
+        new int[]{7, 3},
+        new int[]{1, 4}
+    };
+
+    var mat_3 = new int[][]{
+        new int[]{3, 4, 9},
+        new int[]{1, 5, 3},
+        new int[]{4, 4, 0}
+    };
+
+    var mat_4 = new int[][]{
+        new int[]{4, 6, 3, 1},
+        new int[]{2, 9, 4, 6},
+        new int[]{8, 34, 5, 10},
+        new int[]{100, 4, 5, 6}
+    };
+/*
+    var det_1_correct = determinant1(mat_1) == 2;
+    var det_2_correct = determinant2(mat_2) == 25;
+    var det_3_correct = determinant3(mat_3) == -132;
+    var det_4_correct = laplace_determinant(mat_4, 4) == -30696;
+
+    var all_dets_correct = det_4_correct;
+
+    if(all_dets_correct) {
+        return 0;
+    }
+    else {
+        return -1;
+    }
+*/
+    print_int(laplace_determinant(mat_1));
+    print_string("_");
+    print_int(laplace_determinant(mat_2));
+    print_string("_");
+    print_int(laplace_determinant(mat_3));
+    print_string("_");
+    print_int(laplace_determinant(mat_4));
+    print_string("_");
+    return 0;
+}
+
+int determinant1(int[][] matrix) {
+    return matrix[0][0];
+}
+
+int determinant2(int[][] matrix) {
+    return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
+}
+
+int determinant3(int[][] matrix) {
+    var a = matrix[0][0] * matrix[1][1] * matrix[2][2];
+    var b = matrix[0][1] * matrix[1][2] * matrix[2][0];
+    var c = matrix[0][2] * matrix[1][0] * matrix[2][1];
+    var d = matrix[0][2] * matrix[1][1] * matrix[2][0];
+    var e = matrix[0][1] * matrix[1][0] * matrix[2][2];
+    var f = matrix[0][0] * matrix[1][2] * matrix[2][1];
+    return a + b + c - d - e - f;
+}
+
+int laplace_determinant(int[][] matrix) {
+    var size = length(matrix);
+    var determinante = 0;
+
+    if(size <= 0) {
+        return 0;
+    }
+
+    if(size == 1) {
+        return determinant1(matrix);
+    }
+
+    if(size == 2) {
+        return determinant2(matrix);
+    }
+
+    if(size == 3) {
+        return determinant3(matrix);
+    }
+
+    var submatrix = fresh_empty_matrix(size - 1);
+    
+    for(var i = 0; i < size; i = i + 1;) {
+        delete_row_and_colum(matrix, i, 0, submatrix);
+        var submatrix_det = laplace_determinant(submatrix);
+        var el = sign_for_index(i) * matrix[i][0];
+        determinante = determinante + (el * submatrix_det);
+    }
+
+    return determinante;
+}
+
+void print_matrix(int[][] matrix) {
+    print_string("\n");
+    for(var i = 0; i < length(matrix); i = i + 1;) {
+        for(var j = 0; j < length(matrix); j = j + 1;) {
+            print_int(matrix[i][j]);
+            print_string("  |  ");
+        }
+        print_string("\n");
+    }
+    print_string("-------------------------\n");
+    return;
+}
+
+int sign_for_index(int index) {
+    if(mod(index, 2) == 0) {
+        return 1;
+    }
+    else {
+        return -1;
+    }
+}
+
+/* Computes a modulo b */
+int mod(int a, int b) {
+    var tmp = a;
+    while(tmp >= b) {
+        tmp = tmp - b;
+    }
+    return tmp;
+}
+
+void delete_row_and_colum(int[][] matrix, int delete_row, int delete_column, int[][] new_matrix) {
+    var new_size = length(matrix) - 1;
+
+    var new_i = 0;
+    for(var i = 0; i < length(matrix); i = i + 1;) {
+        var new_j = 0;
+        if(i != delete_row) {
+            for(var j = 0; j < length(matrix); j = j + 1;) {
+                if(j != delete_column) {
+                    new_matrix[new_i][new_j] = matrix[i][j];
+                    new_j = new_j + 1;
+                }
+            }
+            new_i = new_i + 1;
+        }
+    }
+    return;
+}
+
+int[][] fresh_empty_matrix(int size) {
+    var matrix = new int[][size]{i -> new int[size]{ j -> 0}};
+    return matrix;
+}

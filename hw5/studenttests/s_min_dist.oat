@@ -1,0 +1,112 @@
+/* 17-927-690, Christian Ulmann */
+/* 17-916-503, Enrico Mann */
+
+struct Point {
+  int x;
+  int y
+}
+
+struct Pair {
+  Point p1;
+  Point p2;
+  int dist
+}
+
+struct LinkedList {
+  LinkedList? nxt;
+  Point p
+}
+
+void addEntry(LinkedList ll, Point entry) {
+  var llcurrent = ll;
+  var llAdd = new LinkedList{p=entry; nxt=LinkedList null};
+
+  var hasNextElemnt = true;
+  while (hasNextElemnt) {
+    if?(LinkedList llnext = llcurrent.nxt) {
+      llcurrent = llnext;
+    }
+    else {
+      hasNextElemnt = false;
+    }
+  }
+  llcurrent.nxt = llAdd;
+  return;
+}
+
+int getDist2 (Point p1, Point p2){
+  var dx = p1.x - p2.x;
+  var dy = p1.y - p2.y;
+  var d2 = (dx*dx) + (dy*dy);
+  return d2;
+}
+
+Pair leastDist (LinkedList ll) {
+  var llc1 = ll;
+  var hasNext = true;
+
+  var pair = new Pair{p1 = ll.p; p2 = ll.p; dist = 0};
+  var firstPair = true;
+  while (hasNext) {
+    if?(LinkedList llnext = llc1.nxt) {
+      var llc2 = llnext;
+      var hasNext2 = true;
+      while (hasNext2) {
+        if?(LinkedList ll2next = llc2.nxt) {
+          
+          var d = getDist2(llc1.p, llc2.p); 
+          if(firstPair) {
+            pair = new Pair{p1 = llc1.p; p2 = llc2.p; dist = d};
+            firstPair = false;
+          }
+          if(pair.dist > d) {
+            pair = new Pair{p1 = llc1.p; p2 = llc2.p; dist = d};
+          }
+
+          llc2 = ll2next;
+        }
+        else { 
+          hasNext2 = false;
+        }
+      }
+   
+      llc1 = llnext;
+    }
+    else {
+      hasNext = false;
+    }
+  }
+  return pair;
+}
+
+
+int program(int argc, string[] argv) {
+  
+  var p1 = new Point{x = 0; y = 3};
+  var p2 = new Point{x = 5; y = 4};
+  var p3 = new Point{x = 2; y = 10};
+  var p4 = new Point{x = 8; y = 8};
+  var p5 = new Point{x = 2; y = 5};
+  var p6 = new Point{x = 9; y = 5};
+  var p7 = new Point{x = 9; y = 1}; 
+
+  var ll = new LinkedList {p = p1; nxt = LinkedList null};
+  addEntry(ll, p2);
+  addEntry(ll, p3);
+  addEntry(ll, p4);
+  addEntry(ll, p5);
+  addEntry(ll, p6);
+  addEntry(ll, p7);
+
+/* r should hold p1 amd p5*/
+  var r = leastDist(ll);
+  print_int(r.p1.x);
+  print_int(r.p1.y);
+  print_int(r.p2.x);
+  print_int(r.p2.y);
+/* should print 0 3 2 5  "0325"*/
+  return 0;
+/* total output should be "03250"*/ 
+}
+
+

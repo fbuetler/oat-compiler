@@ -1,0 +1,126 @@
+/* Janis Peyer */
+/* Oliver Schwarzenbach */
+
+struct Item {
+       int weight;
+       int value
+    }
+
+Item createItem (int weight, int value){
+    return new Item{weight = weight; value = value};
+}
+
+int divide(int dividend, int divisor){
+    var res = 0;
+    var jump = 1;
+    
+    for(var i = 9; i>=2; i=i-1;){
+        jump = 1;
+        while((res + jump) * divisor <= dividend){
+            res = res + jump;
+            jump = jump * i;
+        }
+    }
+    
+    while((res + 1) * divisor <= dividend){
+        res = res + 1;
+    }
+    return res;
+}
+
+int stringToInt(string input) {
+    var output = 0;
+    var inputLength = length_of_string(input);
+    var charArr = array_of_string(input);
+    for(var i = 0; i<inputLength; i = i+1;){
+        var ch = charArr[i];
+        if (ch >= 48 & ch <= 57) {
+            output = output * 10 + (ch - 48);
+        } else {
+            print_string("Error\n");
+            return 0;
+        }
+    }
+    return output;
+}
+
+int verySimplePacking(int size, Item[] items){
+    var used = 0;
+    var totalValue = 0;
+    for(var i = 0; i < length(items); i=i+1;){
+        if(items[i].weight <= size - used){
+            used = used + items[i].weight;
+            totalValue = totalValue + items[i].value;
+        }
+    }
+    return totalValue;
+}
+
+int valueSortedPacking(int size, Item[] items){
+    var used = 0;
+    var totalValue = 0;
+    var packed = new bool[length(items)]{i -> false};
+    var itemsLeft = length(items);
+
+    while (itemsLeft > 0 & used < size) {
+        var mostValuable = -1;
+        var value = -1;
+        for(var i = 0; i < length(items); i=i+1;){
+            if(!packed[i]){
+                if(items[i].value > value){
+                    mostValuable = i;
+                    value = items[i].value;
+                }
+            }
+        }
+        
+        packed[mostValuable] = true;
+        itemsLeft = itemsLeft - 1;
+        if(items[mostValuable].weight <= size - used){
+            used = used + items[mostValuable].weight;
+            totalValue = totalValue + items[mostValuable].value;
+        }
+    }
+    return totalValue;
+}
+
+int dynamicPacking(int size, Item[] items){
+    var used = 0;
+    var totalValue = 0;
+    var dynTable = new int[][length(items)+1]{i -> new int[size+1]{j -> 0}};
+    
+    for(var i = length(items) - 1; i >= 0; i=i-1;){
+        for(var j = 1; j < size+1; j=j+1;){
+            if(items[i].weight <= j){
+                if(items[i].value + dynTable[i+1][j-items[i].weight] > dynTable[i+1][j]){
+                    dynTable[i][j] = items[i].value + dynTable[i+1][j-items[i].weight];
+                } else {
+                    dynTable[i][j] = dynTable[i+1][j];
+                }
+            } else {
+                dynTable[i][j] = dynTable[i+1][j];
+            }
+        }
+    }
+    return dynTable[0][size];
+}
+
+int program(int argc, string[] argv) {
+    var weights = new int[divide(argc-3, 2)]{i -> 0};
+    var values = new int[divide(argc-3, 2)]{i -> 0};
+
+    var funChoose = stringToInt(argv[1]);
+    var size = stringToInt(argv[2]);
+
+    var funs = new ((int, Item[]) -> int)[]{verySimplePacking, valueSortedPacking, dynamicPacking};
+
+    for(var i = 3, var index = 0; i+1 < argc; i = i+2;){
+      weights[index] = stringToInt(argv[i]);
+      values[index] = stringToInt(argv[i+1]);
+      index = index + 1;
+    }
+
+    var items = new Item[divide(argc-3, 2)]{i -> createItem(weights[i], values[i])};
+
+    return (funs[funChoose] (size, items));
+}

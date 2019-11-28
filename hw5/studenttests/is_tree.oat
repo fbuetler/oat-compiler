@@ -1,0 +1,211 @@
+/* Guy Lüthi */
+/* Lukas Gygi */
+
+
+/*   Tests if an input has the form n e11 e12 e21 e22... */
+/*   where n is the number of nodes and e's represent edges */ 
+/*   and this input forms a valid tree */
+
+
+struct Node {
+    Node[]? neighbours;
+    bool visited
+}
+
+struct Edge {
+    Node first;
+    Node second
+}
+
+struct Input {
+    int len;
+    Node[]? nodes;
+    Edge[]? edges;
+    bool parse_error
+}
+
+void dfs_rec(Node startnode) {
+    startnode.visited = true;
+    if? (Node[] a = startnode.neighbours){
+        var len = length(a);
+        if (len == 0) {
+            return;
+        }
+        for(var i = 0; i < len; i = i + 1;) {
+            if (!(a[i].visited)) {
+                dfs_rec(a[i]);
+            }
+        }
+        return;
+    } else {
+        return;
+    }
+    
+
+}
+
+bool dfs(Node[] nodes){
+    if (length(nodes) == 1) {
+        return true;
+    }
+
+    var len = length(nodes);
+    dfs_rec(nodes[0]);
+
+    for(var i = 0; i < len; i = i + 1;) {
+        if (!(nodes[i].visited)){
+            return false;
+        }
+    }
+    return true;
+}
+
+Node select(int i, Node single, Node[] array){
+    if (i >= (length(array))){
+        return single;
+    } else {
+        return array[i];
+    }
+}
+
+Node[] add_node_to_array(Node to_add, Node[]? array){
+    if? (Node[] a = array){
+        var x = new Node[(length(a) + 1)]{ 
+            i -> select(i, to_add, a) 
+        };
+        return x;
+    } else {
+        return new Node[]{to_add};
+    }
+}
+
+Edge selecte(int i, Edge single, Edge[] array){
+    if (i >= (length(array))){
+        return single;
+    } else {
+        return array[i];
+    }
+}
+
+Edge[] add_edge_to_array(Edge to_add, Edge[]? array){
+    if? (Edge[] a = array){
+        var x = new Edge[(length(a) + 1)]{ 
+            i -> selecte(i, to_add, a) 
+        };
+        return x;
+    } else {
+        return new Edge[]{to_add};
+    }
+}
+
+int ten_pow_n(int n){
+    var res = 1;
+    for (var i = 0; i < n; i = i + 1;){
+        res = res * 10;
+    }
+    return res;
+}
+
+int string_to_int(string s){
+    var lena = array_of_string(s);
+    var len = length(lena);
+    var x = 0;
+    for(var i = 0; i < len; i = i + 1;){
+        var ascii = lena[(len - i - 1)];
+        if (ascii > 57) {
+            return -1;
+        }
+        if (ascii <= 47) {
+            return -1;
+        }
+        x = x + ((ascii - 48) * ten_pow_n(i));
+    }
+    return x;
+}
+
+Input parse_input(string[] argv) {
+    var arglen = length(argv);
+    if (arglen == 1) {
+        return new Input{len = 0; edges = Edge[] null; nodes = Node[] null; parse_error = true};
+    }
+
+    var n_nodes = string_to_int(argv[1]);
+    if (n_nodes == -1){
+        return new Input{len = 0; edges = Edge[] null; nodes = Node[] null; parse_error = true};
+    }
+
+    var nodes_a = new Node[n_nodes]{ i -> new Node{visited = false; neighbours = Node[] null}};
+
+    var i = 3;
+    var edges_a = Edge[] null;
+
+    for (; i < arglen; i = i + 2;){
+        var from = string_to_int(argv[i - 1]);
+        var to = string_to_int(argv[i]);
+
+        if (from >= n_nodes) {
+            return new Input{len = 0; edges = Edge[] null; nodes = Node[] null; parse_error = true};
+        }
+        if (to >= n_nodes) {
+            return new Input{len = 0; edges = Edge[] null; nodes = Node[] null; parse_error = true};
+        }
+
+
+        edges_a = add_edge_to_array( new Edge{first = nodes_a[from]; second = nodes_a[to]}, edges_a );
+    }
+
+    if (i != arglen + 1) {
+        if (arglen != 2) {
+            return new Input{len = 0; edges = Edge[] null; nodes = Node[] null; parse_error = true};
+        }
+    }
+    var lene = 0;
+    if? (Edge[] a = edges_a){
+        lene = length(a);
+
+        for(var i = 0; i < lene; i = i + 1;) {
+            a[i].first.neighbours = add_node_to_array(a[i].second, a[i].first.neighbours);
+            a[i].second.neighbours = add_node_to_array(a[i].first, a[i].second.neighbours);
+        }
+
+        return new Input{len = 0; edges = a; nodes = nodes_a; parse_error = false};
+    }
+    
+    return new Input{len = 0; edges = edges_a; nodes = nodes_a; parse_error = false};
+    
+    
+}
+
+
+int program(int argc, string[] argv) {
+    var read = parse_input(argv);
+
+    if (read.parse_error) {
+        return -2;
+    }
+    if? (Node[] b = read.nodes){
+        if (length(b) == 0){
+            return 1;
+        }
+
+        if? (Edge[] a = read.edges){
+            if (length(a) != (length(b) - 1)){
+                return 0;
+            }
+
+            if (dfs(b)){
+                return 1;
+            } else {
+                return 0;
+            }
+        } else {
+            if (length(b) == 1){
+                return 1;
+            } else {
+                return 0;
+            }
+        }
+    }
+    return -1;
+    
+}
