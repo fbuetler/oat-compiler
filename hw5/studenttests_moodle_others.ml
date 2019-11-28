@@ -245,6 +245,52 @@ let unit_tests_binop n ops tp tf tr = List.flatten (List.map (fun op -> [
       typecheck_exp_fail (n^"_3") (nl(Bop(op, nl(tf), nl(tf)))) tr;
     ]) ops)
 
+let fptr1 = let open Ast in (RFun([TBool; TInt], RetVoid))
+let fptr2 = let open Ast in (RFun([TBool; TInt; TInt], RetVoid))
+let fptr3 = let open Ast in (RFun([TBool; TInt; TRef(RArray TBool)], RetVoid))
+let fptr4 = let open Ast in (RFun([TBool; TInt; TNullRef(RArray TBool)], RetVoid))
+
+let create_tctxt () : Tctxt.t=
+  let c1 = Tctxt.empty in
+  let c2 = add_struct c1 "A" [{fieldName="x";ftyp=TInt}] in
+  let c3 = add_struct c2 "B" [{fieldName="x";ftyp=TInt};{fieldName="y";ftyp=TInt}] in
+  let c4 = add_struct c3 "C" [{fieldName="a";ftyp=TRef(RStruct "A")}] in
+  let c5 = add_struct c4 "D" [{fieldName="b";ftyp=TRef(RStruct "B")};{fieldName="z";ftyp=TInt}] in
+  let c6 = add_struct c5 "E" [{fieldName="b";ftyp=TRef(RStruct "B")};{fieldName="a";ftyp=TRef(RStruct "A")}] in
+  c6
+
+let test_for_subtype c t1 t2 cond =
+  Printf.sprintf "Check if %s is subtype of %s:\n" (string_of_ty t1) (string_of_ty t2),
+  (fun () ->
+     if (Typechecker.subtype c t1 t2 = cond) then ()
+     else failwith "FAIL")
+
+let to_node a : Ast.exp node = no_loc (Uop (Neg, no_loc a))
+
+let tctxt1 = { Tctxt.locals = []; Tctxt.globals = []; Tctxt.structs = 
+                                                [
+                                                  ("s1", [{fieldName = "x"; ftyp = TInt}; {fieldName = "arr"; ftyp = TRef (RArray TInt)}])
+                                                ; ("s2", [{fieldName = "x"; ftyp = TInt}; {fieldName = "arr"; ftyp = TRef (RArray TInt)}])
+                                                ]}
+let tctxt1_err = { Tctxt.locals = []; Tctxt.globals = []; Tctxt.structs = 
+                                                    [
+                                                      ("s1", [{fieldName = "x"; ftyp = TInt}; {fieldName = "arr"; ftyp = TRef (RArray TInt)}])
+                                                    ; ("s2", [{fieldName = "x"; ftyp = TInt}; {fieldName = "ints"; ftyp = TRef (RArray TInt)}])
+                                                    ]}
+
+let unit_tests = [
+  ("subtype_Struct_Int__Array_Int__Struct_Int__Array_Int",
+   (fun () ->
+      if Typechecker.subtype tctxt1 (TRef (RStruct "s1")) (TRef (RStruct "s2")) then ()
+      else failwith "should not fail")                                                                                     
+  )
+;("no_subtype_Struct_Int__Array_Int__Struct_Int__Array_Int",
+  (fun () ->
+     if Typechecker.subtype tctxt1_err (TRef (RStruct "s1")) (TRef (RStruct "s2")) then
+       failwith "should not succeed" else ())
+ );
+]
+
 let unit_tests = [
   ("subtype_string_array_nullable_string_array",
    (fun () ->
@@ -564,12 +610,12 @@ let unit_tests = [
       else failwith "should not fail")
   );
   ("TYP_FOR_fail",
-     (fun () ->
-     try
-       let _ = Typechecker.typecheck_stmt Tctxt.empty for_stmt_f RetVoid in
-       failwith "should not succeed"
-       with Typechecker.TypeError s -> ())
-     ); 
+   (fun () ->
+      try
+        let _ = Typechecker.typecheck_stmt Tctxt.empty for_stmt_f RetVoid in
+        failwith "should not succeed"
+      with Typechecker.TypeError s -> ())
+  ); 
   ("arr_subtype_neq", 
    (fun () ->
       if Typechecker.subtype jan_sandro_struct_ctxt (TRef (RArray (TRef(RStruct "S_sub")))) (TRef (RArray (TRef(RStruct "S")))) then
@@ -755,6 +801,26 @@ let unit_tests = [
        let exp          = Ast.no_loc maybe_struct in
        let _ = Typechecker.typecheck_exp ctxt exp in
        ())
+  );
+  ("sub_subrfunt success",
+   (fun () ->
+      if Typechecker.subtype_ref Tctxt.empty fptr4 fptr3 then ()
+      else failwith "should not fail")
+  ); 
+  ("sub_subrfunt fail",
+   (fun () ->
+      if Typechecker.subtype_ref Tctxt.empty fptr2 fptr1 then
+        failwith "should not succeed" else ())
+  );
+  test_for_subtype (create_tctxt ()) (TRef(RStruct "E")) (TRef(RStruct "C")) true;
+  test_for_subtype (create_tctxt ()) (TRef(RStruct "D")) (TRef(RStruct "C")) false;
+  ("typecheck_exp_uop_neg_uint",
+   (fun () -> try let res = Typechecker.typecheck_exp Tctxt.empty (to_node (CInt 1L)) in
+       if res = TInt then () else failwith "" with _ -> failwith "should not fail")
+  );
+  ("typecheck_exp_uop_neg_cbool",
+   (fun () -> let succed = try let res = Typechecker.typecheck_exp Tctxt.empty (to_node (CBool true)) in true with _ -> false in
+       if succed then failwith "should not succeed" else ())
   );
 ]
 
@@ -954,14 +1020,14 @@ let provided_tests : suite = [
                                                  ("studenttests/is_tree.oat", "4 0 1 0 2 0 3", "1");
                                                  ("studenttests/is_tree.oat", "5 0 1 0 2 0 3 3 4", "1");
                                                  ("studenttests/is_tree.oat", "6 0 1 1 2 2 3 2 4 2 5", "1"); ]);
-     Test("Others: IsTree err 1", executed_oat_file[("studenttests/is_tree.oat", "2", "0");
+  Test("Others: IsTree err 1", executed_oat_file[("studenttests/is_tree.oat", "2", "0");
                                                  ("studenttests/is_tree.oat", "3 0 1", "0");
                                                  ("studenttests/is_tree.oat", "3 0 1 0 1", "0");
                                                  ("studenttests/is_tree.oat", "4 0 1 1 2 2 0", "0");
                                                  ("studenttests/is_tree.oat", "5 0 1 0 2 0 3 1 0", "0");
                                                  ("studenttests/is_tree.oat", "6 1 2 2 3 3 4 4 5 5 1", "0");
                                                  ("studenttests/is_tree.oat", "5", "0"); ]);
-     Test("Others: IsTree input err 1", executed_oat_file [("studenttests/is_tree.oat", "finthechat", "254");
+  Test("Others: IsTree input err 1", executed_oat_file [("studenttests/is_tree.oat", "finthechat", "254");
                                                         ("studenttests/is_tree.oat", "0 1 2", "254");
                                                         ("studenttests/is_tree.oat", "", "254");
                                                         ("studenttests/is_tree.oat", "2 1 2 1", "254"); ]); 
@@ -974,5 +1040,9 @@ let provided_tests : suite = [
       ("studenttests/levenstein.oat", "apocalypse maleficent", "10 6045904 0");
     ]);
   Test("Others: Oat test, higher order functions", executed_oat_file [("studenttests/higher_order_functions.oat", "", "5")]);
+  Test("Others: Queue test", executed_oat_file [("studenttests/array_queue.oat", "", "[5,7,9,]5[7,9,]7[9,]943[2,1,]21420[-5,-3,4,99,3,]-5-3[4,99,3,1,]0")]);
+  Test("Others: Moodle triangle test:", executed_oat_file [("studenttests/triangle.oat","","2")]);
+  Test("Others: Levenshtein Test", executed_oat_file [("studenttests/editing_distance.oat", "", "1")]);
+  Test("Others: Posted Moodle Test Case", executed_oat_file [("studenttests/squared.oat","","9")]);
 
 ] 

@@ -1,0 +1,125 @@
+/* Matthias Roshardt */
+/* Adrian Balla */
+
+struct Queue {
+    int[] a;
+    int start;
+    int size
+}
+
+Queue create_empty_queue_of_capacity(int capacity) {
+    return new Queue {
+        a = new int[capacity] { i -> 0 };
+        start = 0;
+        size = 0
+    };
+}
+Queue create_empty_queue() {
+    return create_empty_queue_of_capacity(0);
+}
+Queue create_queue_from(int[] elements) {
+    return new Queue {
+        a = elements;
+        start = 0;
+        size = length(elements)
+    };
+}
+int mod(int a, int m) {
+    while (a < 0) {
+        a = a + m;
+    }
+    while (a >= m) {
+        a = a - m;
+    }
+    return a;
+}
+
+int size(Queue q) {
+    return q.size;
+}
+int capacity(Queue q) {
+    return length(q.a);
+}
+int get(Queue q, int idx) {
+    return q.a[mod(q.start + idx, capacity(q))];
+}
+int get_def(Queue q, int idx, int default) {
+    if (idx < 0 | idx >= size(q)) {
+        return default;
+    } else {
+        return get(q, idx);
+    }
+}
+void grow_by(Queue q, int incr) {
+    if(incr <= 0) { incr = 1; }
+    var new_c = capacity(q) + incr;
+    var new_a = new int[new_c] { i -> get_def(q, i, 0) };
+    q.a = new_a;
+    q.start = 0;
+    return;
+}
+void enqueue(Queue q, int element) {
+    if(size(q) >= capacity(q)) {
+        grow_by(q, size(q) + 1);
+    }
+    q.a[mod(q.start + q.size, capacity(q))] = element;
+    q.size = q.size + 1;
+    return;
+}
+int dequeue(Queue q) {
+    var elem = q.a[q.start];
+    q.start = mod(q.start + 1, capacity(q));
+    q.size = q.size - 1;
+    return elem;
+}
+
+void print_queue(Queue q) {
+    print_string("[");
+    for(var i = 0; i < size(q); i = i+1;) {
+        print_int(get(q, i));
+        print_string(",");
+    }
+    print_string("]");
+    return;
+}
+
+int program(int argc, string[] argv) {
+    var q = create_empty_queue();
+    
+    enqueue(q, 5);
+    enqueue(q, 7);
+    enqueue(q, 9);
+    print_queue(q);
+    print_int(dequeue(q));
+    print_queue(q);
+    print_int(dequeue(q));
+    print_queue(q);
+    print_int(dequeue(q));
+
+    enqueue(q, 4);
+    enqueue(q, 3);
+    enqueue(q, 2);
+    print_int(dequeue(q));
+    enqueue(q, 1);
+    print_int(dequeue(q));
+    print_queue(q);
+    print_int(dequeue(q));
+    enqueue(q, 42);
+    print_int(dequeue(q));
+    print_int(dequeue(q));
+
+    for(var i = 0; i < 20; i = i + 1;) {
+        enqueue(q, i);
+    }
+    print_int(dequeue(q));
+
+    q = create_queue_from(new int[]{-5,-3,4,99,3});
+    
+    print_queue(q);
+    print_int(dequeue(q));
+    enqueue(q, 1);
+    print_int(dequeue(q));
+    print_queue(q);
+
+    return 0;
+}

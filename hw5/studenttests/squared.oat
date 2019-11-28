@@ -1,0 +1,121 @@
+/* 16-920-969 Jules Bachmann */
+/* 16-922-221 Tim Matter */
+
+struct Nums {
+    int[]? input;
+    int[]? output
+}
+
+void genSquares(int[][] ts, int len)
+{
+    ts[0][1] = 1;
+    ts[1][1] = 1;
+    for(var i = 2; i <= len; i = i+1;)
+    {
+        ts[1][i] = ts[1][i-1] + 2;
+        ts[0][i] = ts[0][i-1] + ts[1][i];
+    }
+    return;
+}
+
+int absVal(int v)
+{
+    if(v < 0)
+    {
+        v = (v - v) - v;
+    }
+    return v;
+}
+
+void square_noMult(Nums[] tosquare)
+{
+    for(var i = 0; i < length(tosquare); i=i+1;){
+        if?(int[] s = tosquare[i].input){
+        
+        var max = 0;
+        for(var j = 0; j < length(s); j=j+1;)
+        {
+            s[j] = absVal(s[j]);
+            if(s[j] > max)
+            {
+                max = s[j];
+            }
+        }
+        var squares = new int[][max+1]{k -> new int[2]{l -> 0}};
+        genSquares(squares, max);
+        for(var j = 0; j < length(s); j=j+1;)
+        {
+            s[j] = squares[0][s[j]];
+        }
+        tosquare[i].output = s;
+        }
+    }
+
+    return;
+}
+
+bool eq_array(int[]? a, int[]? b)
+{
+    
+    var anull = true;
+    var bnull = true;
+    if?(int[] aa = a){
+        anull = false;
+        if?(int[] bb = b){
+            if (length(aa)!=length(bb)){
+                return false;
+            }
+            var eq = true;
+            for(var i = 0; i < length(aa); i=i+1;)
+            {
+                if(aa[i] != bb[i])
+                {
+                    eq = false;
+                }
+            }
+            return eq;
+        }
+    }
+    if(anull){
+        if?(int[] bb = b){
+            return false;
+        }
+        return true;
+    }
+    return false;
+    
+}
+
+int program(int argc, string[] argv)
+{
+    var empty = new Nums {input = int[] null; output = int[] null};
+    var test_a = new Nums {input = new int[]{3, 23, 0, 12, 54, 32, 1}; output = int[] null};
+    var sol_a = new int[]{9, 529, 0, 144, 2916, 1024, 1};
+    var test_b = new Nums {input = new int[]{-1}; output = int[] null};
+    var sol_b = new int[]{1};
+    var test_c = new Nums {input = new int[]{-3, 6, -3, 9, -20}; output = int[] null};
+    var sol_c = new int[]{9, 36, 9, 81, 400};
+
+    var input = new Nums[]{test_a, test_b, empty, test_c};
+    var sol = new int[]?[]{sol_a, sol_b, int[] null, sol_c};
+
+    square_noMult(input);
+    var res = true;
+
+    for(var i=0; i < 1; i=i+1;){
+        if(!(eq_array(input[i].output, sol[i]))){
+            res = false;
+        }
+    }
+    if(res)
+    {
+        if?(int[] ret = input[3].output){
+            return ret[2];
+        }
+        return -1;
+    }
+    else
+    {
+        return 0;
+    }
+}

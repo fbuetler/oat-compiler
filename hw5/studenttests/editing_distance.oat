@@ -1,0 +1,122 @@
+/* Julian SChilliger */
+/* Benjamin Glaus */
+
+/*  calculates the Levensthein Distance between 2 words using dinamic programming (represented as an int array of ascii values)
+    preprocessing: uppercase letters are turned into lowercase letters
+*/
+
+struct Words {
+    int[] a;
+    int[] b
+}
+
+struct Dp_table {
+    int len_x;
+    int len_y;
+    (int,int,int,int) -> int get_index;
+    int[] table
+}
+
+global cleopatra = new int[] { 99, 108, 101, 111, 112, 97, 116, 114, 97}; /* ASCII values of chars in "cleopatra" */
+global ceasar = new int[] { 99, 101, 097, 115, 97, 114}; /* ASCII values of chars in "ceasar" */
+global clEopAtRa = new int[] { 99, 108, 69, 111, 112, 65, 116, 82, 97}; /* ASCII values of chars in "clEopAtRa" */
+global cEaSar = new int[] { 99, 69, 097, 83, 97, 114}; /* ASCII values of chars in "cEaSar" */
+
+
+int[] preprocessing (int[] str){ 
+    var len = length(str);
+    for (var i = 0; i < len; i = i + 1;){
+        var current = str[i];
+        if (current > 64){
+            if (current < 91){
+                str[i] = str[i] + 32;
+            }
+        }
+    }
+    return str;
+} 
+
+int get_index_function (int lenx, int leny, int x, int y){
+    if (x >= lenx){
+        return -1;
+    }
+    if (y >= leny){
+        return -1;
+    }
+    var sol = x + y * lenx;
+    return sol;
+}
+
+int minimum (int a, int b, int c){
+    var res = -1;
+    if (a < b){
+        if (a < c){
+            res = a;
+        } else {
+            res = c;
+        }
+    } else {
+        if (b < c){
+            res = b;
+        } else {
+            res = c;
+        }
+    }
+    return res;
+}
+
+int levenshtein_distance (Words words){
+    var a = preprocessing(words.a);
+    var b = preprocessing(words.b);
+
+    var lena = length(a);
+    var lenb = length(b);
+    var lendp = (lena + 1) * (lenb + 1);
+    
+    var dp = new Dp_table  {len_x = lena+1; len_y =lenb+1; 
+                        get_index = get_index_function; table = new int[lendp]{i->0}};
+
+
+    for (var i = 1; i < dp.len_x; i = i+1;){
+        dp.table[i] = i;
+    }
+    for (var i = 1; i < dp.len_y; i = i + 1;){
+        dp.table[dp.get_index(dp.len_x, dp.len_y, 0, i)] = i;
+    }
+
+    for (var x = 0; x < lena; x = x + 1;){
+        for (var y = 0; y < lenb; y = y + 1;){
+
+            var add_val = 1;
+            if (a[x] - b[y] == 0){
+                add_val = 0;
+            }
+            var val = minimum(dp.table[dp.get_index(dp.len_x, dp.len_y, x, y+1)] + 1,
+                              dp.table[dp.get_index(dp.len_x, dp.len_y, x+1, y)] + 1,
+                              dp.table[dp.get_index(dp.len_x, dp.len_y, x, y)] + add_val);
+            dp.table[dp.get_index(dp.len_x, dp.len_y, x + 1, y + 1)] = val;
+        }
+    }  
+
+    var res = dp.table[dp.get_index(dp.len_x, dp.len_y, lena, lenb)];
+    return res;
+}
+
+
+int program(int argc, string[] argv) {
+    var in1 = new Words {a = cleopatra; b = ceasar};
+    var in2 = new Words {a = clEopAtRa; b = ceasar};
+    var in3 = new Words {a = clEopAtRa; b = cEaSar};
+    var in4 = new Words {a = clEopAtRa; b = cleopatra};
+
+    var testcases = new int[] {levenshtein_distance(in1), levenshtein_distance(in2), 
+                               levenshtein_distance(in3), levenshtein_distance(in4) };
+    var results = new int[]{5,5,5,0};
+    for (var i = 0; i < length(testcases); i = i+1;){
+        
+        if (testcases[i] != results[i]){
+            return -1;
+        }
+    }
+    return 1;
+}
