@@ -563,13 +563,13 @@ let unit_tests = [
       if (c, r) = (Tctxt.empty, false) then ()
       else failwith "should not fail")
   );
-  (* ("TYP_FOR_fail",
+  ("TYP_FOR_fail",
      (fun () ->
      try
        let _ = Typechecker.typecheck_stmt Tctxt.empty for_stmt_f RetVoid in
        failwith "should not succeed"
        with Typechecker.TypeError s -> ())
-     ); TODO: check why it is failing *)
+     ); 
   ("arr_subtype_neq", 
    (fun () ->
       if Typechecker.subtype jan_sandro_struct_ctxt (TRef (RArray (TRef(RStruct "S_sub")))) (TRef (RArray (TRef(RStruct "S")))) then
@@ -606,7 +606,7 @@ let unit_tests = [
        if Typechecker.typecheck_exp Tctxt.empty (no_loc (Length (no_loc (CInt 1L)))) = TInt then ()
        else failwith "should not succeed")  
   );
-  (* ("subtype_positive",
+  (*("subtype_positive",
      (fun () ->
      if Typechecker.subtype subt_ctxt (TRef (RStruct "Octopus")) (TRef (RStruct "Human"))
      then ()
@@ -617,7 +617,7 @@ let unit_tests = [
      if not @@ Typechecker.subtype subt_ctxt (TRef (RStruct "Human")) (TRef (RStruct "Octopus"))
      then ()
      else failwith "should not fail")
-     ); TODO: where is the subt_ctxt *)
+     );  TODO: where is the subt_ctxt *)
   ("Index_ok",
    (fun () ->
       if Typechecker.typecheck_exp Tctxt.empty (no_loc (Index (en_array, en_int))) == TBool then ()

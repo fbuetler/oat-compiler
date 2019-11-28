@@ -394,9 +394,12 @@ let rec typecheck_stmt (tc : Tctxt.t) (s:Ast.stmt node) (to_ret:ret_ty) : Tctxt.
         | None -> ()
       end;
       begin match update with
-        | Some update -> ignore @@ typecheck_stmt for_c update to_ret
+        | Some update -> 
+          let (_, r) = typecheck_stmt for_c update to_ret in
+          if r then 
+            type_error update @@ Printf.sprintf "unexpected return in for loop";
         | None -> ()
-      end; 
+      end;  
       ignore @@ typecheck_block for_c block to_ret;
       (tc, false)
     | While (cond, block) ->
