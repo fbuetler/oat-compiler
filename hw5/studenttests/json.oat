@@ -177,12 +177,10 @@ must_parse_str asserts that the given ParseResult contains a string
 and advances the ParseState. It returns the string from the ParseResult.
 */
 string must_parse_str(ParseResult res) {
-  /* TODO if? else if? is broken in our compiler */
   if? (Json node = res.node) {
     assert(false);
     return "";
-  }
-  if? (string str = res.str) {
+  } else if? (string str = res.str) {
     assert(length_of_string(str) == res.count);
     assert(res.count > 0);
     res.input.pos = res.input.pos + res.count;
@@ -200,8 +198,7 @@ Json must_parse_node(ParseResult res) {
   if? (string str = res.str) {
     assert(false);
     return empty_json;
-  }
-  if? (Json node = res.node) {
+  } else if? (Json node = res.node) {
     assert(res.count > 0);
     res.input.pos = res.input.pos + res.count;
     return node;
