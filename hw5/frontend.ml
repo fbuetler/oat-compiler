@@ -375,9 +375,7 @@ and cmp_exp_lhs (tc : TypeCtxt.t) (c:Ctxt.t) (e:exp node) : Ll.ty * Ll.operand *
     Ptr ret_ty, Id ptr_id,
     rec_stream >@ lift
       [
-        tmp1, Bitcast (rec_ty, rec_op, Ptr I64);
-        tmp2, Gep (Ptr I64, Id tmp1, [i64_op_of_int index]);
-        ptr_id, Bitcast (Ptr I64, Id tmp2, Ptr ret_ty);
+        ptr_id, Gep (rec_ty, rec_op, [Const 0L; i64_op_of_int index]);
       ]
 
   | Ast.Index (e, i) ->
