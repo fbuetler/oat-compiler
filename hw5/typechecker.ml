@@ -11,12 +11,11 @@ let type_error (l : 'a node) err =
   let (_, (s, e), _) = l.loc in
   raise (TypeError (Printf.sprintf "[%d, %d] %s" s e err))
 
-module SAstField = Set.Make(
-  struct 
-    let compare = Pervasives.compare
-    type t = Ast.field
-  end
-  );;
+let take (n : int) (l : 'a list) : 'a list =
+  l |>
+  List.mapi (fun i el -> (i, el)) |>
+  List.filter (fun (i, _) -> i < n) |>
+  List.map snd
 
 module SS = Set.Make(String);;
 
@@ -88,7 +87,7 @@ and subtype_ref (c : Tctxt.t) (t1 : Ast.rty) (t2 : Ast.rty) : bool =
   end
 
 and subtype_struct (s1: Ast.field list) (s2: Ast.field list) : bool =
-  SAstField.subset (SAstField.of_list s2) (SAstField.of_list s1)
+  take (List.length s2) s1 = s2
 
 and subtype_return (c : Tctxt.t) (t1 : Ast.ret_ty) (t2 : Ast.ret_ty) : bool =
   begin match (t1, t2, t1 = t2) with
