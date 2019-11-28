@@ -1,0 +1,123 @@
+/* Robin Staab */
+/* Jan Urech */
+struct Node {
+  int val;
+  int sub;
+  Node? left;
+  Node? right
+}
+
+int program (int argc, string[] argv) {
+  var arrLen = 5;
+  var arrLen2 = 187;
+  var vals = new int[arrLen] {i->i+1};
+  var vals2 = new int[arrLen2] {i->i+1};
+  var tree = buildTree(vals);
+  var tree2 = buildTree(vals2);
+  ppsUp(tree);
+  ppsDown(tree, 0);
+  ppsUp(tree2);
+  ppsDown(tree2, 0);
+  if?(Node t = tree){
+    for(var i=1; i<=arrLen;i=i+1;){
+      print_int(lookup(t, i, arrLen));
+    }
+  }
+  if?(Node t = tree2){
+    print_int(lookup(t, 102, arrLen2));
+  }
+  return 0;
+}
+
+int lookup(Node? root, int k, int n){
+  if?(Node rt = root){
+    if(n==1){
+      return rt.sub;
+    }
+    if?(Node left = rt.left){
+      var halfr = n>>1;
+      var halfl = n-halfr;
+      if(k<=halfl){
+        return lookup(left, k, halfl);
+      }else{
+        if?(Node right = rt.right){
+          return lookup(right, k-halfl, n-halfl);
+        }
+      }
+    }
+  }
+  return -1;
+}
+
+void ppsUp(Node? root){
+  if?(Node rt = root){
+    var leftvalue = 0;
+    if?(Node left = rt.left){
+      ppsUp(left);
+      leftvalue = left.val;
+    }
+    var rightvalue = 0;
+    if?(Node right = rt.right){
+      ppsUp(right);
+      rightvalue = right.val;
+    }
+    rt.val = rt.val+leftvalue + rightvalue;
+    return;
+  }
+  return;
+}
+
+void ppsDown(Node? root, int top){
+  if?(Node rt = root){
+    rt.sub = top;
+    if?(Node left = rt.left){
+      ppsDown(left, top);    
+      if?(Node right = rt.right){
+        ppsDown(right, top+left.val);
+      }
+    }else{
+      rt.sub = rt.sub+rt.val;
+    }
+  }
+  return;
+}
+
+int getRight(Node? root){
+  if?(Node rt = root){
+     if?(Node right = rt.right){
+        return getRight(right);
+      }else{
+        if?(Node left = rt.left){
+          return left.sub;
+        }else{
+          return rt.sub;
+        }
+      }
+  }
+  return -1;
+}
+
+Node? buildTree(int[] vals){
+  var len = length(vals);
+  if(len == 0){
+    return Node null;
+  }
+  if(len == 1){
+    return new Node {val = vals[0]; sub = 0; left = Node null; right = Node null};
+  }else{
+    return new Node {val = 0; sub = 0; left = buildTree(createSubArr(vals, true)); right = buildTree(createSubArr(vals, false))};
+  }
+}
+
+int[] createSubArr(int[] arr, bool left){
+  var len = length(arr);
+  var halfr = len>>1;
+  var halfl = len-halfr;
+  var ret = new int[]{1,2,3};
+  if(left){
+    ret = new int[halfl]{i->arr[i]};
+  }else{
+    ret = new int[halfr]{i->arr[i+halfl]};
+  }
+  return ret;
+}

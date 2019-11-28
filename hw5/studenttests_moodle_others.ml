@@ -149,6 +149,102 @@ let tctxt : Tctxt.t = {
     "B", [{fieldName="x"; ftyp=TInt}; {fieldName="y"; ftyp=TInt}]
   ]}
 
+let struct_test_ctxt = {
+  Tctxt.empty with structs = [
+    ("A", [
+        {fieldName="f1"; ftyp=TInt};
+        {fieldName="f2"; ftyp=TNullRef (RStruct "B")};
+      ]);
+    ("B", [
+        {fieldName="f1"; ftyp=TInt};
+      ]);
+    ("C", [
+        {fieldName="f1"; ftyp=TInt};
+        {fieldName="f2"; ftyp=TNullRef (RStruct "A")};
+      ]);
+  ]
+}
+
+let c1 = add_struct Tctxt.empty "s1" [{fieldName="a"; ftyp=TInt}; {fieldName="b"; ftyp=TInt}; {fieldName="c"; ftyp=TInt}]
+let c2 = add_struct c1 "s2" [{fieldName="a"; ftyp=TInt}; {fieldName="b"; ftyp=TInt}]
+let c3 = add_struct c2 "s3" [{fieldName="a"; ftyp=TInt}]
+let c4 = add_struct c3 "s4" [{fieldName="a"; ftyp=TInt}; {fieldName="c"; ftyp=TInt}]
+
+let typecheck path () =
+  let () = Platform.verb @@ Printf.sprintf "** Processing: %s\n" path in
+  let oat_ast = parse_oat_file path in
+  Typechecker.typecheck_program oat_ast
+
+let typecheck_error (a : assertion) () =
+  try a (); failwith "Should have a type error" with Typechecker.TypeError s -> ()
+
+let typecheck_correct (a : assertion) () =
+  try a () with Typechecker.TypeError s -> failwith ("Should not have had a type error ("^s^")")
+
+
+let typecheck_file_error tests =
+  List.map (fun p -> p, typecheck_error (typecheck p)) tests
+
+let typecheck_file_correct tests =
+  List.map (fun p -> p, typecheck_correct (typecheck p)) tests
+
+let unit_test_tctxt = Tctxt.empty
+let unit_test_tctxt = Tctxt.add_struct unit_test_tctxt "s0" []
+let unit_test_tctxt = Tctxt.add_struct unit_test_tctxt "s1" [{ fieldName = "f0"; ftyp = TBool }]
+let unit_test_tctxt = Tctxt.add_struct unit_test_tctxt "s2" [{ fieldName = "f0"; ftyp = TInt }]
+let unit_test_tctxt = Tctxt.add_struct unit_test_tctxt "s3" [{ fieldName = "f0"; ftyp = TInt }; { fieldName = "f1"; ftyp = TBool }]
+let unit_test_tctxt = Tctxt.add_local unit_test_tctxt "l0" TInt
+let unit_test_tctxt = Tctxt.add_local unit_test_tctxt "l1" TBool
+let unit_test_tctxt = Tctxt.add_global unit_test_tctxt "g0" TInt
+let unit_test_tctxt = Tctxt.add_global unit_test_tctxt "g1" TBool
+
+let subtype_pass n a b =
+  n,
+  (fun () ->
+     if Typechecker.subtype unit_test_tctxt a b then
+       ()
+     else
+       failwith "should not fail"
+  )
+
+let subtype_fail n a b =
+  n,
+  (fun () ->
+     if Typechecker.subtype unit_test_tctxt a b then
+       failwith "should not succeed"
+     else
+       ()
+  )
+
+let subtype_ret_pass n a b = subtype_pass n (TRef(RFun([], a))) (TRef(RFun([], b)))
+let subtype_ret_fail n a b = subtype_fail n (TRef(RFun([], a))) (TRef(RFun([], b)))
+
+let typecheck_exp_inner e t =
+  let act = Typechecker.typecheck_exp unit_test_tctxt e in
+  if act <> t then
+    failwith "Types did not match"
+  else
+    ()
+
+let typecheck_exp_fail n e t =
+  n, (fun () ->
+      try typecheck_exp_inner e t; failwith "Should have a type error" with Typechecker.TypeError s -> ()
+    )
+
+let typecheck_exp_pass n e t =
+  n, (fun () ->
+      try typecheck_exp_inner e t with Typechecker.TypeError s -> failwith ("Should not have had a type error ("^s^")")
+    )
+
+let nl (e:Ast.exp) = Ast.no_loc e
+
+let unit_tests_binop n ops tp tf tr = List.flatten (List.map (fun op -> [
+      typecheck_exp_pass (n^"_0") (nl(Bop(op, nl(tp), nl(tp)))) tr;
+      typecheck_exp_fail (n^"_1") (nl(Bop(op, nl(tf), nl(tp)))) tr;
+      typecheck_exp_fail (n^"_2") (nl(Bop(op, nl(tp), nl(tf)))) tr;
+      typecheck_exp_fail (n^"_3") (nl(Bop(op, nl(tf), nl(tf)))) tr;
+    ]) ops)
+
 let unit_tests = [
   ("subtype_string_array_nullable_string_array",
    (fun () ->
@@ -619,6 +715,50 @@ let unit_tests = [
            ()
        end)
   );
+  ("Typechecker: Struct with more fields",
+   (fun () ->
+      if Typechecker.subtype struct_test_ctxt (TRef (RStruct "A")) (TRef (RStruct "B")) then ()
+      else failwith "should not fail")
+  ); 
+  ("Typechecker: Struct with different ftyp",
+   (fun () ->
+      if Typechecker.subtype struct_test_ctxt (TRef (RStruct "A")) (TRef (RStruct "C")) then
+        failwith "should not succeed" else ())
+  );
+  ("subtype_struct_struct",
+   (fun () ->
+      if Typechecker.subtype  c4 (TRef (RStruct "s1")) (TRef (RStruct "s2")) &&
+         Typechecker.subtype  c4 (TRef (RStruct "s1")) (TRef (RStruct "s3")) &&
+         Typechecker.subtype  c4 (TRef (RStruct "s2")) (TRef (RStruct "s3")) then ()
+      else failwith "should not fail")                                                                                     
+  ); 
+  ("no_subtype_struct_struct",
+   (fun () ->
+      if Typechecker.subtype  c4 (TRef (RStruct "s3")) (TRef (RStruct "s1")) ||
+         Typechecker.subtype  c4 (TRef (RStruct "s2")) (TRef (RStruct "s1")) ||
+         Typechecker.subtype  c4 (TRef (RStruct "s3")) (TRef (RStruct "s2")) ||
+         Typechecker.subtype  c4 (TRef (RStruct "s1")) (TRef (RStruct "s4")) then
+        failwith "should not succeed" else ())
+  );
+  (* (unit_tests_binop "typeck_binop_int" [Add; Sub; Mul; IAnd; IOr; Shl; Shr; Sar] (CInt(0L)) (CBool(false)) TInt);
+     (unit_tests_binop "typeck_binop_cmp" [Lt; Lte; Gt; Gte] (CInt(0L)) (CBool(false)) TBool);
+     (unit_tests_binop "typeck_binop_bool" [And; Or] (CBool(false)) (CInt(0L)) TBool); *)
+  ("TYP_STRUCTEX, reordering correct",
+   Gradedtests.typecheck_correct (fun () ->
+       let ctxt         = Tctxt.add_struct Tctxt.empty "Maybe" [{fieldName = "case"; ftyp = TInt}; {fieldName = "some_val"; ftyp = TInt}] in
+       let maybe_struct = Ast.CStruct ("Maybe", [("some_val", Ast.no_loc (Ast.CInt 42L)); ("case", Ast.no_loc (Ast.CInt 1L))]) in
+       let exp          = Ast.no_loc maybe_struct in
+       let _            = Typechecker.typecheck_exp ctxt exp in
+       ())
+  );
+  ("TYP_STRUCTEX, wrong field names incorrect",
+   Gradedtests.typecheck_error (fun () ->
+       let ctxt         = Tctxt.add_struct Tctxt.empty "Maybe" [{fieldName = "case"; ftyp = TInt}; {fieldName = "some_val"; ftyp = TInt}] in
+       let maybe_struct = Ast.CStruct ("Maybe", [("field1", Ast.no_loc (Ast.CInt 1L)); ("field2", Ast.no_loc (Ast.CInt 42L))]) in
+       let exp          = Ast.no_loc maybe_struct in
+       let _ = Typechecker.typecheck_exp ctxt exp in
+       ())
+  );
 ]
 
 let brainfuck_tests = [
@@ -809,7 +949,7 @@ let provided_tests : suite = [
   Test("Others: Heapsort", executed_oat_file [("studenttests/heapsort.oat", "", "fhkmopsy{0")]);
   Test("Others: Kronecker Student Test", executed_oat_file [("studenttests/struct_kron.oat", "", "896532362420566342351347412162872128492883832321214565621125148204714357161812102427181524271815268143912213912214161666242496242492410236153361530")]);
   Test("Others: function pointers", executed_oat_file["studenttests/fptrs.oat", "", "1"]);
-  Test("Others: scope_struct_stress", executed_oat_file [("studenttests/testitest.oat", "", "111222\nfalse, true, 22, true, 22, 222\n20, 20, 10, 10, 10, 990\n990, 10, 7770, 7770, 7770")]); (* Note: Modified a few things *)
+  Test("Others: scope_struct_stress", executed_oat_file [("studenttests/testitest.oat", "", "111222\nfalse, true, 22, true, 22, 222\n20, 20, 10, 10, 10, 990\n990, 10, 7770, 7770, 7770")]); (* Note: Modified a few things *) 
   Test("Others: Rucksack Tests", executed_oat_file rucksackTest);
   (* Test("Others: IsTree ok 1", executed_oat_file [("studenttests/is_tree.oat", "1", "1");
                                                  ("studenttests/is_tree.oat", "0", "1");
@@ -831,4 +971,12 @@ let provided_tests : suite = [
                                                         ("studenttests/is_tree.oat", "2 1 2 1", "254"); ]); TODO: prohibited variable redelclaration*)
   Test("Others: student tests", executed_oat_file [("studenttests/s_min_dist.oat", "0", "03250")]);
   Test("Others: determinants", Gradedtests.executed_oat_file ["studenttests/determinant.oat", "", "2_25_-132_-30696_0"]);
+  Test("Others: student tests", executed_oat_file [("studenttests/s_min_dist.oat", "0", "03250")]);
+  Test("Others: pps", executed_oat_file [ ("studenttests/pps.oat", "", "136101552530")]);
+  Test("Others: Schuiki/Zaruba Oat test", executed_oat_file [
+      ("studenttests/levenstein.oat", "kitten sitting", "3 3032 0");
+      ("studenttests/levenstein.oat", "apocalypse maleficent", "10 6045904 0");
+    ]);
+  Test("Others: Oat test, higher order functions", executed_oat_file [("studenttests/higher_order_functions.oat", "", "5")]);
+
 ] 
