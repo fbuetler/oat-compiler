@@ -166,6 +166,11 @@ bool str_eq(string a, string b) {
 
   for (var i = 0; i < a_len; i = i + 1;) {
     if (a_chars[i] != b_chars[i]) {
+      if(debug){
+        print_string("first wrong position: ");
+        print_int(i);
+        print_string("\n");
+      }
       return false;
     }
   }
@@ -1368,7 +1373,8 @@ string print_array(JsonArray tmp, int depth){
     }
     s = string_cat(s, "\n");
   }
-  s = string_cat(s, "]\n");
+  s = string_cat(s, print_indent(depth-1));
+  s = string_cat(s, "]");
   return s;
 }
 
@@ -1488,6 +1494,72 @@ Json wrap_nil(JsonNull nil){
   };
 }
 
+void test_mixed(){
+  var test1 = print_json(wrap_obj(
+    new JsonObject{
+      members = new JsonMember[]{
+        new JsonMember{str = "id"; element = wrap_str(new JsonString {str = "file"})},
+        new JsonMember{str = "value"; element = wrap_str(new JsonString {str = "File"})},
+        new JsonMember{str = "popup"; element = wrap_obj(
+          new JsonObject{
+            members = new JsonMember[]{
+              new JsonMember{str = "menuitem"; element = wrap_arr(
+                new JsonArray {
+                  arr = new Json[]{
+                    wrap_obj(new JsonObject{
+                      members = new JsonMember[]{
+                        new JsonMember{str = "value"; element = wrap_str(new JsonString {str = "New"})},
+                        new JsonMember{str = "onclick"; element = wrap_str(new JsonString {str = "CreateNewDoc()"})}
+                      }
+                    }),
+                    wrap_obj(new JsonObject{
+                      members = new JsonMember[]{
+                        new JsonMember{str = "value"; element = wrap_str(new JsonString {str = "Open"})},
+                        new JsonMember{str = "onclick"; element = wrap_str(new JsonString {str = "OpenDoc()"})}
+                      }
+                    }),
+                    wrap_obj(new JsonObject{
+                      members = new JsonMember[]{
+                        new JsonMember{str = "value"; element = wrap_str(new JsonString {str = "Close"})},
+                        new JsonMember{str = "onclick"; element = wrap_str(new JsonString {str = "CloseDoc()"})}
+                      }
+                    })
+                  }
+                }
+              )}
+            }
+          }
+        )}
+      }
+    }
+  ), 1);
+
+  var ref1 =convert_quotes( 
+"{
+  'id': 'file',
+  'value': 'File',
+  'popup': {
+    'menuitem': [
+      {
+        'value': 'New',
+        'onclick': 'CreateNewDoc()'
+      },
+      {
+        'value': 'Open',
+        'onclick': 'OpenDoc()'
+      },
+      {
+        'value': 'Close',
+        'onclick': 'CloseDoc()'
+      }
+    ]
+  }
+}");
+
+  assert(str_eq(test1, ref1)); 
+  return;
+}
+
 void test_obj(){
   var test1 = print_json(wrap_obj(
       new JsonObject{
@@ -1561,8 +1633,7 @@ void test_arr(){
   0,
   0,
   0
-]
-"
+]"
   ));
   assert(str_eq(
     print_json(wrap_arr(
@@ -1580,8 +1651,7 @@ void test_arr(){
   true,
   false,
   null
-]
-"
+]"
   ));
 
   return;
@@ -1666,6 +1736,7 @@ void test_printer() {
   test_str();
   test_arr();
   test_obj();
+  test_mixed();
   return;
 }
 
@@ -1676,21 +1747,6 @@ int program(int argc, string[] argv) {
   test_parser();
   test_vector();
   print_string("PASSED");
-
-  var input = convert_quotes("
-    {'menu': {
-      'id': 'file',
-      'value': 'File',
-      'popup': {
-        'menuitem': [
-          {'value': 'New', 'onclick': 'CreateNewDoc()'},
-          {'value': 'Open', 'onclick': 'OpenDoc()'},
-          {'value': 'Close', 'onclick': 'CloseDoc()'}
-        ]
-      }
-    }}
-  ");
-  /* print_string(input); */
 
   return 0;
 }
