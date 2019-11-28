@@ -392,6 +392,16 @@ bool is_valid_hex_char(int c) {
   return false;
 }
 
+bool is_valid_digit_char(int c) {
+  var l = array_of_string("0123456789");
+  for (var i = 0; i < length(l); i = i + 1;) {
+    if (c == l[i]) {
+      return true;
+    }
+  }
+  return false;
+}
+
 ParseResult parse_four_hex_digits(ParseState input) { 
   var state = copy_parse_state(input);
   for (var i = 0; i < 4; i = i + 1;) {
@@ -471,6 +481,38 @@ ParseResult parse_json_string(ParseState input) {
     str = string null;
     count = state.pos - input.pos
   };
+}
+
+ParseResult parse_json_integer(ParseState input) { 
+  var state = copy_parse_state(input);
+
+  var res = parse_this(state, "-");
+  var negative = can_parse(res);
+  if (can_parse(res)) {
+    ignore_str(must_parse_str(res));
+  }
+  
+  res = parse_matching_char(state, is_valid_digit_char);
+  if (!can_parse(res)) {
+    return fail_parse(input);
+  }
+  if (str_eq(must_parse_str(res), "0")) {
+    return parse_result_of_difference(input, state);
+  }
+
+  state.pos = state.pos - 1;
+  ignore_str(must_parse_str(parse_matching_chars(state, is_valid_digit_char)));
+
+  return parse_result_of_difference(input, state);
+}
+
+/*
+parse_json_number reads a JSON number. The output is a string which contains
+exactly the same characters as the JSON file did. The number is not evaluated
+to an Oat int.
+*/
+ParseResult parse_json_number(ParseState input) {
+  return fail_parse(input);
 }
 
 void test_must_parse_str() {
@@ -733,6 +775,17 @@ void test_parse_json_string() {
   return;
 }
 
+void test_parse_json_integer() {
+  assert_parse_string(parse_json_integer(parse_state_of_string("123")), "123");
+  assert_parse_string(parse_json_integer(parse_state_of_string("-123")), "-123");
+  assert_parse_string(parse_json_integer(parse_state_of_string("0123")), "0");
+  assert_parse_string(parse_json_integer(parse_state_of_string("-0123")), "-0");
+  assert_parse_string(parse_json_integer(parse_state_of_string("-0123")), "-0");
+  assert_parse_string(parse_json_integer(parse_state_of_string("0")), "0");
+  assert_parse_string(parse_json_integer(parse_state_of_string("9")), "9");
+  return;
+}
+
 void test_parser(){
   test_must_parse_str();
   test_must_parse_node();
@@ -741,6 +794,7 @@ void test_parser(){
   test_parse_quote();
   test_parse_whitespace();
   test_parse_json_string();
+  test_parse_json_integer();
 
   if (assert_disabled_for_test) {
     /* await_assert() without matching did_assert() */
