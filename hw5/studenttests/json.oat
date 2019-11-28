@@ -1033,7 +1033,7 @@ please
 void test_parse_json_string() {
   var state = parse_state_of_string(convert_quotes("'walrus'"));
   var output = must_parse_node(parse_json_string(state));
-  if? (string str = output.str) {
+  if? (JsonString str = output.str) {
     assert(str_eq(str.str, "walrus"));
   } else {
     assert(false);
@@ -1052,7 +1052,7 @@ void test_parse_json_string() {
 
   state = parse_state_of_string(convert_slashes(convert_quotes("'/n/n///txyz/''abc")));
   output = must_parse_node(parse_json_string(state));
-  if? (string str = output.str) {
+  if? (JsonString str = output.str) {
     assert(str_eq(str.str, convert_slashes(convert_quotes("/n/n///txyz/'"))));
   } else {
     assert(false);
@@ -1060,7 +1060,7 @@ void test_parse_json_string() {
 
   state = parse_state_of_string(convert_slashes(convert_quotes("'/u1234/uABCD/uefAB/u0000'")));
   output = must_parse_node(parse_json_string(state));
-  if? (string str = output.str) {
+  if? (JsonString str = output.str) {
     assert(str_eq(str.str, convert_slashes("/u1234/uABCD/uefAB/u0000")));
   } else {
     assert(false);
@@ -1071,7 +1071,7 @@ void test_parse_json_string() {
 
   state = parse_state_of_string(convert_quotes("''"));
   output = must_parse_node(parse_json_string(state));
-  if? (string str = output.str) {
+  if? (JsonString str = output.str) {
     assert(str_eq(str.str, ""));
   } else {
     assert(false);
@@ -1212,10 +1212,10 @@ void test_parse_json_array() {
 void test_parse_json_object() {
   var input = convert_quotes("{'bestAnimal': {'type': 'walrus', 'weight_kg': 1500, 'features': ['tusks', 'moustache']}}");
   var output = must_parse_node(parse_json_object(parse_state_of_string(input)));
-  if? (JsonObj obj = output.obj) {
+  if? (JsonObject obj = output.obj) {
     assert(length(obj.members) == 1);
     assert(str_eq(obj.members[0].str, "bestAnimal"));
-    if? (JsonObj inner_obj = obj.members[0].element.obj) {
+    if? (JsonObject inner_obj = obj.members[0].element.obj) {
       assert(length(inner_obj.members) == 3);
       assert(str_eq(inner_obj.members[0].str, "type"));
       assert(str_eq(inner_obj.members[2].str, "features"));
