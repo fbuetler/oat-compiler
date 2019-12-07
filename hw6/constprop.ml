@@ -38,7 +38,7 @@ type fact = SymConst.t UidM.t
 *)
 let insn_flow (u,i:uid * insn) (d:fact) : fact =
   let get_op (op: Ll.operand) : SymConst.t = begin match op with
-    | Id uid -> UidM.find uid d
+    | Id uid -> UidM.find_or SymConst.UndefConst d uid
     | Const v -> SymConst.Const v
     | _ -> SymConst.NonConst
   end in
