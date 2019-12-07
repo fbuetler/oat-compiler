@@ -152,19 +152,31 @@ let run (cg:Graph.t) (cfg:Cfg.t) : Cfg.t =
     | Gep (ty, op, l) -> Gep (ty, f op, l)
   end in
 
+  let map_operands_term (term: Ll.terminator) (f: Ll.operand -> Ll.operand) : Ll.terminator = begin match term with
+    | Ret (ty, op_opt) -> Ret (ty, begin match op_opt with
+        | Some op -> Some (f op)
+        | None -> None
+      end)
+    | Br l -> Br l
+    | Cbr (op, l_if, l_else) -> Cbr (f op, l_if, l_else)
+  end in
+
   let cp_block (l:Ll.lbl) (cfg:Cfg.t) : Cfg.t =
     let b = Cfg.block cfg l in
     let cb = Graph.uid_out cg l in
-    let new_insns = List.map (fun (uid, instr) -> 
-        let get_new_op op = begin match op with
-          | Id op_uid -> begin match UidM.find_opt op_uid @@ cb uid with
-              | Some Const v -> Ll.Const v
-              | _ -> op
-            end
+    let get_new_op uid op = begin match op with
+      | Id op_uid -> begin match UidM.find_opt op_uid @@ cb uid with
+          | Some Const v -> Ll.Const v
           | _ -> op
-        end in
-        (uid, map_operands instr get_new_op)
+        end
+      | _ -> op
+    end in
+    let new_insns = List.map (fun (uid, instr) -> 
+        (uid, map_operands instr @@ get_new_op uid)
       ) b.insns in
-    Cfg.add_block l { insns = new_insns; term = b.term } cfg
+    Cfg.add_block l {
+      insns = new_insns;
+      term = (fst b.term, map_operands_term (snd b.term) @@ get_new_op (fst b.term));
+    } cfg
   in
   LblS.fold cp_block (Cfg.nodes cfg) cfg
