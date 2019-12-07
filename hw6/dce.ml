@@ -20,25 +20,35 @@ open Datastructures
      Other instructions are dead if the value they compute is not live.
 
    Hint: Consider using List.filter
- *)
+*)
 let dce_block (lb:uid -> Liveness.Fact.t) 
-              (ab:uid -> Alias.fact)
-              (b:Ll.block) : Ll.block =
-  failwith "Dce.dce_block unimplemented"
+    (ab:uid -> Alias.fact)
+    (b:Ll.block) : Ll.block =
+  {
+    insns = List.filter (fun (uid, instr) -> 
+        begin match instr with
+          | Store (ty, src, Id dest) ->
+            (UidS.mem dest @@ lb uid) ||
+            UidM.find_opt dest (ab uid) = Some Alias.SymPtr.MayAlias
+          | Call (ty, f, args) -> true
+          | _ -> UidS.mem uid @@ lb uid
+        end) b.insns;
+    term = b.term;
+  }
 
 let run (lg:Liveness.Graph.t) (ag:Alias.Graph.t) (cfg:Cfg.t) : Cfg.t =
 
   LblS.fold (fun l cfg ->
-    let b = Cfg.block cfg l in
+      let b = Cfg.block cfg l in
 
-    (* compute liveness at each program point for the block *)
-    let lb = Liveness.Graph.uid_out lg l in
+      (* compute liveness at each program point for the block *)
+      let lb = Liveness.Graph.uid_out lg l in
 
-    (* compute aliases at each program point for the block *)
-    let ab = Alias.Graph.uid_in ag l in 
+      (* compute aliases at each program point for the block *)
+      let ab = Alias.Graph.uid_in ag l in 
 
-    (* compute optimized block *)
-    let b' = dce_block lb ab b in
-    Cfg.add_block l b' cfg
-  ) (Cfg.nodes cfg) cfg
+      (* compute optimized block *)
+      let b' = dce_block lb ab b in
+      Cfg.add_block l b' cfg
+    ) (Cfg.nodes cfg) cfg
 
