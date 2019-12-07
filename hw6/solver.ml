@@ -22,45 +22,45 @@ open Datastructures
 
 *)
 module type DFA_GRAPH =
-  sig
-    module NodeS : SetS
-    type node = NodeS.elt
+sig
+  module NodeS : SetS
+  type node = NodeS.elt
 
-    (* dataflow facts associated with the out-edges of the nodes in 
-       this graph *)
-    type fact
+  (* dataflow facts associated with the out-edges of the nodes in 
+     this graph *)
+  type fact
 
-    (* the abstract type of dataflow graphs *)
-    type t
-    val preds : t -> node -> NodeS.t
-    val succs : t -> node -> NodeS.t
-    val nodes : t -> NodeS.t
+  (* the abstract type of dataflow graphs *)
+  type t
+  val preds : t -> node -> NodeS.t
+  val succs : t -> node -> NodeS.t
+  val nodes : t -> NodeS.t
 
-    (* the flow function:
-       given a graph node and input fact, compute the resulting fact on the 
-       output edge of the node                                                
-    *)
-    val flow : t -> node -> fact -> fact
+  (* the flow function:
+     given a graph node and input fact, compute the resulting fact on the 
+     output edge of the node                                                
+  *)
+  val flow : t -> node -> fact -> fact
 
-    (* lookup / modify the dataflow annotations associated with a node *)    
-    val out : t -> node -> fact
-    val add_fact : node -> fact -> t -> t
+  (* lookup / modify the dataflow annotations associated with a node *)    
+  val out : t -> node -> fact
+  val add_fact : node -> fact -> t -> t
 
-    (* printing *)
-    val to_string : t -> string
-    val printer : Format.formatter -> t -> unit
-  end
+  (* printing *)
+  val to_string : t -> string
+  val printer : Format.formatter -> t -> unit
+end
 
 (* abstract dataflow lattice signature -------------------------------------- *)
 (* The general algorithm works over a generic lattice of abstract "facts".
-    - facts can be combined (this is the 'join' operation)
-    - facts can be compared                                                   *)
+   - facts can be combined (this is the 'join' operation)
+   - facts can be compared                                                   *)
 module type FACT =
-  sig
-    type t
-    val combine : t list -> t
-    val compare : t -> t -> int
-  end
+sig
+  type t
+  val combine : t list -> t
+  val compare : t -> t -> int
+end
 
 
 (* generic iterative dataflow solver ---------------------------------------- *)
@@ -70,10 +70,10 @@ module type FACT =
 
    It produces a module that has a single function 'solve', which 
    implements the iterative dataflow analysis described in lecture.
-      - using a worklist (or workset) nodes 
+   - using a worklist (or workset) nodes 
         [initialized with the set of all nodes]
 
-      - process the worklist until empty:
+   - process the worklist until empty:
           . choose a node from the worklist
           . find the node's predecessors and combine their flow facts
           . apply the flow function to the combined input to find the new
@@ -84,9 +84,28 @@ module type FACT =
    TASK: complete the [solve] function, which implements the above algorithm.
 *)
 module Make (Fact : FACT) (Graph : DFA_GRAPH with type fact := Fact.t) =
-  struct
+struct
 
-    let solve (g:Graph.t) : Graph.t =
-      let w = g.
-  end
+  let solve (g:Graph.t) : Graph.t =
+    let w = ref @@ Graph.nodes g in
+    let g = ref g in
+    while not @@ Graph.NodeS.is_empty !w do
+      let n = Graph.NodeS.choose !w in
+      w := Graph.NodeS.remove n !w;
+      let old_out = Graph.out !g n in
+      let new_in =
+        Graph.preds !g n |>
+        Graph.NodeS.elements |>
+        List.map (Graph.out !g) |>
+        Fact.combine |>
+        Graph.flow !g n
+      in
+      g := Graph.add_fact n new_in !g;
+      let succ = Graph.succs !g n in 
+      if Fact.compare old_out (Graph.out !g n) != 0
+      then w := Graph.NodeS.union !w succ
+    done;
+    !g
+
+end
 
