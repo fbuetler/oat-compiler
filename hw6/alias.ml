@@ -34,8 +34,31 @@ type fact = SymPtr.t UidM.t
 
 *)
 let insn_flow ((u,i):uid * insn) (d:fact) : fact =
-  failwith "Alias.insn_flow unimplemented"
-
+  let (uid_is_unique: bool), (aliased_ops: Ll.operand list) = begin match i with
+    | Binop (op, ty, a, b) -> false, []
+    | Alloca ty -> true, []
+    | Load (ty, op) -> begin match ty with 
+        | Ptr Ptr _ -> false, [Id u]
+        | _ -> false, []
+      end
+    | Store (ty, src, dest) -> begin match ty with 
+        | Ptr _ -> false, [src]
+        | _ -> false, []
+      end
+    | Icmp (ty, op, a, b) -> false, []
+    | Call (ret, f, args) -> false, Id u :: List.map snd args
+    | Bitcast (in_ty, op, out_ty) -> false, [Id u; op] 
+    | Gep (ty, op, l) -> false, [Id u; op]
+  end in
+  let philippes_stuff = List.map (fun op -> begin match op with
+      | Id uid -> Some (uid, SymPtr.MayAlias)
+      | _ -> None 
+    end) aliased_ops in
+  let philippes_stuff = (if uid_is_unique then Some (u, SymPtr.Unique) else None) :: philippes_stuff in
+  List.fold_left (fun acc el -> begin match el with
+      | Some (uid, sym) -> UidM.add uid sym acc
+      | None -> acc
+    end) d philippes_stuff
 
 (* The flow function across terminators is trivial: they never change alias info *)
 let terminator_flow t (d:fact) : fact = d
@@ -67,9 +90,21 @@ struct
 
      It may be useful to define a helper function that knows how to take the
      join of two SymPtr.t facts.
+
+     may + may -> may
+     may + unique -> may
+     may + undef -> undef
+     unique + undef -> undef
+     unique + unique -> unique
+     undef + undef -> undef
   *)
   let combine (ds:fact list) : fact =
-    failwith "Alias.Fact.combine not implemented"
+    List.fold_left (UidM.union (fun _ a b ->
+        let res = List.find
+            (fun c -> a = c || b = c)
+            [SymPtr.UndefAlias; SymPtr.MayAlias; SymPtr.Unique] in
+        Some res
+      )) UidM.empty ds
 end
 
 (* instantiate the general framework ---------------------------------------- *)
