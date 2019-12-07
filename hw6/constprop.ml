@@ -99,9 +99,16 @@ struct
     UidM.to_string (fun _ v -> SymConst.to_string v)
 
   (* The constprop analysis should take the join over predecessors to compute the
-     flow into a node. You may find the UidM.merge function useful *)
+     flow into a node. You may find the UidM.merge function useful 
+  *)
   let combine (ds:fact list) : fact = 
-    failwith "Constprop.Fact.combine unimplemented"
+    List.fold_left (UidM.union (fun _ a b -> begin match (a, b, a == b) with
+        | (SymConst.Const _, SymConst.Const _, true) -> Some a
+        | (SymConst.Const _, SymConst.Const _, false) -> Some SymConst.NonConst
+        (* TODO should NonConst or UndefConst come first? *)
+        | (SymConst.NonConst, _, _) | (_, SymConst.NonConst, _) -> Some SymConst.NonConst
+        | (SymConst.UndefConst, _, _) | (_, SymConst.UndefConst, _) -> Some SymConst.UndefConst
+      end)) UidM.empty ds
 end
 
 (* instantiate the general framework ---------------------------------------- *)
@@ -128,13 +135,9 @@ let analyze (g:Cfg.t) : Graph.t =
 (* HINT: your cp_block implementation will probably rely on several helper 
    functions.                                                                 *)
 let run (cg:Graph.t) (cfg:Cfg.t) : Cfg.t =
-  let open SymConst in
+  let b = Cfg.block cfg l in
+  let cb = Graph.uid_out cg l in
+  failwith "Constprop.cp_block unimplemented"
+in
 
-
-  let cp_block (l:Ll.lbl) (cfg:Cfg.t) : Cfg.t =
-    let b = Cfg.block cfg l in
-    let cb = Graph.uid_out cg l in
-    failwith "Constprop.cp_block unimplemented"
-  in
-
-  LblS.fold cp_block (Cfg.nodes cfg) cfg
+LblS.fold cp_block (Cfg.nodes cfg) cfg

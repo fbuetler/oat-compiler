@@ -90,13 +90,6 @@ struct
 
      It may be useful to define a helper function that knows how to take the
      join of two SymPtr.t facts.
-
-     may + may -> may
-     may + unique -> may
-     may + undef -> undef
-     unique + undef -> undef
-     unique + unique -> unique
-     undef + undef -> undef
   *)
   let combine (ds:fact list) : fact =
     List.fold_left (UidM.union (fun _ a b ->
