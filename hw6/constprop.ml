@@ -3,25 +3,25 @@ open Datastructures
 
 (* The lattice of symbolic constants ---------------------------------------- *)
 module SymConst =
-  struct
-    type t = NonConst           (* Uid may take on multiple values at runtime *)
-           | Const of int64     (* Uid will always evaluate to const i64 or i1 *)
-           | UndefConst         (* Uid is not defined at the point *)
+struct
+  type t = NonConst           (* Uid may take on multiple values at runtime *)
+         | Const of int64     (* Uid will always evaluate to const i64 or i1 *)
+         | UndefConst         (* Uid is not defined at the point *)
 
-    let compare s t =
-      match (s, t) with
-      | (Const i, Const j) -> Int64.compare i j
-      | (NonConst, NonConst) | (UndefConst, UndefConst) -> 0
-      | (NonConst, _) | (_, UndefConst) -> 1
-      | (UndefConst, _) | (_, NonConst) -> -1
+  let compare s t =
+    match (s, t) with
+    | (Const i, Const j) -> Int64.compare i j
+    | (NonConst, NonConst) | (UndefConst, UndefConst) -> 0
+    | (NonConst, _) | (_, UndefConst) -> 1
+    | (UndefConst, _) | (_, NonConst) -> -1
 
-    let to_string : t -> string = function
-      | NonConst -> "NonConst"
-      | Const i -> Printf.sprintf "Const (%LdL)" i
-      | UndefConst -> "UndefConst"
+  let to_string : t -> string = function
+    | NonConst -> "NonConst"
+    | Const i -> Printf.sprintf "Const (%LdL)" i
+    | UndefConst -> "UndefConst"
 
-    
-  end
+
+end
 
 (* The analysis computes, at each program point, which UIDs in scope will evaluate 
    to integer constants *)
@@ -35,36 +35,74 @@ type fact = SymConst.t UidM.t
    - Uid of a binop or icmp with an NonConst argument is NonConst-out
    - Uid of stores and void calls are UndefConst-out
    - Uid of all other instructions are NonConst-out
- *)
+*)
 let insn_flow (u,i:uid * insn) (d:fact) : fact =
-  failwith "Constprop.insn_flow unimplemented"
+  let get_op (op: Ll.operand) : SymConst.t = begin match op with
+    | Id uid -> UidM.find uid d
+    | _ -> SymConst.NonConst
+  end in
+  let stuff (a: Ll.operand) (b: Ll.operand) (f: int64 -> int64 -> int64) : SymConst.t = 
+    begin match (get_op a, get_op b) with
+      | (SymConst.Const va, SymConst.Const vb) -> SymConst.Const (f va vb)
+      | (SymConst.UndefConst, _) | (_, SymConst.UndefConst) -> SymConst.UndefConst
+      | (SymConst.NonConst, _) | (_, SymConst.NonConst) -> SymConst.UndefConst
+    end
+  in
+  let out_sym: SymConst.t = begin match i with
+    | Binop (bop, _, a, b) -> stuff a b (begin match bop with
+        | Add -> Int64.add
+        | Sub -> Int64.sub
+        | Mul -> Int64.mul
+        | Shl -> (fun a b -> Int64.shift_left a (Int64.to_int b))
+        | Lshr -> (fun a b -> Int64.shift_right_logical a (Int64.to_int b))
+        | Ashr -> (fun a b -> Int64.shift_right a (Int64.to_int b))
+        | And -> Int64.logand
+        | Or -> Int64.logor
+        | Xor -> Int64.logxor 
+      end)
+    | Icmp (cnd, _, a, b) -> stuff a b (fun a b -> 
+        let bool_val = begin match cnd with
+          | Eq -> Int64.equal a b
+          | Ne -> not @@ Int64.equal a b
+          | Slt -> Int64.compare a b < 0
+          | Sle -> Int64.compare a b <= 0
+          | Sgt -> Int64.compare a b > 0
+          | Sge -> Int64.compare a b >= 0
+        end in
+        if bool_val then 1L else 0L
+      )
+    | Store _ -> SymConst.UndefConst
+    | Call (Void, _, _) -> SymConst.UndefConst
+    | _ -> SymConst.NonConst
+  end in
+  UidM.add u out_sym d
 
 (* The flow function across terminators is trivial: they never change const info *)
 let terminator_flow (t:terminator) (d:fact) : fact = d
 
 (* module for instantiating the generic framework --------------------------- *)
 module Fact =
-  struct
-    type t = fact
-    let forwards = true
+struct
+  type t = fact
+  let forwards = true
 
-    let insn_flow = insn_flow
-    let terminator_flow = terminator_flow
-    
-    let normalize : fact -> fact = 
-      UidM.filter (fun _ v -> v != SymConst.UndefConst)
+  let insn_flow = insn_flow
+  let terminator_flow = terminator_flow
 
-    let compare (d:fact) (e:fact) : int  = 
-      UidM.compare SymConst.compare (normalize d) (normalize e)
+  let normalize : fact -> fact = 
+    UidM.filter (fun _ v -> v != SymConst.UndefConst)
 
-    let to_string : fact -> string =
-      UidM.to_string (fun _ v -> SymConst.to_string v)
+  let compare (d:fact) (e:fact) : int  = 
+    UidM.compare SymConst.compare (normalize d) (normalize e)
 
-    (* The constprop analysis should take the join over predecessors to compute the
-       flow into a node. You may find the UidM.merge function useful *)
-    let combine (ds:fact list) : fact = 
-      failwith "Constprop.Fact.combine unimplemented"
-  end
+  let to_string : fact -> string =
+    UidM.to_string (fun _ v -> SymConst.to_string v)
+
+  (* The constprop analysis should take the join over predecessors to compute the
+     flow into a node. You may find the UidM.merge function useful *)
+  let combine (ds:fact list) : fact = 
+    failwith "Constprop.Fact.combine unimplemented"
+end
 
 (* instantiate the general framework ---------------------------------------- *)
 module Graph = Cfg.AsGraph (Fact)
@@ -79,8 +117,8 @@ let analyze (g:Cfg.t) : Graph.t =
   (* the flow into the entry node should indicate that any parameter to the
      function is not a constant *)
   let cp_in = List.fold_right 
-    (fun (u,_) -> UidM.add u SymConst.NonConst)
-    g.Cfg.args UidM.empty 
+      (fun (u,_) -> UidM.add u SymConst.NonConst)
+      g.Cfg.args UidM.empty 
   in
   let fg = Graph.of_cfg init cp_in g in
   Solver.solve fg
@@ -91,7 +129,7 @@ let analyze (g:Cfg.t) : Graph.t =
    functions.                                                                 *)
 let run (cg:Graph.t) (cfg:Cfg.t) : Cfg.t =
   let open SymConst in
-  
+
 
   let cp_block (l:Ll.lbl) (cfg:Cfg.t) : Cfg.t =
     let b = Cfg.block cfg l in
