@@ -25,7 +25,7 @@ let dce_block (lb:uid -> Liveness.Fact.t)
     (ab:uid -> Alias.fact)
     (b:Ll.block) : Ll.block =
   {
-    insns = List.filter (fun (uid, instr) -> 
+    insns = List.filter (fun (uid, instr) ->
         begin match instr with
           | Store (ty, src, Id dest) ->
             (UidS.mem dest @@ lb uid) ||
