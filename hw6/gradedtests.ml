@@ -27,7 +27,7 @@ let exec_ll_ast path ll_ast args extra_files =
 
   (* Run the ll backend *)
   let _ = Backend.set_liveness "dataflow" in
-  let _ = Backend.set_regalloc "greedy" in   (* NOTE: "better" for release! *)
+  let _ = Backend.set_regalloc "better" in   (* NOTE: "better" for release! *)
   let asm_ast = Backend.compile_prog ll_ast in
   let asm_str = X86.string_of_prog asm_ast in
 
