@@ -738,6 +738,16 @@ let create_graph (insns: (uid * insn) list) (live:liveness) : UidGraph.t =
     )
   |> fold_uids (fun uid i -> UidGraph.fully_connect @@ with_live uid i)
 
+let choose_best (avail_locs: LocSet.t) : Alloc.loc =
+  let good, bad = LocSet.partition (fun l -> begin match l with
+      | Alloc.LReg x -> List.mem x [Rdi]
+      | _ -> false
+    end) avail_locs in
+  begin match LocSet.choose_opt good with
+    | Some x -> x
+    | None -> LocSet.choose bad
+  end
+
 let rec color_graph (g: UidGraph.t) (live:liveness) (pal: LocSet.t) : (Alloc.loc UidM.t * int) =
   begin match UidGraph.find_node_with_deg_less_than (LocSet.cardinal pal) g with
     | None ->
@@ -751,7 +761,7 @@ let rec color_graph (g: UidGraph.t) (live:liveness) (pal: LocSet.t) : (Alloc.loc
     | Some uid ->
       let (color_mapping, n_spill) = color_graph (UidGraph.remove_node uid g) live pal in
       let used_colors = Seq.map (fun uid -> UidM.find uid color_mapping) @@ UidS.to_seq @@ UidGraph.get_neighbours uid g in
-      let chosen_color = LocSet.choose @@ LocSet.diff pal @@ LocSet.of_seq used_colors in
+      let chosen_color = choose_best @@ LocSet.diff pal @@ LocSet.of_seq used_colors in
       (UidM.add uid chosen_color color_mapping, n_spill)
   end
 
@@ -802,8 +812,6 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
       )
   in
   let lo = List.fold_left (fun lo uid -> UidM.add uid (Alloc.LReg Rax) lo) lo directly_returned_uids in
-
-  Printf.printf "%d\n" @@ List.length directly_returned_uids;
 
   let n_spill = ref n_spill in
   let n_arg = ref 0 in
