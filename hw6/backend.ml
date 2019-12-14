@@ -730,10 +730,13 @@ let greedy_layout (f:Ll.fdecl) (live:liveness) : layout =
 *)
 
 let create_graph (insns: (uid * insn) list) (live:liveness) : UidGraph.t =
-  let fold_uids f g = List.fold_left (fun g (uid, _) -> f uid g) g insns in
+  let with_live uid i = if insn_assigns i then UidS.add uid @@ live uid else live uid in
+  let fold_uids f g = List.fold_left (fun g (uid, i) -> f uid i g) g insns in
   UidGraph.empty
-  |> fold_uids (fun uid g -> (UidS.union (live uid) @@ UidGraph.get_nodes g, snd g))
-  |> fold_uids (fun uid -> UidGraph.fully_connect @@ live uid)
+  |> fold_uids (fun uid i g -> 
+      (UidS.union (with_live uid i) @@ UidGraph.get_nodes g, snd g)
+    )
+  |> fold_uids (fun uid i -> UidGraph.fully_connect @@ with_live uid i)
 
 let rec color_graph (g: UidGraph.t) (live:liveness) (pal: LocSet.t) : (Alloc.loc UidM.t * int) =
   begin match UidGraph.find_node_with_deg_less_than (LocSet.cardinal pal) g with
@@ -761,15 +764,26 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
   let insns = List.flatten @@ List.map (fun b -> b.insns) @@ b :: List.map snd bs in
   let graph = create_graph insns live in 
   let (lo, n_spill) = color_graph graph live pal in
+
   let n_spill = ref n_spill in
+  let n_arg = ref 0 in
   let spill () = (incr n_spill; Alloc.LStk (- !n_spill)) in
+  let alloc_arg () =
+    let res =
+      match arg_loc !n_arg with
+      | Alloc.LReg Rcx -> spill ()
+      | x -> x
+    in
+    incr n_arg; res
+  in
+
   let try_add k v m = begin match UidM.mem k m with
     | true -> m
     | false -> UidM.add k v m
   end in 
   let lo =
     fold_fdecl
-      (fun lo (x, _) -> try_add x (spill ()) lo)
+      (fun lo (x, _) -> try_add x (alloc_arg ()) lo)
       (fun lo l -> try_add l (Alloc.LLbl (Platform.mangle l)) lo)
       (fun lo (x, i) ->
          if insn_assigns i 
