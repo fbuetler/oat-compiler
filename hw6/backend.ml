@@ -174,9 +174,14 @@ let arg_loc (n:int) : Alloc.loc =
 
 let alloc_fdecl (layout:layout) (liveness:liveness) (f:Ll.fdecl) : Alloc.fbody =
   let dst  = List.map layout.uid_loc f.f_param in
-  let tdst = List.combine (fst f.f_ty) dst in
-  let movs = List.mapi (fun i (t,x) -> x, t, Alloc.Loc (arg_loc i)) tdst in
-  (Alloc.PMov movs, LocSet.of_list dst)
+  let used = List.map (fun x -> begin match x with
+      | Alloc.LVoid -> false
+      | _ -> true
+    end) dst in
+  let mapi_filter_used list = List.filter (fun (i, x) -> List.nth used i) @@ List.mapi (fun i x -> (i, x)) list in
+  let tdst = mapi_filter_used @@ List.combine (fst f.f_ty) dst in
+  let movs = List.map (fun (i, (t,x)) -> x, t, Alloc.Loc (arg_loc i)) tdst in
+  (Alloc.PMov movs, LocSet.of_list @@ List.map snd @@ mapi_filter_used dst)
   :: Alloc.of_cfg layout.uid_loc Platform.mangle liveness f.f_cfg
 
 (* compiling operands  ------------------------------------------------------ *)
@@ -756,9 +761,16 @@ let rec color_graph (g: UidGraph.t) (live:liveness) (pal: LocSet.t) (prefs: LocS
       begin match UidS.choose_opt @@ UidGraph.get_nodes g with (* TODO: improve choice *)
         | None -> (UidM.empty, 0)
         | Some uid -> 
-          let (color_mapping, n_spill) = color_graph (UidGraph.remove_node uid g) live pal prefs in (* TODO: check if coloring is nevertheless possible *)
-          let chosen_color = Alloc.LStk (-(n_spill+1)) in
-          (UidM.add uid chosen_color color_mapping, n_spill + 1)
+          let (color_mapping, n_spill) = color_graph (UidGraph.remove_node uid g) live pal prefs in 
+          let used_colors = Seq.map (fun uid -> UidM.find uid color_mapping) @@ UidS.to_seq @@ UidGraph.get_neighbours uid g in
+          let avail_colors = LocSet.diff pal @@ LocSet.of_seq used_colors in
+          if LocSet.is_empty avail_colors then (
+            let chosen_color = Alloc.LStk (-(n_spill+1)) in
+            (UidM.add uid chosen_color color_mapping, n_spill + 1)
+          ) else (
+            let chosen_color = choose_best (UidM.find_or rarely_prefered prefs uid) avail_colors in
+            (UidM.add uid chosen_color color_mapping, n_spill)
+          )
       end
     | Some uid ->
       let (color_mapping, n_spill) = color_graph (UidGraph.remove_node uid g) live pal prefs in
@@ -783,6 +795,12 @@ let rec last (l: 'a list) : 'a option = begin match l with
   | rest -> None
 end
 
+let to_pairs (l:'a list): (('a * 'a) list) =
+  begin match l with
+    | [] -> []
+    | _ -> List.combine  (List.rev @@ List.tl @@ List.rev l) (List.tl l)
+  end
+
 let better_layout (f:Ll.fdecl) (live:liveness) : layout =
   let pal = LocSet.(caller_save 
                     |> remove (Alloc.LReg Rax)
@@ -791,7 +809,24 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
   let (b, bs) = f.f_cfg in
   let blocks = b :: List.map snd bs in
   let insns = List.flatten @@ List.map (fun b -> b.insns) blocks in
+
+  let rax_uids = 
+    blocks
+    |> List.map (fun b -> to_pairs b.insns)
+    |> List.flatten
+    |> List.map (fun p -> begin match p with
+        | ((u1, Call _), (_, Bitcast (_, Id u2, _))) -> if u1 = u2 then Some u1 else None
+        | _ -> None
+      end
+      )
+    |> List.fold_left (fun s u -> begin match u with
+        | Some uid -> UidS.add uid s
+        | None -> s
+      end) UidS.empty 
+  in
+
   let graph = create_graph insns live in 
+  let graph = UidS.fold UidGraph.remove_node rax_uids graph in
 
   let prefs: LocSet.t UidM.t = UidM.empty in
   let prefs =
@@ -841,6 +876,7 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
       )
   in
   let lo = List.fold_left (fun lo uid -> UidM.add uid (Alloc.LReg Rax) lo) lo directly_returned_uids in
+  let lo = UidS.fold (fun uid lo -> UidM.add uid (Alloc.LReg Rax) lo) rax_uids lo in
 
   let first_instr_uid = begin match b.insns with
     | (x, _)::_ -> Some x
@@ -848,7 +884,7 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
   end in
   let live_entry (var_uid: Uid.t) = begin match first_instr_uid with
     | Some x -> UidS.mem var_uid @@ live x
-    | None -> false
+    | None -> true
   end in
 
   let n_spill = ref n_spill in
@@ -859,7 +895,7 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
       match (arg_loc !n_arg, live_entry uid) with
       | (Alloc.LReg Rcx, true) -> spill ()
       | (Alloc.LReg Rcx, false) -> Alloc.LReg Rcx
-      | (Alloc.LStk _, false) -> Alloc.LReg Rax
+      | (Alloc.LStk _, false) -> Alloc.LVoid
       | (x, _) -> x
     in
     incr n_arg; res
