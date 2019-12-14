@@ -509,7 +509,7 @@ let compile_fbody tdecls (af:Alloc.fbody) : x86stream =
         >@ compile_call live fptr_op os
         >@ lift (List.map (fun x -> Popq, [co (Loc x)]) save)
         >@ restore_fp
-        >@ (if t = Ll.Void || x = LVoid then [] 
+        >@ (if t = Ll.Void || x = LVoid || x = LReg Rax then [] 
             else lift Asm.[ Movq, [~%Rax; co (Loc x)] ]) )
 
     | (Ret (_,None), _)::rest ->
@@ -797,8 +797,25 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
   let prefs =
     f.f_param
     |> List.mapi (fun i uid -> (uid, arg_reg i))
-    |> List.fold_left ( fun prefs (uid, reg) -> begin match reg with
+    |> List.fold_left (fun prefs (uid, reg) -> begin match reg with
         | Some reg -> UidM.add uid (LocSet.add (Alloc.LReg reg) @@ UidM.find_or LocSet.empty prefs uid) prefs
+        | _ -> prefs
+      end) prefs in
+  let prefs =
+    blocks
+    |> List.map (fun b -> b.insns)
+    |> List.flatten
+    |> List.map (fun (_, insn) -> begin match insn with
+        | Call (_, _, args) -> List.mapi (fun i (_, o) -> (o, arg_reg i)) args
+        | _ -> []
+      end)
+    |> List.flatten
+    |> List.map (fun (op, reg) -> begin match (op, reg) with
+        | (Id uid, Some reg) -> Some (uid, reg)
+        | _ -> None
+      end)
+    |> List.fold_left (fun prefs x -> begin match x with
+        | Some (uid, reg) -> UidM.add uid (LocSet.add (Alloc.LReg reg) @@ UidM.find_or LocSet.empty prefs uid) prefs 
         | _ -> prefs
       end) prefs in
 
