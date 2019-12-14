@@ -755,15 +755,55 @@ let rec color_graph (g: UidGraph.t) (live:liveness) (pal: LocSet.t) : (Alloc.loc
       (UidM.add uid chosen_color color_mapping, n_spill)
   end
 
+let count_ops (f: Ll.uid -> bool) (insns: (uid * insn) list) : int =
+  let n = ref 0 in
+  List.iter (fun insn ->
+      ignore @@ Alloc.map_insn (fun u ->
+          (if f u then incr n); LVoid
+        ) (fun g -> g) insn
+    ) insns;
+  !n
+
+
+let rec last (l: 'a list) : 'a option = begin match l with
+  | x::[] -> Some x
+  | _::rest -> last rest
+  | rest -> None
+end
+
 let better_layout (f:Ll.fdecl) (live:liveness) : layout =
   let pal = LocSet.(caller_save 
                     |> remove (Alloc.LReg Rax)
                     |> remove (Alloc.LReg Rcx)                       
                    ) in
   let (b, bs) = f.f_cfg in
-  let insns = List.flatten @@ List.map (fun b -> b.insns) @@ b :: List.map snd bs in
+  let blocks = b :: List.map snd bs in
+  let insns = List.flatten @@ List.map (fun b -> b.insns) blocks in
   let graph = create_graph insns live in 
   let (lo, n_spill) = color_graph graph live pal in
+
+  let directly_returned_uids =
+    blocks
+    |> List.map ( fun b -> begin match (b.term, last b.insns) with
+        | ((_, Ret (_, Some Id x)), Some (y, _)) -> Some (x, y)
+        | _ -> None
+      end) 
+    |> List.filter (fun p -> begin match p with
+        | Some (x, y) -> x = y
+        | None -> false
+      end)
+    |> List.map (fun p -> begin match p with
+        | Some (x, _) -> x
+        | None -> failwith "unreachable"
+      end)
+    |> List.filter (fun uid -> 
+        let total_uses = List.fold_left (fun count b -> count + count_ops (fun o -> o = uid) b.insns) 0 blocks in
+        total_uses = 1
+      )
+  in
+  let lo = List.fold_left (fun lo uid -> UidM.add uid (Alloc.LReg Rax) lo) lo directly_returned_uids in
+
+  Printf.printf "%d\n" @@ List.length directly_returned_uids;
 
   let n_spill = ref n_spill in
   let n_arg = ref 0 in
