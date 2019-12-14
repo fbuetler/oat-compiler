@@ -106,7 +106,7 @@ struct
     (* Printf.printf "combine %d\n" @@ List.length ds; *)
     List.fold_left (UidM.union (fun _ a b ->
         (* Printf.printf "combine (%s, %s)\n" (SymConst.to_string a) (SymConst.to_string b); *)
-        begin match (a, b, a == b) with
+        begin match (a, b, a = b) with
           | (SymConst.Const _, SymConst.Const _, true) -> Some a
           | (SymConst.Const _, SymConst.Const _, false) -> Some SymConst.NonConst
           (* TODO should NonConst or UndefConst come first? *)
