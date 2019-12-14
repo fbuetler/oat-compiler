@@ -30,6 +30,7 @@ let dce_block (lb:uid -> Liveness.Fact.t)
           | Store (ty, src, Id dest) ->
             (UidS.mem dest @@ lb uid) ||
             UidM.find_opt dest (ab uid) = Some Alias.SymPtr.MayAlias
+          | Store (_, _, Gid dest) -> true
           | Call (ty, f, args) -> true
           | _ -> UidS.mem uid @@ lb uid
         end) b.insns;
