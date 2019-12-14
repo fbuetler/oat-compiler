@@ -4,14 +4,15 @@ open Assert
 open Driver
 
 exception Ran_tests
-let suite = ref (Studenttests.provided_tests @ Gradedtests.graded_tests)
+(* let suite = ref (Studenttests.provided_tests @ Gradedtests.graded_tests) *) (* TODO *)
+let suite = ref Studenttests.provided_tests
 
 let execute_tests () =
   Platform.configure_os ();
   let outcome = run_suite !suite in
   Printf.printf "%s\n" (outcome_to_string outcome);
   raise Ran_tests
-    
+
 let args =
   [ ("-linux", Set Platform.linux, "use linux-style name mangling [must preceed --test on linux]")
   ; ("--test", Unit execute_tests, "run the test suite, ignoring other files inputs")
@@ -29,7 +30,7 @@ let args =
   ; ("--liveness", Symbol (["trivial"; "dataflow"], Backend.set_liveness), " use the specified liveness analysis")
   ; ("--print-regs", Set print_regs_flag, "prints the register usage statistics for x86 code")
   ] (* SOLN *)
-@ (Grading.grading_args !suite Ran_tests)
+  @ (Grading.grading_args !suite Ran_tests)
 (* STUBWITH *)
 
 let files = ref []
@@ -50,5 +51,5 @@ let _ =
   with Ran_tests -> 
     (* SOLN *)
     ()
-    (* Platform.sh (Printf.sprintf "rm -rf %s" !Platform.output_path) Platform.raise_error *)
-    (* STUBWITH () *)
+(* Platform.sh (Printf.sprintf "rm -rf %s" !Platform.output_path) Platform.raise_error *)
+(* STUBWITH () *)

@@ -125,12 +125,17 @@ module UidGraph = struct
   let add_node (uid: Uid.t) ((us, ups): t) : t = (UidS.add uid us, ups)
   let remove_node (uid: Uid.t) ((us, ups): t) : t = (UidS.remove uid us, ups)
   let get_nodes (us, ups): UidS.t = us
-  let add_edge (p: UidPair.t) ((us, ups): t) : t = (us, UidPairS.add (canonical_pair p) ups)
+  let add_edge (p: UidPair.t) ((us, ups): t) : t = 
+    if not @@ UidS.mem (fst p) us || not @@ UidS.mem (snd p) us
+    then failwith @@ Printf.sprintf "tried to add edge between nodes which do not exist: (%%%s, %%%s)" (fst p) (snd p)
+    else (us, UidPairS.add (canonical_pair p) ups)
   let fully_connect (uid_set: UidS.t) (g: t) : t = 
     let uids = UidS.to_seq uid_set in
-    let pairs = Seq.flat_map (fun a -> Seq.map (fun b -> (a, b)) uids) uids in
+    let pairs =
+      Seq.flat_map (fun a -> Seq.map (fun b -> (a, b)) uids) uids 
+      |> Seq.filter (fun (a, b) -> a != b) in
     Seq.fold_left (fun g p -> add_edge p g) g pairs
-  let find_node_with_deg_less_than (k: int) ((_, ups): t) : Uid.t option =
+  let find_node_with_deg_less_than (k: int) ((us, ups): t) : Uid.t option =
     let instances = ups
                     |> UidPairS.to_seq
                     |> Seq.flat_map (fun (a, b) -> List.to_seq @@ List.sort_uniq String.compare [a; b]) 
@@ -140,17 +145,23 @@ module UidGraph = struct
         begin match res with
           | None -> Some (uid, 1)
           | Some (other_uid, n) ->
-            if uid == other_uid then Some (uid, n + 1)
+            if uid = other_uid then Some (uid, n + 1)
             else if n < k then res
             else Some (uid, 1)
         end
       ) None instances in
-    begin match res_with_count with
+    let pre_res = begin match res_with_count with
       | None -> None
       | Some (uid, n) -> if n < k then Some uid else None
+    end in
+    begin match (pre_res, k > 0) with
+      | (None, true) -> UidS.choose_opt @@ UidS.diff us @@ UidS.of_list instances
+      | _ -> pre_res
     end
   let get_neighbours (uid: Uid.t) ((us, ups) : t) : UidS.t = 
     UidS.filter (fun a -> UidPairS.mem (canonical_pair(a, uid)) ups) us
+  let find_node_with_deg_less_than_naive (k: int) ((us, ups): t) : Uid.t option =
+    UidS.choose_opt @@ UidS.filter (fun a -> k > List.length @@ UidS.elements @@ get_neighbours a (us, ups)) us
 end
 
 
