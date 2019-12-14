@@ -50,6 +50,9 @@ let provided_tests : suite = [
   Test("UidGraph.remove_node", [
       "remove one node", assert_set_eq (UidGraph.get_nodes @@ UidGraph.remove_node "b" ((UidS.of_list ["a"; "b"], UidPairS.empty))) ["a"];
       "remove last node", assert_set_eq (UidGraph.get_nodes @@ UidGraph.remove_node "a" ((UidS.of_list ["a"], UidPairS.empty))) [];
+      "removes edges", assert_graph_eq (test_graph_with_edges) ["a"; "b"; "c"; "d"] [("a", "b"); ("b", "c")];
+      "removes edges", assert_graph_eq (UidGraph.remove_node "a" test_graph_with_edges) ["b"; "c"; "d"] [("b", "c")];
+      "removes edges (different node)", assert_graph_eq (UidGraph.remove_node "b" test_graph_with_edges) ["a"; "c"; "d"] [];
     ]);
   Test("UidGraph.add_edge", [
       "add first edge", assert_graph_eq (UidGraph.add_edge ("a", "b") test_graph) test_graph_nodes [("a", "b")];

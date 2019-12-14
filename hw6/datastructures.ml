@@ -123,7 +123,11 @@ module UidGraph = struct
   (* module FindIndex = Map.Make(Uid * Int) *)
 
   let add_node (uid: Uid.t) ((us, ups): t) : t = (UidS.add uid us, ups)
-  let remove_node (uid: Uid.t) ((us, ups): t) : t = (UidS.remove uid us, ups)
+  let remove_node (uid: Uid.t) ((us, ups): t) : t = 
+    (
+      UidS.remove uid us,
+      UidPairS.filter (fun (a, b) -> a <> uid && b <> uid) ups
+    )
   let get_nodes (us, ups): UidS.t = us
   let add_edge (p: UidPair.t) ((us, ups): t) : t = 
     if not @@ UidS.mem (fst p) us || not @@ UidS.mem (snd p) us
