@@ -842,14 +842,25 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
   in
   let lo = List.fold_left (fun lo uid -> UidM.add uid (Alloc.LReg Rax) lo) lo directly_returned_uids in
 
+  let first_instr_uid = begin match b.insns with
+    | (x, _)::_ -> Some x
+    | _ -> None
+  end in
+  let live_entry (var_uid: Uid.t) = begin match first_instr_uid with
+    | Some x -> UidS.mem var_uid @@ live x
+    | None -> false
+  end in
+
   let n_spill = ref n_spill in
   let n_arg = ref 0 in
   let spill () = (incr n_spill; Alloc.LStk (- !n_spill)) in
-  let alloc_arg () =
+  let alloc_arg uid =
     let res =
-      match arg_loc !n_arg with
-      | Alloc.LReg Rcx -> spill ()
-      | x -> x
+      match (arg_loc !n_arg, live_entry uid) with
+      | (Alloc.LReg Rcx, true) -> spill ()
+      | (Alloc.LReg Rcx, false) -> Alloc.LReg Rcx
+      | (Alloc.LStk _, false) -> Alloc.LReg Rax
+      | (x, _) -> x
     in
     incr n_arg; res
   in
@@ -861,7 +872,7 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
   let lo =
     fold_fdecl
       (fun lo (x, _) ->
-         let target = alloc_arg () in
+         let target = alloc_arg x in
          try_add x (fun () -> target) lo
       )
       (fun lo l -> try_add l (fun () -> Alloc.LLbl (Platform.mangle l)) lo)
