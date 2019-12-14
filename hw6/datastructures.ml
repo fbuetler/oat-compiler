@@ -164,7 +164,6 @@ module UidGraph = struct
     UidS.choose_opt @@ UidS.filter (fun a -> k > List.length @@ UidS.elements @@ get_neighbours a (us, ups)) us
 end
 
-
 (** For testing   *)
 let uidm (b:(Ll.uid * 'a) list) : 'a UidM.t =
   List.fold_left (fun m (k,v) -> UidM.add k v m) UidM.empty b
