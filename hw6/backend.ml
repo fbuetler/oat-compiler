@@ -817,18 +817,21 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
     incr n_arg; res
   in
 
-  let try_add k v m = begin match UidM.mem k m with
+  let try_add k f m = begin match UidM.mem k m with
     | true -> m
-    | false -> UidM.add k v m
+    | false -> UidM.add k (f ()) m
   end in 
   let lo =
     fold_fdecl
-      (fun lo (x, _) -> try_add x (alloc_arg ()) lo)
-      (fun lo l -> try_add l (Alloc.LLbl (Platform.mangle l)) lo)
+      (fun lo (x, _) ->
+         let target = alloc_arg () in
+         try_add x (fun () -> target) lo
+      )
+      (fun lo l -> try_add l (fun () -> Alloc.LLbl (Platform.mangle l)) lo)
       (fun lo (x, i) ->
          if insn_assigns i 
-         then try_add x (spill ()) lo
-         else try_add x Alloc.LVoid lo)
+         then try_add x spill lo
+         else try_add x (fun () -> Alloc.LVoid) lo)
       (fun lo _ -> lo)
       lo f in
   { uid_loc = (fun x -> UidM.find x lo)
