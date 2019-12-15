@@ -1,6 +1,10 @@
 const fs = require("fs");
 const path = require("path");
-const { TARGET_FILES, COMPILER_CONFIGURATIONS } = require("./timing-config");
+const {
+  TARGET_FILES,
+  COMPILER_CONFIGURATIONS,
+  REPETITIONS
+} = require("./timing-config");
 
 function parseRealTime(s) {
   const [minutes, seconds] = s.split(":");
@@ -50,8 +54,10 @@ function flatMap(a, f) {
   return [].concat(...a.map(f));
 }
 
+process.chdir(__dirname);
+
 const input = fs
-  .readFileSync(path.join(__dirname, "timing/auto-log.txt"), "utf-8")
+  .readFileSync("timing/auto-log.txt", "utf-8")
   .trim()
   .split("\n")
   .map(s => JSON.parse(s));
@@ -73,7 +79,7 @@ for (const row of input) {
     TARGET_FILES.findIndex(
       f => JSON.stringify(f) === JSON.stringify(row.target)
     ) *
-      TARGET_FILES.length +
+      COMPILER_CONFIGURATIONS.length +
       COMPILER_CONFIGURATIONS.findIndex(c => c.name === row.config.name)
   );
 }
@@ -81,7 +87,7 @@ for (const row of input) {
 const sortedCommands = [...averages.keys()].sort(
   (a, b) => sortKeys.get(a) - sortKeys.get(b)
 );
-const output = flatMap(sortedCommands, command => [
+const timingOutput = flatMap(sortedCommands, command => [
   "$ " + command,
   "$ time ./a.out",
   "",
@@ -91,4 +97,10 @@ const output = flatMap(sortedCommands, command => [
   .join("\n")
   .trim();
 
-fs.writeFileSync(path.join(__dirname, "timinganalysis.txt"), output);
+const output = [
+  `# Timings are averages from ${REPETITIONS} consecutive runs`,
+  fs.readFileSync("timing/system.txt", "utf-8").trim(),
+  timingOutput
+].join("\n\n");
+
+fs.writeFileSync("timinganalysis.txt", output);
