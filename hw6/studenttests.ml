@@ -1,5 +1,6 @@
 open Assert
 open Datastructures
+open Backend
 
 (* These tests are provided by you -- they will be graded manually *)
 
