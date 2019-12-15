@@ -855,6 +855,7 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
   let prefs =
     f.f_param
     |> List.mapi (fun i uid -> (uid, arg_reg i))
+    |> List.filter (fun (_, reg) -> reg <> Some Rcx)
     |> List.fold_left (fun prefs (uid, reg) -> begin match reg with
         | Some reg -> UidM.add uid (LocSet.add (Alloc.LReg reg) @@ UidM.find_or LocSet.empty prefs uid) prefs
         | _ -> prefs
