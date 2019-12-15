@@ -454,10 +454,12 @@ let compile_fbody tdecls (af:Alloc.fbody) : x86stream =
 
 
     | (Bitcast (x, _,o,_), _)::rest ->
-      loop rest @@ 
-      ( outstream
-        >@ emit_mov (co o) (Reg Rax)
-        >:: I Asm.( Movq, [~%Rax; co (Loc x)] ) )
+      if Loc x = o then loop rest outstream
+      else
+        loop rest @@ 
+        ( outstream
+          >@ emit_mov (co o) (Reg Rax)
+          >:: I Asm.( Movq, [~%Rax; co (Loc x)] ) )
 
 
     | (Load (LReg x, _, Loc (LReg src)), _)::rest ->
@@ -788,7 +790,6 @@ let count_ops (f: Ll.uid -> bool) (insns: (uid * insn) list) : int =
     ) insns;
   !n
 
-
 let rec last (l: 'a list) : 'a option = begin match l with
   | x::[] -> Some x
   | _::rest -> last rest
@@ -800,6 +801,18 @@ let to_pairs (l:'a list): (('a * 'a) list) =
     | [] -> []
     | _ -> List.combine  (List.rev @@ List.tl @@ List.rev l) (List.tl l)
   end
+
+let filter_map (f: 'a -> 'b option) (l: 'a list) : 'b list =
+  l
+  |> List.map f
+  |> List.filter (fun o -> begin match o with
+      | Some _ -> true
+      | None -> false
+    end)
+  |> List.map (fun o -> begin match o with
+      | Some o -> o
+      | None -> failwith "unreachable"
+    end)
 
 let better_layout (f:Ll.fdecl) (live:liveness) : layout =
   let pal = LocSet.(caller_save 
@@ -825,8 +838,18 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
       end) UidS.empty 
   in
 
+  let bitcast_call_uid_pairs = 
+    blocks
+    |> List.map (fun b -> to_pairs b.insns)
+    |> List.flatten
+    |> filter_map (fun p -> begin match p with
+        | ((utemp1, Bitcast (_, Id uin, _)), (_, Call (_, _, (_, Id utemp2)::_))) -> if utemp1 = utemp2 then Some (uin, utemp2) else None
+        | _ -> None
+      end)
+  in
+
   let graph = create_graph insns live in 
-  let graph = UidS.fold UidGraph.remove_node rax_uids graph in
+  let graph = UidS.fold UidGraph.remove_node (UidS.union rax_uids @@ UidS.of_list @@ List.map snd bitcast_call_uid_pairs) graph in
 
   let prefs: LocSet.t UidM.t = UidM.empty in
   let prefs =
@@ -853,6 +876,9 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
         | Some (uid, reg) -> UidM.add uid (LocSet.add (Alloc.LReg reg) @@ UidM.find_or LocSet.empty prefs uid) prefs 
         | _ -> prefs
       end) prefs in
+  let prefs = List.fold_left (fun prefs (uin, utemp) -> 
+      UidM.add uin (LocSet.union (UidM.find_or LocSet.empty prefs uin) @@ UidM.find_or LocSet.empty prefs utemp) prefs 
+    ) prefs bitcast_call_uid_pairs in 
 
   let (lo, n_spill) = color_graph graph live pal prefs in
 
@@ -877,6 +903,7 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
   in
   let lo = List.fold_left (fun lo uid -> UidM.add uid (Alloc.LReg Rax) lo) lo directly_returned_uids in
   let lo = UidS.fold (fun uid lo -> UidM.add uid (Alloc.LReg Rax) lo) rax_uids lo in
+  let lo = List.fold_left (fun lo (uin, utemp) -> UidM.add utemp (UidM.find uin lo) lo) lo bitcast_call_uid_pairs in
 
   let first_instr_uid = begin match b.insns with
     | (x, _)::_ -> Some x
