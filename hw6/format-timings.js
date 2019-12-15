@@ -27,7 +27,7 @@ function parseTimeOutput(timeOutput) {
 
 function formatMinutesSeconds(s) {
   const m = Math.floor(s / 60);
-  return `${m}m${(s % 60).toFixed(3)}s`;
+  return `${m}m${(s % 60).toFixed(2)}s`;
 }
 
 function formatTiming(timing) {
