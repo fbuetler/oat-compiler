@@ -1,4 +1,3 @@
-------------------------------------------------------- compile_return_struct.ll
 %Pair = type { i1, i1 }
 
 define %Pair* @create_pair(i1 %_a23, i1 %_b20) {

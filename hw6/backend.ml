@@ -737,13 +737,16 @@ let greedy_layout (f:Ll.fdecl) (live:liveness) : layout =
 *)
 
 let create_graph (insns: (uid * insn) list) (live:liveness) : UidGraph.t =
-  let with_live uid i = if insn_assigns i then UidS.add uid @@ live uid else live uid in
+  let with_live uid i = if insn_assigns i then live uid else live uid in
   let fold_uids f g = List.fold_left (fun g (uid, i) -> f uid i g) g insns in
   UidGraph.empty
   |> fold_uids (fun uid i g -> 
       (UidS.union (with_live uid i) @@ UidGraph.get_nodes g, snd g)
     )
-  |> fold_uids (fun uid i -> UidGraph.fully_connect @@ with_live uid i)
+  |> fold_uids (fun uid i -> 
+      (* Printf.printf "DEBUG %s\n" @@ UidS.to_string @@ with_live uid i; *)
+      UidGraph.fully_connect @@ with_live uid i
+    )
 
 let choose_best (prefs: LocSet.t) (avail_locs: LocSet.t) : Alloc.loc =
   let good, bad = LocSet.partition (fun l -> begin match l with
@@ -757,28 +760,47 @@ let choose_best (prefs: LocSet.t) (avail_locs: LocSet.t) : Alloc.loc =
 
 let rarely_prefered: LocSet.t = LocSet.of_list @@ List.map (fun r -> Alloc.LReg r) [R10; R11]
 
-let rec color_graph (g: UidGraph.t) (live:liveness) (pal: LocSet.t) (prefs: LocSet.t UidM.t) : (Alloc.loc UidM.t * int) =
+let filter_map (f: 'a -> 'b option) (l: 'a list) : 'b list =
+  l
+  |> List.map f
+  |> List.filter (fun o -> begin match o with
+      | Some _ -> true
+      | None -> false
+    end)
+  |> List.map (fun o -> begin match o with
+      | Some o -> o
+      | None -> failwith "unreachable"
+    end)
+
+let rec color_graph (g: UidGraph.t) (live:liveness) (pal: LocSet.t) (prefs: LocSet.t UidM.t) (soft_coalesce_pairs: UidPairS.t) : (Alloc.loc UidM.t * int) =
+  let do_stuff (uid: Uid.t) = 
+    let (color_mapping, n_spill) = color_graph (UidGraph.remove_node uid g) live pal prefs soft_coalesce_pairs in 
+    let used_colors = Seq.map (fun uid -> UidM.find uid color_mapping) @@ UidS.to_seq @@ UidGraph.get_neighbours uid g in
+    let avail_colors = LocSet.diff pal @@ LocSet.of_seq used_colors in
+    if LocSet.is_empty avail_colors then (
+      let chosen_color = Alloc.LStk (-(n_spill+1)) in
+      (UidM.add uid chosen_color color_mapping, n_spill + 1)
+    ) else (
+      let colors_of_partners =
+        soft_coalesce_pairs
+        |> UidPairS.to_seq
+        |> List.of_seq
+        |> filter_map (fun (a, b) -> if a = uid then Some b else if b = uid then Some a else None)
+        |> filter_map (fun x -> UidM.find_opt x color_mapping)
+        |> LocSet.of_list
+      in
+      let fallback = if LocSet.is_empty colors_of_partners then rarely_prefered else colors_of_partners in
+      let chosen_color = choose_best (UidM.find_or fallback prefs uid) avail_colors in
+      (UidM.add uid chosen_color color_mapping, n_spill)
+    )
+  in
   begin match UidGraph.find_node_with_deg_less_than (LocSet.cardinal pal) g with
     | None ->
       begin match UidS.choose_opt @@ UidGraph.get_nodes g with (* TODO: improve choice *)
         | None -> (UidM.empty, 0)
-        | Some uid -> 
-          let (color_mapping, n_spill) = color_graph (UidGraph.remove_node uid g) live pal prefs in 
-          let used_colors = Seq.map (fun uid -> UidM.find uid color_mapping) @@ UidS.to_seq @@ UidGraph.get_neighbours uid g in
-          let avail_colors = LocSet.diff pal @@ LocSet.of_seq used_colors in
-          if LocSet.is_empty avail_colors then (
-            let chosen_color = Alloc.LStk (-(n_spill+1)) in
-            (UidM.add uid chosen_color color_mapping, n_spill + 1)
-          ) else (
-            let chosen_color = choose_best (UidM.find_or rarely_prefered prefs uid) avail_colors in
-            (UidM.add uid chosen_color color_mapping, n_spill)
-          )
+        | Some uid -> do_stuff uid
       end
-    | Some uid ->
-      let (color_mapping, n_spill) = color_graph (UidGraph.remove_node uid g) live pal prefs in
-      let used_colors = Seq.map (fun uid -> UidM.find uid color_mapping) @@ UidS.to_seq @@ UidGraph.get_neighbours uid g in
-      let chosen_color = choose_best (UidM.find_or rarely_prefered prefs uid) @@ LocSet.diff pal @@ LocSet.of_seq used_colors in
-      (UidM.add uid chosen_color color_mapping, n_spill)
+    | Some uid -> do_stuff uid
   end
 
 let count_ops (f: Ll.uid -> bool) (insns: (uid * insn) list) : int =
@@ -802,17 +824,6 @@ let to_pairs (l:'a list): (('a * 'a) list) =
     | _ -> List.combine  (List.rev @@ List.tl @@ List.rev l) (List.tl l)
   end
 
-let filter_map (f: 'a -> 'b option) (l: 'a list) : 'b list =
-  l
-  |> List.map f
-  |> List.filter (fun o -> begin match o with
-      | Some _ -> true
-      | None -> false
-    end)
-  |> List.map (fun o -> begin match o with
-      | Some o -> o
-      | None -> failwith "unreachable"
-    end)
 
 let better_layout (f:Ll.fdecl) (live:liveness) : layout =
   let pal = LocSet.(caller_save 
@@ -848,6 +859,18 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
       end)
   in
 
+  let soft_coalesce_pairs =
+    insns
+    |> filter_map (fun insn -> begin match insn with
+        | (uout, Binop (bop, _, _, Id uright))
+          when (bop = Add || bop = Mul || bop = And || bop = Or || bop = Xor) ->
+          Some (uout, uright)
+        | _ -> None
+      end)
+    |> List.map UidGraph.canonical_pair
+    |> UidPairS.of_list
+  in
+
   let graph = create_graph insns live in 
   let graph = UidS.fold UidGraph.remove_node (UidS.union rax_uids @@ UidS.of_list @@ List.map snd bitcast_call_uid_pairs) graph in
 
@@ -881,7 +904,9 @@ let better_layout (f:Ll.fdecl) (live:liveness) : layout =
       UidM.add uin (LocSet.union (UidM.find_or LocSet.empty prefs uin) @@ UidM.find_or LocSet.empty prefs utemp) prefs 
     ) prefs bitcast_call_uid_pairs in 
 
-  let (lo, n_spill) = color_graph graph live pal prefs in
+  (* Printf.printf "DEBUG %s\n" @@ UidS.to_string @@ fst graph; *)
+  (* Printf.printf "DEBUG %s\n" @@ UidPairS.to_string @@ snd graph; *)
+  let (lo, n_spill) = color_graph graph live pal prefs soft_coalesce_pairs in
 
   let directly_returned_uids =
     blocks
