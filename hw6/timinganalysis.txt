@@ -1,0 +1,83 @@
+$ ./main.native -O1 --liveness trivial --regalloc none atprograms/regalloctest.oat runtime.c
+$ time ./a.out
+
+real	0m0.573s
+user	0m0.573s
+sys 	0m0.000s
+
+$ ./main.native -O1 --liveness dataflow --regalloc greedy atprograms/regalloctest.oat runtime.c
+$ time ./a.out
+
+real	0m0.535s
+user	0m0.530s
+sys 	0m0.000s
+
+$ ./main.native -O1 --liveness dataflow --regalloc better atprograms/regalloctest.oat runtime.c
+$ time ./a.out
+
+real	0m0.240s
+user	0m0.240s
+sys 	0m0.000s
+
+$ ./main.native -O1 --liveness trivial --regalloc none llprograms/matmul.ll
+$ time ./a.out
+
+real	0m1.703s
+user	0m1.703s
+sys 	0m0.000s
+
+$ ./main.native -O1 --clang atprograms/regalloctest.oat runtime.c
+$ time ./a.out
+
+real	0m0.000s
+user	0m0.000s
+sys 	0m0.000s
+
+$ ./main.native -O1 --liveness dataflow --regalloc greedy llprograms/matmul.ll
+$ time ./a.out
+
+real	0m1.225s
+user	0m1.220s
+sys 	0m0.000s
+
+$ ./main.native -O1 --liveness dataflow --regalloc better llprograms/matmul.ll
+$ time ./a.out
+
+real	0m1.511s
+user	0m1.510s
+sys 	0m0.000s
+
+$ ./main.native -O1 --liveness trivial --regalloc none studenttest.oat runtime.c
+$ time ./a.out
+
+real	0m7.465s
+user	0m7.460s
+sys 	0m0.000s
+
+$ ./main.native -O1 --clang llprograms/matmul.ll
+$ time ./a.out
+
+real	0m0.058s
+user	0m0.058s
+sys 	0m0.000s
+
+$ ./main.native -O1 --liveness dataflow --regalloc greedy studenttest.oat runtime.c
+$ time ./a.out
+
+real	0m3.891s
+user	0m3.891s
+sys 	0m0.000s
+
+$ ./main.native -O1 --liveness dataflow --regalloc better studenttest.oat runtime.c
+$ time ./a.out
+
+real	0m2.232s
+user	0m2.231s
+sys 	0m0.000s
+
+$ ./main.native -O1 --clang studenttest.oat runtime.c
+$ time ./a.out
+
+real	0m0.090s
+user	0m0.090s
+sys 	0m0.000s
