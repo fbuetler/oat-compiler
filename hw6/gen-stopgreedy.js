@@ -24,11 +24,7 @@ ${times(
 ${times(NUM_VARS, i => `    sum = x${i} + sum + x${i};`).join("\n")}
   }
 
-  if (sum > 0) {
-    return 0;
-  } else {
-    return sum;
-  }
+  return sum;
 }
 `;
 

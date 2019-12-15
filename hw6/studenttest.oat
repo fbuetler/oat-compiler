@@ -164,9 +164,5 @@ int program (int argc, string[] argv) {
     sum = x3 + sum + x3;
   }
 
-  if (sum > 0) {
-    return 0;
-  } else {
-    return sum;
-  }
+  return sum;
 }
