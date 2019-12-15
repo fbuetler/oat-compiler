@@ -15,7 +15,7 @@ ${times(NUM_VARS, i => `  var x${i} = argc;`).join("\n")}
 
   var sum = 0;
 
-  for (var i = 0; i < 100000000; i = i + 1;) {
+  for (var i = 0; i < 20000000; i = i + 1;) {
 ${times(
   NUM_MIX_ADDS,
   () => `    ${randVar()} = ${randVar()} + ${randVar()};`
