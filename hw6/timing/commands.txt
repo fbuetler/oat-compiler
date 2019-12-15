@@ -1,0 +1,7 @@
+make; and env OCAMLRUNPARAM=b ./main.native --regalloc greedy --liveness dataflow -O1 runtime.c atprograms/own/stopgreedy.oat --print-x86 > /tmp/a
+ocamlbuild -use-ocamlfind -Is util,x86,grading,ll -libs unix,str main.native -use-menhir -yaccflag --explain
+Finished, 105 targets (105 cached) in 00:00:00.
+
+make; and env OCAMLRUNPARAM=b ./main.native --regalloc better --liveness dataflow -O1 runtime.c atprograms/own/stopgreedy.oat --print-x86 > /tmp/b
+ocamlbuild -use-ocamlfind -Is util,x86,grading,ll -libs unix,str main.native -use-menhir -yaccflag --explain
+Finished, 105 targets (105 cached) in 00:00:00.
