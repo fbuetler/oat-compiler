@@ -11,17 +11,24 @@ function randVar() {
 
 const output = `
 int program (int argc, string[] argv) {
-${times(NUM_VARS, i => `  var x${i} = argc;`).join('\n')}
+${times(NUM_VARS, i => `  var x${i} = argc;`).join("\n")}
 
   var sum = 0;
 
   for (var i = 0; i < 100000000; i = i + 1;) {
-${times(NUM_MIX_ADDS, i => `    ${randVar()} = ${randVar()} + ${randVar()};`).join('\n')}
+${times(
+  NUM_MIX_ADDS,
+  () => `    ${randVar()} = ${randVar()} + ${randVar()};`
+).join("\n")}
 
-${times(NUM_VARS, i => `    sum = x${i} + sum + x${i};`).join('\n')}
+${times(NUM_VARS, i => `    sum = x${i} + sum + x${i};`).join("\n")}
   }
 
-  return sum;
+  if (sum > 0) {
+    return 0;
+  } else {
+    return sum;
+  }
 }
 `;
 
