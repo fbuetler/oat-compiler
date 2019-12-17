@@ -112,6 +112,34 @@ cache_alignment	: 64
 address sizes	: 39 bits physical, 48 bits virtual
 power management:
 
+$ ./main.native --liveness trivial --regalloc none atprograms/regalloctest.oat runtime.c
+$ time ./a.out
+
+real	0m0.57s
+user	0m0.57s
+sys 	0m0.00s
+
+$ ./main.native --liveness dataflow --regalloc greedy atprograms/regalloctest.oat runtime.c
+$ time ./a.out
+
+real	0m0.22s
+user	0m0.22s
+sys 	0m0.00s
+
+$ ./main.native --liveness dataflow --regalloc better atprograms/regalloctest.oat runtime.c
+$ time ./a.out
+
+real	0m0.24s
+user	0m0.23s
+sys 	0m0.00s
+
+$ ./main.native --clang atprograms/regalloctest.oat runtime.c
+$ time ./a.out
+
+real	0m0.00s
+user	0m0.00s
+sys 	0m0.00s
+
 $ ./main.native -O1 --liveness trivial --regalloc none atprograms/regalloctest.oat runtime.c
 $ time ./a.out
 
@@ -122,7 +150,7 @@ sys 	0m0.00s
 $ ./main.native -O1 --liveness dataflow --regalloc greedy atprograms/regalloctest.oat runtime.c
 $ time ./a.out
 
-real	0m0.54s
+real	0m0.53s
 user	0m0.53s
 sys 	0m0.00s
 
@@ -140,6 +168,34 @@ real	0m0.00s
 user	0m0.00s
 sys 	0m0.00s
 
+$ ./main.native --liveness trivial --regalloc none llprograms/matmul.ll
+$ time ./a.out
+
+real	0m1.71s
+user	0m1.70s
+sys 	0m0.00s
+
+$ ./main.native --liveness dataflow --regalloc greedy llprograms/matmul.ll
+$ time ./a.out
+
+real	0m1.22s
+user	0m1.21s
+sys 	0m0.00s
+
+$ ./main.native --liveness dataflow --regalloc better llprograms/matmul.ll
+$ time ./a.out
+
+real	0m1.51s
+user	0m1.51s
+sys 	0m0.00s
+
+$ ./main.native --clang llprograms/matmul.ll
+$ time ./a.out
+
+real	0m0.06s
+user	0m0.06s
+sys 	0m0.00s
+
 $ ./main.native -O1 --liveness trivial --regalloc none llprograms/matmul.ll
 $ time ./a.out
 
@@ -150,7 +206,7 @@ sys 	0m0.00s
 $ ./main.native -O1 --liveness dataflow --regalloc greedy llprograms/matmul.ll
 $ time ./a.out
 
-real	0m1.23s
+real	0m1.22s
 user	0m1.22s
 sys 	0m0.00s
 
@@ -168,25 +224,53 @@ real	0m0.06s
 user	0m0.06s
 sys 	0m0.00s
 
+$ ./main.native --liveness trivial --regalloc none studenttest.oat runtime.c
+$ time ./a.out
+
+real	0m7.44s
+user	0m7.44s
+sys 	0m0.00s
+
+$ ./main.native --liveness dataflow --regalloc greedy studenttest.oat runtime.c
+$ time ./a.out
+
+real	0m2.45s
+user	0m2.45s
+sys 	0m0.00s
+
+$ ./main.native --liveness dataflow --regalloc better studenttest.oat runtime.c
+$ time ./a.out
+
+real	0m2.22s
+user	0m2.22s
+sys 	0m0.00s
+
+$ ./main.native --clang studenttest.oat runtime.c
+$ time ./a.out
+
+real	0m0.09s
+user	0m0.09s
+sys 	0m0.00s
+
 $ ./main.native -O1 --liveness trivial --regalloc none studenttest.oat runtime.c
 $ time ./a.out
 
-real	0m7.46s
-user	0m7.46s
+real	0m7.44s
+user	0m7.44s
 sys 	0m0.00s
 
 $ ./main.native -O1 --liveness dataflow --regalloc greedy studenttest.oat runtime.c
 $ time ./a.out
 
-real	0m3.89s
-user	0m3.89s
+real	0m3.88s
+user	0m3.88s
 sys 	0m0.00s
 
 $ ./main.native -O1 --liveness dataflow --regalloc better studenttest.oat runtime.c
 $ time ./a.out
 
 real	0m2.23s
-user	0m2.23s
+user	0m2.22s
 sys 	0m0.00s
 
 $ ./main.native -O1 --clang studenttest.oat runtime.c
